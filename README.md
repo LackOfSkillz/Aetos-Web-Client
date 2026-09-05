@@ -176,32 +176,50 @@ Colour never carries meaning alone. `innerHTML` is never used.
 
 ## What is left
 
-| Milestone | |
+| Stage | |
 | --- | --- |
-| M17 | Rich chat and event history |
-| M18 | Audio and multimedia, with nonverbal cues |
-| M19 | Themes, with High Contrast in core |
+| **A0** | **Accessibility Foundation — next, and it blocks M17** |
+| A1 | Widget accessibility contract *(retrofits M6, M7)* |
+| A2 | Current State View and semantic values *(retrofits M8, M16)* |
+| A3 | Accessible map completion *(retrofits M9)* |
+| M17 | Rich chat, event history and Review Mode |
+| A5 | Cognitive and orientation layer — Reorient Me, How I Got Here, Quiet Mode |
+| M18 | Audio and multimedia, with captions |
+| M19 | Themes, with contrast validation |
+| A7 | AAC and simplified workspace |
 | M20 | PWA shell and touch gestures *(responsive layout done)* |
-| M21 | Developer inspector and visual designer |
-| M22 | Documented widget SDK |
-| M23 | Server-described advanced UI manifest |
-| M24 | Reconnect hardening |
-| M25 | Performance hardening |
-| M26 | Security hardening |
-| M27 | Configuration validation |
-| M28 | Documentation |
-| M29 | Compatibility matrix |
-| M30 | Accessibility review *(needs a real assistive-technology pass)* |
-| M31 | Release candidate |
-| M32 | Upstream pull request |
+| M21–M29 | Inspector, widget SDK, server-described manifest, and hardening |
+| A8 | Assistive-technology validation — NVDA, JAWS, Orca, braille, cognitive, AAC |
+| M31–M32 | Release candidate and upstream pull request |
 | M33 | Voice input and speech accessibility |
+
+The **A-track** comes from
+[Addendum A](docs/addendum-a-accessibility.md), a normative accessibility
+specification whose `A11Y-` requirement IDs are release gates. It withdraws the
+old single "M30 accessibility review" in favour of a foundation plus
+requirements inside every milestone, ending in validation rather than
+discovery.
+
+Addendum A arrived at M16, so A0 is a **retrofit** — which the addendum itself
+warns against. That ordering deviation is recorded rather than glossed, along
+with an audited table of what the client already satisfies and what it does not.
 
 Detail and reasoning: [`notes/roadmap.md`](notes/roadmap.md).
 
-**Two open questions.** M33 sits after the upstream PR in the blueprint's
-ordering, but the PR description lists voice as part of the solution — that
-wants settling before M30. And M30 needs a human: NVDA and VoiceOver, keyboard
-only, 200% zoom. Nothing automated substitutes for it.
+**Open dependencies on the release.** A8 needs people, not tooling: a
+refreshable-braille tester on real hardware, and someone familiar with
+picture-supported communication to review the AAC work. Automated testing
+cannot substitute for either, and neither can this project fill those roles
+alone.
+
+**Still unsettled.** M33 sits after the upstream PR in the blueprint's ordering,
+but the PR description lists voice as part of the solution. It should be decided
+before A8, since voice is itself an accessibility surface and A8 would otherwise
+validate an interface about to gain a major new input mode.
+
+No conformance claim ships ahead of its evidence. Until A8 completes, the honest
+wording is **"designed toward WCAG 2.2 AA"** — not "compliant", not "JAWS
+compatible".
 
 ---
 
@@ -209,7 +227,7 @@ only, 200% zoom. Nothing automated substitutes for it.
 
 ```
 contrib/aetos_webclient/   The client. Byte-identical to the eventual PR diff.
-docs/                      Feature reference, mirroring the in-client help.
+docs/                      Feature reference, and Addendum A (accessibility spec).
 notes/                     Engineering record: roadmap, decisions, milestones.
 browser-qa/                Live-browser QA suites and baseline screenshots.
 scripts/                   Interpreter detection and the contrib mirror.

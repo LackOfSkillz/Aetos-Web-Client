@@ -11,6 +11,48 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Addendum A — accessibility becomes architectural
+
+**Added**
+
+- [`docs/addendum-a-accessibility.md`](docs/addendum-a-accessibility.md), a
+  normative accessibility specification covering WCAG 2.2 AA, NVDA/JAWS/Orca,
+  refreshable braille, cognitive and executive-function support, and AAC.
+  Requirement IDs beginning `A11Y-` are release gates.
+- An **A-track** in the roadmap (A0–A8) interleaved with the feature
+  milestones, with every `A11Y-` requirement assigned to a stage.
+- An audit of the client at M16 against the addendum, recording what is already
+  met with the evidence, and what is absent.
+
+**Changed**
+
+- **M30 "Accessibility review" is withdrawn.** A single late review is replaced
+  by a foundation (A0), requirements inside every milestone, continuous axe and
+  keyboard testing, and a final validation stage (A8) that validates an
+  architecture rather than discovering its absence.
+- **A0 blocks M17.** No further feature milestone starts until the foundation
+  exists, because everything after it inherits the foundation's correctness.
+
+**Recorded as a deviation**
+
+- The addendum places the accessibility foundation immediately after clean
+  Evennia setup and explicitly warns against retrofitting. It arrived at M16,
+  with sixteen milestones built, so A0 *is* a retrofit. That is recorded
+  openly rather than absorbed quietly, per the addendum's own rule that a MUST
+  is never silently downgraded.
+- Mitigating: accessibility has been a merge gate since `decision-003`, so the
+  audit found `role="application"` absent, a single central announcer already in
+  place, the transcript already non-live by explicit choice, no character-only
+  shortcuts, and the dialog pattern already correct. The retrofit is narrower
+  than the ordering implies.
+
+**Open dependencies on release**
+
+- A refreshable-braille tester on real hardware (an emulator does not
+  substitute), and an AAC-familiar reviewer. Neither can be filled by tooling.
+
+---
+
 ### M16 — Inventory, equipment, target and effects
 
 **Added**
