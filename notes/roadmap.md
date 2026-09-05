@@ -397,7 +397,12 @@ SVG hidden from the a11y tree A11Y-MAP-005
 **Gate:** A.98's mapper rule — the mapper does not pass until the accessible map
 passes.
 
-### A4 — Transcript, log store and Review Mode  → **merged into M17**
+### A4 — Transcript, log store and Review Mode  ✅ COMPLETE (as M17)
+
+Record: [`m17-history-review.md`](m17-history-review.md). 593 Python tests OK.
+Three bugs found in my own flood control, all by testing rather than reading --
+including a summary silently overwritten because a live region only announces
+its latest text.
 
 Addendum A.10, A.11, A.12, A.16, A.17, A.18.
 
@@ -499,7 +504,8 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] A3   Accessible map completion                     -- 508 py
 [x] E0   Event pipeline contract                       -- 534 py
 [x] E1   Capture + replay                              -- 560 py
-[ ] M17  Rich chat + event history + Review Mode       <-- NEXT
+[x] M17  Rich chat + event history + Review Mode       -- 593 py
+[ ] E2   Non-destructive presentation rules            <-- NEXT
 [ ] A5   Cognitive and orientation layer
 [ ] M18  Audio + multimedia + captions                 (absorbs A6)
 [ ] M19  Themes  (+ contrast validation, A11Y-VIS-003)
@@ -1071,7 +1077,6 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [ ] E0   Event pipeline contract                  <-- BEFORE M17
 [ ] E1   Capture + replay                         <-- BEFORE M17
 [ ] M17  Rich chat + event history + Review Mode
-[ ] E2   Non-destructive presentation rules       (needs M17's canonical log)
 [ ] E3   Automation groups
 [ ] E4   Unified validator
 [ ] E5   Diagnostic reporting

@@ -28,6 +28,8 @@
         HELLO: "aetos_hello",
         MANIFEST: "aetos_manifest",
         SYNC: "aetos_sync",
+        // A categorised game event (A.76). Optional for a game to send.
+        EVENT: "aetos_event",
         REQUEST_SYNC: "aetos_request_sync",
         ERROR: "aetos_error"
     };
@@ -414,6 +416,7 @@
             ? window.AetosNotes.create(storage)
             : null;
         var notesRefreshers = [];
+        var historyRefreshers = [];
 
         evennia.init({ emitter: emitter });
 
@@ -472,6 +475,23 @@
             : null;
 
         /*
+         * Review Mode.  A.17, A.18.
+         *
+         * Reads the canonical log rather than the console, so a player can
+         * review a line that a display rule has since hidden -- which is
+         * exactly the case where reviewing matters.
+         */
+        var review = (canonicalLog && window.AetosReview)
+            ? window.AetosReview.create({
+                canonicalLog: canonicalLog,
+                announcer: accessibility ? accessibility.announcer : null,
+                announce: function (message, options) {
+                    announcer.announce(message, options);
+                }
+            })
+            : null;
+
+        /*
          * Replay feeds records through `pipeline.ingest` -- the same seam the
          * websocket uses. There is deliberately no second path: a harness that
          * exercises different code from production tests the harness.
@@ -503,6 +523,14 @@
                     // has already been applied, two stages earlier.
                     triggers.onState(triggerCache);
                 }
+            });
+
+            // The history widget redraws from the canonical log. Driven from
+            // the pipeline rather than from a store subscription, because it
+            // shows *events* and the store holds *state* -- correlated, but
+            // not the same thing.
+            pipeline.observe("presentation", function () {
+                historyRefreshers.forEach(function (refresh) { refresh(); });
             });
 
             // Presentation second, and handed a copy -- so nothing it does can
@@ -617,6 +645,33 @@
             window.console.error(
                 "Aetos: server reported an error during " + (detail.stage || "?") +
                 ": " + (detail.message || "unknown"));
+        });
+
+        /*
+         * A categorised game event.  A.76, M17.
+         *
+         * Optional: a game that never sends one still works, and its output
+         * arrives as ordinary text in the "other" category. What a category
+         * buys is review by channel -- "previous tell" is only possible
+         * because the game said which events were tells. Aetos will not work
+         * that out by reading the words, on any game.
+         */
+        emitter.on(AETOS_MSG.EVENT, function (args, kwargs) {
+            var detail = kwargs || {};
+            if (!pipeline) {
+                if (detail.text) {
+                    consoleWidget.append(detail.text);
+                }
+                return;
+            }
+            pipeline.ingest({
+                kind: "event",
+                category: detail.category || "other",
+                text: detail.text || "",
+                plain: detail.plain || "",
+                priority: detail.importance_hint || null,
+                payload: detail.data || null
+            });
         });
 
         emitter.on(AETOS_MSG.SYNC, function (args, kwargs) {
@@ -1029,6 +1084,14 @@
              * them failed to load the snapshot simply has less to say rather
              * than erroring -- every section degrades to absent.
              */
+            if (window.AetosHistory && canonicalLog) {
+                registry.register(window.AetosHistory.createWidget({
+                    canonicalLog: canonicalLog,
+                    review: review,
+                    registerRefresh: function (fn) { historyRefreshers.push(fn); }
+                }));
+            }
+
             if (window.AetosStateView) {
                 registry.register(window.AetosStateView.createWidget({
                     preferences: accessibility ? accessibility.preferences : null,
@@ -1453,6 +1516,22 @@
                 });
             }
 
+            /* Review */
+            if (review) {
+                addCommand("review.toggle", "Review mode", "Review",
+                    "Pause announcements and read back through what happened.",
+                    function () { review.toggle(); }, null, "Ctrl+Shift+R");
+                addCommand("review.prev.tell", "Previous tell", "Review",
+                    "Jump back to the last thing someone said to you.",
+                    function () { review.previous("tell"); });
+                addCommand("review.next.tell", "Next tell", "Review",
+                    "Jump forward to the next thing someone said to you.",
+                    function () { review.next("tell"); });
+                addCommand("review.latest", "Latest event", "Review",
+                    "Jump to the most recent thing that happened.",
+                    function () { review.latest(); });
+            }
+
             /* Session */
             if (commandQueue) {
                 addCommand("queue.cancel", "Stop queued commands", "Session",
@@ -1500,6 +1579,20 @@
                     run: function () { help.toggle(); }
                 });
             }
+            if (review) {
+                shortcuts.register({
+                    id: "review.toggle",
+                    label: "Review mode",
+                    description: "Pause announcements and read back through history.",
+                    // Ctrl+Shift+R: not a bare character, and not Ctrl+R, which
+                    // reloads the page and would lose the session being
+                    // reviewed.
+                    defaultBinding: "Ctrl+Shift+R",
+                    paletteCommand: "review.toggle",
+                    run: function () { review.toggle(); }
+                });
+            }
+
             if (workspaces) {
                 shortcuts.register({
                     id: "layout.edit",
@@ -1560,6 +1653,7 @@
             canonicalLog: canonicalLog,
             capture: capture,
             replay: replay,
+            review: review,
             reloadTriggers: reloadTriggers,
             macros: macros,
             editMacro: editMacro,

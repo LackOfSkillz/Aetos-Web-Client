@@ -20,12 +20,24 @@
  * constantly stops being an interruption and becomes noise, at which point the
  * one message that genuinely needed to interrupt is the one that gets ignored.
  *
- * WHAT THIS DOES NOT DO YET. Burst aggregation (A.16) and Review Mode (A.17)
- * need the categorised log store, which is scheduled with M17. The priority
- * and category vocabulary is defined here now so that every call site is
- * already passing the information those stages will need -- retrofitting a
- * category argument onto a hundred call sites later is exactly the kind of
- * churn this foundation exists to avoid.
+ * FLOOD CONTROL (A.16). A browser cannot know when a screen reader has finished
+ * speaking -- there is no event for it, on any platform. So Aetos does not try
+ * to synchronise against speech. It counts, and when announceable events arrive
+ * faster than anyone could listen to them it stops reading each one and starts
+ * reporting the shape of the burst instead:
+ *
+ *     Goblin attacks. Bob attacks. You dodge. Jane attacks. Goblin parries...
+ *          ↓
+ *     "Heavy activity. 12 further combat events."
+ *
+ * Every individual line is still in the transcript. What is dropped is the
+ * *reading aloud* of each one, which was never going to be heard anyway: speech
+ * is serial, and a queue growing faster than it drains does not inform anybody,
+ * it just means the player hears a minute-old message and cannot interrupt it.
+ *
+ * Tells and critical messages bypass aggregation. Someone speaking to you
+ * directly is the thing you most need to hear during a fight, and it is exactly
+ * what a naive rate limiter would bury.
  */
 
 (function (window, document) {
@@ -77,10 +89,43 @@
         combat: "screenReader.announceCombat"
     };
 
+    /*
+     * Flood-control constants.  A.16.
+     *
+     * All in one object so they can be tuned from user testing rather than
+     * hunted for. These are starting values, not findings -- the addendum's
+     * own numbers, and they should be revisited once somebody has used this in
+     * a real fight.
+     */
+    var FLOOD = {
+        // Events per second above which a burst is considered to be underway.
+        threshold: 5,
+        // How long the rate must stay above the threshold before aggregating.
+        // Without this a single busy moment would trigger summarising.
+        sustainMs: 2000,
+        // How often a summary is emitted while the burst continues.
+        summaryMs: 2000,
+        // Rolling window used to measure the rate.
+        windowMs: 1000
+    };
+
+    //: Categories that never aggregate. Someone speaking to you directly is
+    //: precisely what a naive rate limiter would bury.
+    var NEVER_AGGREGATE = ["tell", "connection", "session"];
+
     function createAnnouncer(services) {
         var politeRegion = services.politeRegion || null;
         var urgentRegion = services.urgentRegion || null;
         var preferences = services.preferences || null;
+        var now = services.now || function () { return Date.now(); };
+
+        // Rolling record of recent announceable events, for rate measurement.
+        var recent = [];
+        var burstStartedAt = null;
+        var lastSummaryAt = 0;
+        var suppressed = {};
+        var suppressedTotal = 0;
+        var aggregating = false;
 
         // Kept for the Review Mode work in M17: while review is active the
         // manager holds low-priority announcements and counts them, so leaving
@@ -193,14 +238,126 @@
                 return null;
             }
 
+            /*
+             * Burst handling.
+             *
+             * Measured on announceable events only -- events the player has
+             * already chosen not to hear do not count towards a flood, because
+             * they were never going to be spoken.
+             */
+            var moment = now();
+
+            // Prune BEFORE counting, and count what was already there rather
+            // than including this event. An earlier version pushed first and
+            // then tested for an empty window, which could never be true --
+            // so a burst never formally ended and the next message minutes
+            // later was still reported as "heavy activity".
+            while (recent.length && recent[0] < moment - FLOOD.windowMs) {
+                recent.shift();
+            }
+            var quiet = recent.length === 0;
+            recent.push(moment);
+
+            var flooding = recent.length >= FLOOD.threshold;
+            if (flooding && burstStartedAt === null) {
+                burstStartedAt = moment;
+            }
+
+            var settledSummary = null;
+            if (quiet && burstStartedAt !== null) {
+                // A full window with nothing in it ends the burst. Anything
+                // held back is reported rather than forgotten -- but NOT
+                // written straight to the region, because the message that
+                // ended the burst is about to be written there too and a live
+                // region only ever announces its latest text. Writing both
+                // would silently lose the summary.
+                //
+                // So it is carried and prefixed onto that message instead.
+                if (suppressedTotal) {
+                    settledSummary = buildBurstSummary(true);
+                }
+                burstStartedAt = null;
+                aggregating = false;
+                suppressed = {};
+                suppressedTotal = 0;
+                lastSummaryAt = moment;
+            }
+
+            var sustained = burstStartedAt !== null &&
+                (moment - burstStartedAt) >= FLOOD.sustainMs;
+
+            if (sustained && NEVER_AGGREGATE.indexOf(category) === -1 &&
+                    priority !== "critical" && priority !== "important") {
+                if (!aggregating) {
+                    // The clock for the first summary starts when aggregation
+                    // starts, not at zero. Otherwise the very first suppressed
+                    // event trips the interval immediately and announces
+                    // "Heavy activity. 1 chat event.", which is both useless
+                    // and faintly absurd.
+                    aggregating = true;
+                    lastSummaryAt = moment;
+                }
+                suppressed[category] = (suppressed[category] || 0) + 1;
+                suppressedTotal += 1;
+                record(message, category, priority);
+
+                if (moment - lastSummaryAt >= FLOOD.summaryMs) {
+                    flushBurstSummary(moment, false);
+                }
+                return priority;
+            }
+
             record(message, category, priority);
 
+            var spoken = settledSummary ? settledSummary + " " + message : message;
+
             if (URGENT_PRIORITIES.indexOf(priority) !== -1) {
-                lastUrgent = write(urgentRegion, message, lastUrgent);
+                lastUrgent = write(urgentRegion, spoken, lastUrgent);
+                if (settledSummary) {
+                    // The tail of a burst is not urgent even when the message
+                    // that ended it is, so it goes to the polite region too
+                    // rather than riding an interruption.
+                    lastPolite = write(politeRegion, settledSummary, lastPolite);
+                }
             } else {
-                lastPolite = write(politeRegion, message, lastPolite);
+                lastPolite = write(politeRegion, spoken, lastPolite);
             }
             return priority;
+        }
+
+        /*
+         * Say what was skipped, in one line.
+         *
+         * The count is the information. "Twelve further combat events" tells a
+         * player that a fight is happening and that they are not missing a
+         * conversation, which is all the announcement channel can usefully
+         * convey at that rate.
+         */
+        function buildBurstSummary(ending) {
+            if (!suppressedTotal) {
+                return null;
+            }
+            var parts = Object.keys(suppressed).map(function (category) {
+                var count = suppressed[category];
+                return count + " " + category + (count === 1 ? " event" : " events");
+            });
+            return (ending ? "Activity settled. " : "Heavy activity. ") +
+                parts.join(", ") + ".";
+        }
+
+        function flushBurstSummary(moment, ending) {
+            var message = buildBurstSummary(ending);
+            if (!message) {
+                return null;
+            }
+            suppressed = {};
+            suppressedTotal = 0;
+            lastSummaryAt = moment;
+            if (ending) {
+                aggregating = false;
+            }
+            lastPolite = write(politeRegion, message, lastPolite);
+            return message;
         }
 
         function record(message, category, priority) {
@@ -254,6 +411,12 @@
         return {
             announce: announce,
             resolve: resolve,
+            flushBurstSummary: function () { return flushBurstSummary(now(), true); },
+            isFlooding: function () {
+                return burstStartedAt !== null &&
+                    (now() - burstStartedAt) >= FLOOD.sustainMs;
+            },
+            suppressedCount: function () { return suppressedTotal; },
             beginReview: beginReview,
             endReview: endReview,
             summarize: summarize,
@@ -265,6 +428,8 @@
 
     window.AetosAnnouncementManager = {
         create: createAnnouncer,
+        FLOOD: FLOOD,
+        NEVER_AGGREGATE: NEVER_AGGREGATE.slice(),
         PRIORITIES: PRIORITIES.slice(),
         URGENT_PRIORITIES: URGENT_PRIORITIES.slice(),
         CATEGORY_PRIORITY: CATEGORY_PRIORITY,

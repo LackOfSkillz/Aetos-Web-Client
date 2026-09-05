@@ -1323,3 +1323,58 @@ body {
 }
 
 .aetos-map__empty { color: var(--aetos-text-muted); }
+
+/* Event history (M17) ------------------------------------------------------- */
+
+.aetos-history__controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.aetos-history__controls .aetos-input { flex: 1 1 8em; min-width: 0; }
+
+.aetos-history__filters { display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* The pressed filter is marked with a rule as well as a tint, because the
+   player most likely to be reading history rather than the console is the one
+   least able to rely on a colour. */
+.aetos-history__filter[aria-pressed="true"] {
+    border-bottom: 2px solid var(--aetos-accent);
+    color: var(--aetos-accent);
+}
+
+.aetos-history__rows { overflow-y: auto; max-height: 22em; }
+
+.aetos-history__list { list-style: none; margin: 0; padding: 0; }
+
+.aetos-history__row {
+    display: grid;
+    grid-template-columns: 5.5em 1fr;
+    gap: var(--aetos-space);
+    padding: 2px 0;
+    align-items: baseline;
+}
+
+/* The channel is a word, not a colour. */
+.aetos-history__channel {
+    color: var(--aetos-text-muted);
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.aetos-history__row--tell .aetos-history__channel { color: var(--aetos-accent); }
+.aetos-history__row--combat .aetos-history__channel { color: var(--aetos-warning); }
+
+.aetos-history__text { min-width: 0; overflow-wrap: anywhere; }
+
+.aetos-history__pager {
+    display: flex;
+    align-items: center;
+    gap: var(--aetos-space);
+    margin-top: 6px;
+}
+
+.aetos-history__page, .aetos-history__empty { color: var(--aetos-text-muted); }

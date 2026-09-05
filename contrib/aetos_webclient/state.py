@@ -381,3 +381,70 @@ def push_sync(session, character=None):
     """
     puppet = character if character is not None else getattr(session, "puppet", None)
     session.msg(**{protocol.MSG_SYNC: ((), build_sync(puppet))})
+
+
+#: Categories a game may declare on an event (Addendum A.11). Structural rather
+#: than genre-specific: "combat" describes where a message came from in the
+#: client's routing, not what kind of game this is.
+EVENT_CATEGORIES = (
+    "room",
+    "movement",
+    "tell",
+    "chat",
+    "combat",
+    "system",
+    "resource",
+    "effect",
+    "inventory",
+    "target",
+    "command",
+    "media",
+    "other",
+)
+
+#: Importance a game may advise. Advisory only -- the player's own announcement
+#: preferences always decide what is actually spoken (A.76).
+EVENT_IMPORTANCE = ("critical", "important", "normal", "background", "silent")
+
+MAX_EVENT_TEXT_LENGTH = 4000
+
+
+def push_event(session, text, category="other", importance=None, data=None):
+    """
+    Send one categorised event to a session.
+
+    Optional. A game that never calls this still works: its output arrives as
+    ordinary text in the "other" category, which supports search and review by
+    time but not review by channel.
+
+    The point of calling it is that Aetos will not guess. It cannot tell a tell
+    from a shout by reading the words, and a client that tried would be wrong on
+    every game that phrases things its own way.
+
+    Args:
+        session (Session): The session to notify.
+        text (str): The message, as the player should read it.
+        category (str): One of `EVENT_CATEGORIES`. Unknown values become
+            "other" rather than being rejected -- a typo should cost the
+            categorisation, not the message.
+        importance (str, optional): One of `EVENT_IMPORTANCE`. Advisory: the
+            player's own preferences still decide what is announced.
+        data (dict, optional): Structured payload accompanying the text.
+
+    """
+    if category not in EVENT_CATEGORIES:
+        category = "other"
+
+    payload = {
+        "category": category,
+        "text": _html(str(text)[:MAX_EVENT_TEXT_LENGTH]),
+        # The plain form travels too, because automation matches on what the
+        # player reads rather than on the markup they never see.
+        "plain": _plain(str(text)[:MAX_EVENT_TEXT_LENGTH]),
+    }
+    if importance in EVENT_IMPORTANCE:
+        payload["importance_hint"] = importance
+    if isinstance(data, dict):
+        payload["data"] = data
+
+    session.msg(**{protocol.MSG_EVENT: ((), payload)})

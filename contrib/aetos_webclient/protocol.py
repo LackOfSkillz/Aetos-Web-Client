@@ -47,6 +47,18 @@ MSG_ENTITIES = "aetos_entities"
 MSG_MAP = "aetos_map"
 MSG_ACTIONS = "aetos_actions"
 MSG_EFFECTS = "aetos_effects"
+
+#: A categorised game event.  Addendum A.76, A.11.
+#:
+#: Optional, and the reason it exists is worth stating: Aetos must never infer
+#: what a line of game text *means*. It cannot tell a tell from a shout by
+#: looking, and a client that guessed would be wrong on every game that words
+#: things differently -- which is all of them.
+#:
+#: So a game that wants its output categorised says so. A game that does not is
+#: not punished: everything arrives as "other", review by time and search still
+#: work, and only review-by-channel is unavailable.
+MSG_EVENT = "aetos_event"
 MSG_TARGET = "aetos_target"
 MSG_MEDIA = "aetos_media"
 MSG_MODE = "aetos_mode"

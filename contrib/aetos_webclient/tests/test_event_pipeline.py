@@ -225,8 +225,16 @@ class TestTheShellUsesThePipeline(TestCase):
         self.assertIn("triggers.onState", window)
 
     def test_the_console_observes_the_presentation_stage(self):
-        start = SHELL.index('pipeline.observe("presentation"')
-        window = SHELL[start : start + 400]
+        """
+        Located by its own body rather than by being the first presentation
+        observer -- M17 added a second one for the history widget, and an
+        index-based assertion silently started testing the wrong thing.
+
+        """
+        needle = 'pipeline.observe("presentation", function (event) {'
+        self.assertIn(needle, SHELL)
+        start = SHELL.index(needle)
+        window = SHELL[start : start + 300]
         self.assertIn("consoleWidget.append", window)
 
     def test_triggers_see_canonical_text(self):
