@@ -92,6 +92,28 @@ What a reviewer would be asked to judge, none of which I can:
   capitalised is a real question I guessed at.
 - **The strip's cognitive load.** Twelve words maximum, with move-left,
   move-right and remove on each. Is that too many controls per word?
+**Gary's answer, 2026-09-05:** *"I think we are good to use the symbols."*
+
+Recorded, and the ARASAAC mapping is a small job whenever it is wanted. One
+thing to settle first, because it decides *where* the symbols live rather than
+whether they are used:
+
+ARASAAC's terms say plainly that *"the use of these resources within any product
+or publication for commercial purposes is therefore excluded"*, and that
+redistribution requires the derivative to carry CC BY-NC-SA too. For **you**
+using them, and for any non-commercial game, that is fine and no more needs
+saying. What it blocks is *shipping them inside the contrib*, because the
+contrib is BSD-3-Clause and gets installed by games that may charge money — the
+NC term would follow the files to every one of them, and Evennia upstream would
+be taking on a mixed-licence tree at M32.
+
+So the version that needs no permission from anyone is the one already built for
+Mulberry: **ship the mapping, fetch the artwork on install**. The player or game
+accepts ARASAAC's terms for their own use, which is theirs to accept, and the
+symbols work. If you would rather bundle the images directly, say so and I will
+— it is your project and your call; I would just want the licence stated in the
+repo root rather than discovered later.
+
 - **Which symbol set should be the default** — and this got sharper once you
   pointed me at the free libraries, because the answer is genuinely awkward.
   ARASAAC is a complete pictographic system and covers the core words, but it is
