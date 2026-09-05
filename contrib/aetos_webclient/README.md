@@ -61,9 +61,12 @@ matching interface appears. Declare nothing and nothing appears.
 - Keyboard operation of everything; colour never carries meaning alone
 - No CDN, no build step, no JavaScript framework
 
-Still to come: audio and multimedia, themes, a PWA shell and touch gestures, a
-developer inspector, a documented widget SDK, a server-described advanced UI
-manifest, and voice input. See the project repository for the full roadmap.
+Still to come: an accessibility foundation and assistive-technology validation
+(see Accessibility below), rich chat and event history, audio and multimedia
+with captions, themes, a PWA shell and touch gestures, a developer inspector, a
+documented widget SDK, a server-described advanced UI manifest,
+picture-supported communication, and voice input. See the project repository for
+the full roadmap.
 
 ## Installation
 
@@ -252,6 +255,57 @@ Aetos is never authoritative for game mechanics. A button labelled "Attack
 Goblin" sends exactly the text `attack goblin`, identical to a player typing it.
 Locks, cooldowns, permissions and command availability are enforced by your
 server exactly as they always were. Nothing in Aetos can bypass a command.
+
+## Accessibility
+
+Accessibility is not a feature of Aetos; it is one of the mechanisms by which
+Aetos is built. It is governed by a normative specification, Addendum A, whose
+`A11Y-` requirement IDs are release gates rather than aspirations.
+
+**You cannot switch it off, and you are not asked to.** `AETOS_AUTOMATION`
+governs gameplay automation -- whether players may script or use timers. It does
+not govern whether a player gets a usable interface. Semantic HTML, keyboard
+operation, focus management, accessible labels, non-drag alternatives, contrast
+and reduced-motion support are always present.
+
+### What your players get, with no work from you
+
+- Every function is operable from the keyboard. Dragging is never the only path.
+- Combat spam never floods speech. The transcript is a `role="log"` region with
+  `aria-live="off"` set deliberately, so a screen reader is not made to read
+  every line as it arrives -- the full text stays reviewable on demand.
+- One central announcer. No widget owns its own live region, so nothing competes
+  for speech.
+- No character-only keyboard shortcuts, which would collide with the single
+  letters NVDA and JAWS use for structural navigation.
+- Colour never carries meaning alone. Severity, effect tone and status are
+  written in words.
+- The map has a text equivalent generated from the *same* graph as the picture,
+  so the two cannot disagree.
+- Game events never move focus. Dialogs trap focus and return it where they
+  found it.
+
+### What only you can supply
+
+Aetos can make an ordinary Evennia game substantially more accessible. It cannot
+invent information your game does not expose.
+
+- **Captions for meaningful audio.** No caption can be reliably invented. If a
+  sound carries information, describe it in the media descriptor.
+- **`state_text` on resources** -- a short word for a value, so a bar reads as
+  "healthy" rather than only as a number.
+- **`description` on actions**, where the label alone is ambiguous.
+- **`importance_hint`** on state events, if you want to advise which changes
+  matter. It is advisory only; the player's own preference always decides what
+  is spoken.
+
+### Honest status
+
+This project is **designed toward WCAG 2.2 Level AA**. It does not claim
+compliance, JAWS compatibility or braille compatibility, because the
+assistive-technology testing that would justify those claims has not yet been
+done. Testing against NVDA, JAWS, Orca and refreshable braille is a scheduled
+release gate, and no claim will ship ahead of its evidence.
 
 ## Security
 

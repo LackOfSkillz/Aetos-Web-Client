@@ -14,6 +14,13 @@
 > Staging, requirement-to-milestone mapping, and current compliance status are
 > in [`notes/roadmap.md`](../notes/roadmap.md) under "Addendum A". This document
 > is the requirement text; the roadmap is where it is scheduled.
+>
+> **On the parent document.** The master engineering blueprint this addendum
+> extends is held outside the repository. `notes/roadmap.md` is its scheduled
+> expression and `notes/decision-*.md` record the choices made against it, so
+> nothing here depends on the parent being present -- but section references of
+> the form "section 76" point into a document a reader of this repository does
+> not have. That is a known gap.
 
 ---
 

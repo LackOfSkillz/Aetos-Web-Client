@@ -51,6 +51,26 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 - A refreshable-braille tester on real hardware (an emulator does not
   substitute), and an AAC-familiar reviewer. Neither can be filled by tooling.
 
+**Reconciled**
+
+- The contrib README -- the file that ships with the client and the one an
+  Evennia reviewer reads -- contained no mention of accessibility at all. It now
+  documents what players get with no work from the game developer, what only the
+  developer can supply (audio captions, `state_text`, action descriptions), and
+  the honest conformance status.
+- `decision-003` predated the addendum and still said M30 remained in the plan.
+  Amended rather than reversed: the addendum agrees with the decision and goes
+  further. The decision's one error was scope, not direction -- it assumed
+  contrast and ARIA labels were safely fixable late, whereas braille review
+  position and cognitive orientation turn out to be structural too.
+- The M33 note still deferred to M30. It now points at A8, and records that
+  voice sharpens the question rather than settling it: A8 would otherwise
+  validate an interface about to gain an entire new input mode.
+- Addendum A cites a parent blueprint held outside this repository, so its
+  "section 76"-style references point somewhere a reader here cannot follow.
+  Recorded as a known gap rather than left dangling.
+- Added `docs/README.md` as an index.
+
 ---
 
 ### M16 — Inventory, equipment, target and effects

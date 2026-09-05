@@ -130,17 +130,22 @@ decision rather than silent acceptance: shipping voice after the PR means the
 first upstream submission does not include it, and the PR description in section
 76 lists "voice control" as part of the solution.
 
-Two coherent readings, to settle before M30:
+Two coherent readings, to settle before A8 (see Addendum A):
 
 - **Ship M33 before M32.** The PR then matches its own description, and voice gets
   reviewed with everything else. Costs a later PR.
 - **Ship M33 as a follow-up.** Smaller first PR, easier review. Then the initial PR
   description must not claim voice.
 
-The accessibility *architecture* (M30 and sections 45-52) is independent of this
-and stays before the release candidate either way. Voice is an accessibility
-*enhancement*, not the accessibility story itself -- keyboard-only and
-screen-reader support must not depend on it.
+The accessibility *architecture* is independent of this and stays before the
+release candidate either way. Since Addendum A that architecture is the A-track
+rather than a single review, which sharpens the question rather than settling it:
+voice is a new **input mode**, and validating an interface at A8 that is about to
+gain one is validating something that will not exist for long.
+
+Voice remains an accessibility *enhancement*, not the accessibility story itself.
+Keyboard-only and screen-reader support must not depend on it -- a browser
+without speech recognition must still be completely usable.
 
 ---
 

@@ -1,7 +1,25 @@
 # Decision 003 -- Accessibility is a gate, not a phase
 
 Date: 2026-09-04
-Status: **Accepted** (blueprint revision 2, sections 45-52, 72)
+Status: **Accepted**, and **extended at M16 by Addendum A**
+(blueprint revision 2, sections 45-52, 72)
+
+> **Amendment.** [Addendum A](../docs/addendum-a-accessibility.md) supersedes
+> the M30 references below. This decision argued that accessibility is a gate
+> rather than a phase; Addendum A agrees and goes further, withdrawing M30
+> entirely in favour of a foundation stage plus requirements inside every
+> milestone, ending in validation.
+>
+> Everything else here stands unchanged and is strengthened rather than
+> replaced. Where this document says "M30 remains in the plan as a verification
+> pass", read **A8** -- which is that verification pass, with the scope the
+> addendum defines.
+>
+> The one thing this decision got wrong is scope, not direction: it treated
+> contrast and ARIA labels as safely fixable late. Addendum A's A11Y-BRL and
+> A11Y-COG requirements show that braille review position and cognitive
+> orientation are structural too, in the same way the mapper's text rendering
+> was.
 
 ## Decision
 
