@@ -128,7 +128,15 @@
         aac: {
             enabled: false,
             symbolPack: null,
-            showTextWithSymbols: true
+            // A.64. Symbol *and* text by default: a symbol nobody recognises
+            // with no word under it is unusable, while the reverse is merely
+            // plain. A symbol-focused presentation is a choice, not a default.
+            showTextWithSymbols: true,
+            // The command a composed sentence is sent with. A player on a game
+            // that uses something other than `say` -- or who wants their board
+            // to whisper rather than speak aloud -- changes it here, and it is
+            // an ordinary command either way (A.68).
+            sayCommand: "say"
         }
     };
 

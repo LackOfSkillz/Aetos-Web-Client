@@ -498,6 +498,115 @@
         },
 
         {
+            id: "talk",
+            title: "The picture and word board",
+            group: "Your data",
+            summary: "Build a sentence from words, check it, then send it.",
+            sections: [
+                {
+                    body: [
+                        "The Talk panel is a board of words in categories. Press one " +
+                            "and it joins your sentence; press Preview and send and " +
+                            "you see exactly what will be sent before anyone else " +
+                            "does.",
+                        "It sends ordinary game commands. \"I\", \"want\", " +
+                            "\"help\" becomes `say i want help` -- the same thing " +
+                            "you would have typed, judged by the game in the same " +
+                            "way. A single direction is movement instead: pressing " +
+                            "North on its own sends `north`."
+                    ]
+                },
+                {
+                    heading: "Everything works from the keyboard",
+                    body: [
+                        "Add a word, remove one, move it left or right, clear the " +
+                            "whole sentence, preview, send. All buttons.",
+                        "There is no drag-and-drop, deliberately. It would have been " +
+                            "easier to build the mouse version first, and that is " +
+                            "reliably how a keyboard path ends up as an afterthought " +
+                            "nobody tests."
+                    ]
+                },
+                {
+                    heading: "You always see it before it is sent",
+                    body: [
+                        "The preview is not a politeness. If a word meant something " +
+                            "slightly different from what you expected, that " +
+                            "sentence would otherwise be said in public, under your " +
+                            "name, without you seeing it.",
+                        "So you get Send, Edit text and Cancel. Edit text matters as " +
+                            "much as the other two -- you are the authority on what " +
+                            "you meant, and the board is a keyboard, not a " +
+                            "translator."
+                    ]
+                },
+                {
+                    heading: "About pictures",
+                    body: [
+                        "Aetos ships no symbol artwork, so every key shows its word. " +
+                            "That is not an oversight: the symbol sets that AAC users " +
+                            "actually know are licensed, and \"it is for " +
+                            "accessibility\" is not a licence. Shipping them " +
+                            "unverified would hand a copyright problem to every game " +
+                            "that installs this client.",
+                        "If you have a symbol pack you are licensed to use, it can be " +
+                            "installed and the keys will show its pictures beside the " +
+                            "words. A pack must state its licence, and if it has no " +
+                            "picture for a word you get the word -- never a " +
+                            "similar-looking substitute, because a near-miss symbol " +
+                            "is a different word and you would have no way to know."
+                    ]
+                },
+                {
+                    heading: "What this is, honestly",
+                    body: [
+                        "This is an AAC *architecture*, not reviewed AAC support, and " +
+                            "Aetos does not claim otherwise anywhere.",
+                        "Nobody familiar with picture-supported communication has " +
+                            "reviewed the word choices, the categories, or how much " +
+                            "work a sentence takes to build. Until somebody has, the " +
+                            "honest description is that the extension point exists and " +
+                            "the judgement has not been applied to it."
+                    ]
+                }
+            ]
+        },
+
+        {
+            id: "simplified",
+            title: "The simplified layout",
+            group: "Getting started",
+            summary: "Four panels instead of a dozen, with nothing removed.",
+            sections: [
+                {
+                    body: [
+                        "Search the palette for \"Simplified layout\". You get the " +
+                            "game text, who is here, the map, your character, and the " +
+                            "Talk board -- with help where it always is.",
+                        "**Nothing is removed.** Every feature is still in the " +
+                            "palette, every command still works, and switching back " +
+                            "restores what you had.",
+                        "That distinction matters. A \"simple mode\" that quietly " +
+                            "took features away would be making a decision about what " +
+                            "you are capable of because you asked for a calmer screen. " +
+                            "Those are not the same request."
+                    ]
+                },
+                {
+                    heading: "How it differs from focus mode",
+                    body: [
+                        "Focus mode hides everything except the game text and your " +
+                            "input, and you turn it off again when you are done. This " +
+                            "is a layout you might use permanently.",
+                        "It also only adds panels your game actually has. A map panel " +
+                            "on a game with no map would be one permanently empty " +
+                            "box, which is worse than three panels."
+                    ]
+                }
+            ]
+        },
+
+        {
             id: "themes",
             title: "Themes and contrast",
             group: "Your data",

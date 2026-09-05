@@ -75,8 +75,32 @@ and I agree — nothing I can run replaces either.
 A.100 means the project cannot claim braille or AAC compatibility without them —
 and I would rather plan around their absence early than discover it at release.
 
-**Meanwhile:** A0–A7 proceed normally; none of them depends on this. A8 is the
-only stage that does.
+**Update (A7 is now built, so the AAC review has a concrete subject).** The
+architecture exists and is deliberately not described anywhere as "AAC support".
+What a reviewer would be asked to judge, none of which I can:
+
+- **The concept set and its categories.** I chose sixty-odd words across eight
+  categories, with Common first (yes, no, stop, help). Is that the right first
+  screen? Is anything important missing, and is anything there that should not
+  be?
+- **The feelings category.** I included one because a board without it lets
+  somebody transact but not converse, and "I am not okay" is not a transaction.
+  The set is small and plain on purpose. Whether it is *right* is exactly the
+  judgement A.94 reserves.
+- **Sentence capitalisation.** A composed sentence sends lower-case —
+  `say I want help`, not `say I Want Help`. Whether the first word should be
+  capitalised is a real question I guessed at.
+- **The strip's cognitive load.** Twelve words maximum, with move-left,
+  move-right and remove on each. Is that too many controls per word?
+- **Whether a text-only board is usable at all.** Aetos bundles no symbol
+  artwork (A.63 — the sets AAC users know are licensed, and "it is for
+  accessibility" is not a licence). So out of the box every key is a word. That
+  may make the whole feature useless to the people it is for, and if so I would
+  rather know now than ship it looking complete.
+
+**Meanwhile:** A0–A7 are built; none of them depends on this. A8 is the only
+stage that does, and nothing in the client, README or help claims AAC support —
+a test asserts it, so making the claim means deleting a test that says why not.
 
 ---
 

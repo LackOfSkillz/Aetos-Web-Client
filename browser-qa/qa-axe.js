@@ -225,6 +225,25 @@
             });
     }
 
+    /*
+     * A7. Scanned with a sentence in the strip, since an empty strip has no
+     * per-word controls and those are where the labelling risk lives.
+     *
+     * This scan already earned itself: the word grid carried an `aria-label`
+     * on a plain <div>, which is prohibited and, worse, silently ignored -- so
+     * the grid was simply unlabelled, and axe reported it only as
+     * *incomplete* rather than as a violation.
+     */
+    if (A.aac) {
+        await scan("picture communication",
+            function () {
+                A.aac.add("i");
+                A.aac.add("want");
+                A.aac.add("help");
+            },
+            function () { A.aac.clear(); });
+    }
+
     if (A.workspaces) {
         await scan("edit layout",
             function () { A.workspaces.toggleEditing(); },

@@ -307,6 +307,76 @@
             return true;
         }
 
+        /*
+         * The simplified workspace.  Addendum A.51.
+         *
+         * Six panels: the game, who is here, the map, your character, the
+         * communication board, and help.
+         *
+         * **This is not an inferior client.** A.51 is explicit about that, and
+         * it matters: it is the same capabilities with fewer things on screen
+         * at once. Every feature is still reachable from the palette, nothing
+         * is disabled, and switching back restores exactly what was there.
+         *
+         * A client that offered a "simple mode" which quietly removed
+         * functionality would be making a decision about what somebody is
+         * capable of, on the basis of them having asked for a calmer screen.
+         * Those are not the same request, and conflating them is the specific
+         * condescension this requirement exists to prevent.
+         *
+         * Distinct from Focus Mode (A.47), which hides everything but the game
+         * text. Focus Mode is a temporary quieting; this is a layout somebody
+         * might use permanently.
+         */
+        /*
+         * A.51 names six: Game, People, Map, My Character, Talk, Help.
+         *
+         * Two of them are not panels and never were. The console *is* the game
+         * and lives in `main` regardless of layout -- a player must never be
+         * able to end up with no output. Help is an overlay on F1 with a button
+         * that stays in one place whatever the workspace (A.50), which is the
+         * stronger guarantee: somebody who is lost should not have to find help
+         * somewhere new.
+         *
+         * So the four that are panels are listed, and the other two are
+         * present by construction rather than by being added here.
+         */
+        var SIMPLIFIED_WIDGETS = ["people", "map", "state", "aac"];
+
+        function applySimplifiedLayout() {
+            layout.instances().forEach(function (instance) {
+                layout.remove(instance.id);
+            });
+
+            var manifest = store ? store.get("manifest") : {};
+            var offered = registry.available(manifest).map(function (definition) {
+                return definition.id;
+            });
+
+            /*
+             * Only what this game actually has.
+             *
+             * A simplified layout that added a map panel to a game with no map
+             * would be six panels of which one is permanently empty -- which is
+             * worse than five, and precisely the confusion the layout is meant
+             * to remove.
+             */
+            var placed = SIMPLIFIED_WIDGETS.filter(function (id) {
+                return offered.indexOf(id) !== -1;
+            });
+            placed.forEach(function (id) { layout.add(id); });
+
+            selectedId = null;
+            renderPalette();
+            announce(
+                "Simplified layout: " + placed.length +
+                (placed.length === 1 ? " panel." : " panels.") +
+                " Everything else is still in the command palette.",
+                { category: "system", priority: "important" }
+            );
+            return placed;
+        }
+
         /* --- Keyboard bindings ------------------------------------------- */
 
         /*
@@ -374,6 +444,8 @@
             hideSelected: hideSelected,
             addWidget: addWidget,
             resetLayout: resetLayout,
+            applySimplifiedLayout: applySimplifiedLayout,
+            SIMPLIFIED_WIDGETS: SIMPLIFIED_WIDGETS.slice(),
             saveWorkspace: saveWorkspace,
             listWorkspaces: listWorkspaces,
             switchTo: switchTo,

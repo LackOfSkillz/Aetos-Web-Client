@@ -512,8 +512,9 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] A5   Cognitive and orientation layer               -- 727 py
 [x] M18  Audio + multimedia + captions  (absorbs A6)   -- 791 py
 [x] M19  Themes + contrast validation                  -- 830 py
-[ ] A7   AAC + simplified workspace                    <-- NEXT
-[ ] M20  PWA + touch gestures  (+ A.57 pointer targets)
+[x] A7   AAC architecture + simplified workspace       -- 885 py
+         (A.94 human AAC review outstanding -- questions.md 3)
+[ ] M20  PWA + touch gestures                          <-- NEXT
 [ ] M21  Developer inspector
 [ ] M22  Widget SDK  (documents the A.28 contract)
 [ ] M23  Server-described manifest  (+ A.76 importance_hint)
@@ -808,7 +809,8 @@ D-track   developer integration            D0 next, independent
 [x] A2   Current State View + semantic values
 [x] A3   Accessible map completion
 [x] A5   Cognitive and orientation layer
-[ ] A7   AAC + simplified workspace               <-- next on the A-track
+[x] A7   AAC architecture + simplified workspace
+[ ] A8   Assistive-technology validation          <-- next on the A-track
 [ ] D0   Discovery architecture spike           <-- next on the D-track
 [ ] D1   Safe AETOS_BINDINGS foundation
 [ ] D2   Declarative provider suite
@@ -1093,7 +1095,8 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [x] A2   Current State View + semantic values
 [x] A3   Accessible map completion
 [x] A5   Cognitive and orientation layer
-[ ] A7   AAC + simplified workspace               <-- next on the A-track
+[x] A7   AAC architecture + simplified workspace
+[ ] A8   Assistive-technology validation          <-- next on the A-track
 [ ] A3   Accessible map completion
 
 [ ] E0   Event pipeline contract                  <-- BEFORE M17
@@ -1106,7 +1109,7 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [ ] A5   Cognitive and orientation layer
 [x] M18  Audio + multimedia + captions
 [x] M19  Themes + contrast validation
-[ ] A7   AAC + simplified workspace
+[x] A7   AAC architecture + simplified workspace
 [ ] M20  PWA + touch gestures
 [ ] E6   Mapper metadata + widget SDK hardening   (with M22, M23)
 [ ] M21..M29

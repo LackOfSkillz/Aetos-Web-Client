@@ -11,6 +11,58 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### A7 — AAC architecture and the simplified workspace
+
+885 tests. Addendum A.51, A.59–A.69. Gate A.94 **outstanding**.
+[`notes/a7-aac-simplified.md`](notes/a7-aac-simplified.md)
+
+**Added**
+
+- A concept model separating what is meant, what is on the key, what a word says
+  in a sentence, what is drawn, and what is sent (A.60).
+- A picture and word board with a sentence strip, a text preview and an ordinary
+  game command as its output — `say i want help` goes through the same seam as
+  anything typed, and the server is never told the player uses a board (A.68).
+- A pluggable symbol provider (A.62), a simplified four-panel layout (A.51), and
+  palette entries for both.
+
+**What Aetos deliberately does not do**
+
+- **Claim AAC support.** A.94 says standards compliance is not expertise. Until
+  an AAC practitioner has reviewed the concept organisation and cognitive load,
+  the honest description is "an architecture" — and a test asserts the source
+  still says so, so making the claim means deleting a test explaining why not.
+  `questions.md` §3 lists the five judgements a reviewer would be asked for.
+- **Invent W3C concept identifiers.** Every `waiAdaptConcept` is null. An
+  identifier is a claim that this concept *is* that published concept, and a
+  plausible-looking invented one propagates into other tools as though checked.
+- **Bundle symbol artwork.** The sets AAC users actually know are licensed, and
+  "it is for accessibility" is not a licence. Every key shows its word until a
+  player installs a pack they are licensed to use; a pack must state its licence
+  or registration is refused.
+- **Guess a replacement symbol.** A symbol *is* the word for somebody using one,
+  so a near-miss is a different word — and the player has no way to know it
+  happened.
+- **Infer anything.** No prediction, no phrase suggestions, no rewriting prose
+  into symbols (A.69). A system that speaks for somebody has to be one they can
+  predict completely.
+- **Require a pointer.** Drag-and-drop is not implemented at all: A.66 permits
+  it as an addition and forbids requiring it, and building the pointer version
+  first is how a keyboard path becomes an afterthought nobody tests.
+- **Remove anything in the simplified layout.** All sixteen widgets stay
+  registered and all fifty-seven palette commands stay available. A "simple mode"
+  that quietly took features away would be deciding what somebody is capable of
+  because they asked for a calmer screen.
+
+**Fixed**
+
+- Sentences were built from key labels, so they read `say I Want Help` — which
+  is what every public message somebody sent would have looked like. Key caps
+  and speech are now separate fields.
+- `aria-label` on the word grid sat on a plain `<div>`, which is prohibited and
+  silently ignored — the grid was simply unlabelled, and axe reported it only as
+  *incomplete* rather than as a violation.
+
 ### M19 — Themes and contrast validation
 
 830 tests. Addendum A.55, `A11Y-VIS-003`.

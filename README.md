@@ -440,7 +440,7 @@ is served from your own host.
 ## What is built
 
 Roughly 10,900 lines of Python, 17,300 of JavaScript and 2,200 of CSS, with
-**830 Python tests** passing, plus hand-written browser checks and an axe-core
+**885 Python tests** passing, plus hand-written browser checks and an axe-core
 audit clean across every view — including the high-contrast and
 minimal-stimulation presets.
 
@@ -507,7 +507,24 @@ minimal-stimulation presets.
 | **Universal search** | The palette searches notes, reminders and history alongside its commands |
 | **Focus and Quiet modes** | A calmer screen and fewer interruptions, kept separate |
 | **Themes** | Colours only, contrast-checked against WCAG AA — and your accessibility settings still win |
+| **Simplified layout** | Four panels instead of a dozen, with nothing removed |
+| **Picture and word board** | Compose a sentence, check it, send it as an ordinary command *(architecture; see below)* |
 | **Event history and Review Mode** | Read back through what happened, with flood control for screen readers |
+
+### One thing Aetos does not claim
+
+The picture and word board is an **AAC architecture**, not reviewed AAC support.
+
+Addendum A.94 is explicit that standards compliance is not expertise: until
+somebody familiar with picture-supported communication has reviewed the concept
+organisation, the symbol assumptions and the cognitive load, the honest
+description is that the extension point exists and the judgement has not been
+applied to it. Aetos also bundles no symbol artwork, because the sets AAC users
+know are licensed and "it is for accessibility" is not a licence.
+
+Everything that *can* be verified without that review is: no invented W3C
+concept identifiers, no guessed symbol substitutions, no generative inference,
+full keyboard operation, and a text preview before anything is sent.
 
 ### Throughout
 
@@ -528,8 +545,8 @@ Colour never carries meaning alone. `innerHTML` is never used.
 | ~~A5~~ | ~~Cognitive and orientation layer~~ — **done** |
 | ~~M18~~ | ~~Audio, multimedia and captions~~ — **done** |
 | ~~M19~~ | ~~Themes, with contrast validation~~ — **done** |
-| **A7** | **AAC and simplified workspace — next** |
-| M20 | PWA shell and touch gestures *(responsive layout done)* |
+| ~~A7~~ | ~~AAC architecture and simplified workspace~~ — **done**; the AAC *claim* awaits human review (A.94) |
+| **M20** | **PWA shell and touch gestures — next** *(responsive layout done)* |
 | M21–M29 | Inspector, widget SDK, server-described manifest, and hardening |
 | **D0–D6** | **`AETOS_BINDINGS` and `evennia aetos discover` — the easy button above** |
 | E6 | Weighted map routing and widget SDK hardening |

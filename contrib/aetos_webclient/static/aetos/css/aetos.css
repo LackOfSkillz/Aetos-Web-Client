@@ -1525,3 +1525,108 @@ body {
     display: block;
     margin-bottom: 4px;
 }
+
+/*
+ * Picture communication board.  A7, Addendum A.64–A.66.
+ *
+ * Keys are sized generously: A.57 asks for 44x44 CSS pixel targets wherever
+ * practical, and this is the surface where that matters most -- the population
+ * most likely to use a communication board includes people with limited fine
+ * motor control, and a mis-tap here does not mean a wasted click, it means
+ * saying the wrong word.
+ */
+.aetos-aac__grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    overflow-y: auto;
+    max-height: 14em;
+}
+
+.aetos-aac__key {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 4px 8px;
+    background: var(--aetos-panel);
+    color: var(--aetos-text);
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+    font: inherit;
+    cursor: pointer;
+}
+
+.aetos-aac__symbol {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+.aetos-aac__categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin: 6px 0 4px;
+}
+
+/*
+ * The sentence, set larger than the keys.
+ *
+ * It is the thing being checked before it is said in public under somebody's
+ * name, so it should not be the smallest text on screen.
+ */
+.aetos-aac__strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    list-style: none;
+    margin: 0 0 4px;
+    padding: 4px;
+    min-height: 2.5em;
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+    font-size: 1.15em;
+}
+
+.aetos-aac__strip-item {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 4px;
+    background: var(--aetos-panel);
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+}
+
+.aetos-aac__strip-empty { color: var(--aetos-text-muted); }
+
+.aetos-aac__strip-button {
+    min-width: 28px;
+    min-height: 28px;
+    background: transparent;
+    color: var(--aetos-text);
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+    font: inherit;
+    cursor: pointer;
+}
+
+.aetos-aac__actions {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+/* The preview, larger again: it is the last chance to catch a wrong word. */
+.aetos-aac__preview {
+    font-size: 1.3em;
+    padding: 8px;
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+    background: var(--aetos-panel);
+    word-break: break-word;
+}

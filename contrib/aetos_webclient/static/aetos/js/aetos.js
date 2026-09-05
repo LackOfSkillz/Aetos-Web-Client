@@ -629,6 +629,26 @@
         }
 
         /*
+         * Picture communication.  A7.
+         *
+         * An AAC *architecture*, not reviewed AAC support -- A.94 requires a
+         * practitioner to review the concept organisation, the symbol
+         * assumptions and the cognitive load before anybody claims the latter,
+         * and that has not happened. See the header of `aac/concepts.js`.
+         *
+         * Aetos ships no symbol artwork (A.63), so the provider starts empty
+         * and every control falls back to its text label until a player
+         * installs a pack they are licensed to use.
+         */
+        var aacBoard = null;
+
+        var symbolProvider = window.AetosSymbolProvider
+            ? window.AetosSymbolProvider.create({
+                preferences: accessibility ? accessibility.preferences : null
+            })
+            : null;
+
+        /*
          * Themes.  M19.
          *
          * Created and applied before the widgets exist, because a theme that
@@ -1488,6 +1508,23 @@
                 registry.register(captionsWidget);
             }
 
+            if (window.AetosBoard) {
+                aacBoard = window.AetosBoard.createWidget({
+                    symbols: symbolProvider,
+                    preferences: accessibility ? accessibility.preferences : null,
+                    dialog: window.AetosDialog,
+                    announce: function (message, options) {
+                        announcer.announce(message, options);
+                    },
+                    // The single outbound seam. A board that reached the
+                    // transport directly would be one that bypassed a mute,
+                    // a cooldown or a lock -- and got somebody into trouble
+                    // for a sentence the game had already refused.
+                    sendCommand: function (text) { return sendCommand(text); }
+                });
+                registry.register(aacBoard);
+            }
+
             if (window.AetosStateView) {
                 registry.register(window.AetosStateView.createWidget({
                     preferences: accessibility ? accessibility.preferences : null,
@@ -2109,6 +2146,22 @@
                     });
             }
 
+            if (workspaces) {
+                addCommand("layout.simplified", "Simplified layout", "Layout",
+                    "Four panels instead of a dozen. Nothing is removed -- " +
+                    "everything is still here in the palette.",
+                    function () { workspaces.applySimplifiedLayout(); });
+            }
+
+            if (aacBoard) {
+                addCommand("aac.clear", "Clear my sentence", "Comfort",
+                    "Empty the picture communication strip.",
+                    function () { aacBoard.clear(); });
+                addCommand("aac.send", "Preview and send my sentence", "Comfort",
+                    "See exactly what will be sent, then send or edit it.",
+                    function () { aacBoard.preview(); });
+            }
+
             if (themes && settings) {
                 addCommand("theme.choose", "Themes", "Comfort",
                     "Change colours. Your accessibility settings still win.",
@@ -2332,6 +2385,8 @@
             audio: audio,
             captions: captionsWidget,
             themes: themes,
+            symbols: symbolProvider,
+            aac: aacBoard,
             reloadTriggers: reloadTriggers,
             macros: macros,
             editMacro: editMacro,
