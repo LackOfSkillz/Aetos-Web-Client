@@ -180,6 +180,17 @@ class AetosHello:
         return capability in self.capabilities
 
     def __repr__(self):
+        """
+        Describe the handshake for a log line.
+
+        Counts the capabilities rather than listing them: the payload is
+        untrusted browser input, and a repr that expanded it would put up to
+        4KB of somebody else's choosing into whatever was printing it.
+
+        Returns:
+            str: A short description.
+
+        """
         return "<AetosHello protocol=%r client=%r capabilities=%d>" % (
             self.protocol,
             self.client,

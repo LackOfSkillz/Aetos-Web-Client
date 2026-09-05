@@ -11,6 +11,46 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### M31 — Release candidate (audit complete; **not releasable**)
+
+1243 tests. axe clean at every severity.
+[`notes/m31-release-candidate.md`](notes/m31-release-candidate.md)
+
+**A clean Evennia game, installed by following the README verbatim, serves
+Aetos.** Formatting, docstrings, self-containment, no third-party loads, no
+developer-machine references, mirror identical to the work tree — all checked,
+and now checked on every run rather than once.
+
+- Verified that Evennia's docs pipeline parses the README correctly into
+  `Contrib-Aetos-Webclient.md`. It builds each contrib's index entry by splitting
+  the README on blank lines, so reformatting the top of the file silently changes
+  what everyone browsing the contribs reads. Now pinned by a test.
+- That also settles the PR scope: contrib docs are generated, so nothing outside
+  the contrib directory needs editing.
+
+**Fixed — a connected client that hears nothing now says so**
+
+- Found by the fresh install: the client sat reporting "Connected" with an empty
+  console. `Evennia.isConnected()` was `true` and honest — the socket really was
+  open — while a raw `new WebSocket` from the same page received the game's
+  greeting immediately. Aetos had no way to know nothing would ever arrive.
+- It can see it in its own protocol: it sends `aetos_hello` and expects
+  `aetos_manifest`. After 8 seconds of silence it says so and re-sends the
+  handshake, up to four times, then says reloading may help.
+- **Retrying a handshake is not retrying a command** — M24 refuses to replay a
+  command through a dropout because that executes a decision about a situation
+  that may have moved on; a hello asks a question and changes nothing.
+- **The cause is not proven.** The symptom reproduced once, with logs, and not on
+  demand afterwards. The safeguard is correct whatever the cause, and its firing
+  path is pinned by tests rather than observed live. "We fixed it" and "we made
+  the symptom survivable" are different claims; only the second is earned.
+
+**Blocked — A8, and it is not code.** Assistive-technology validation needs a
+refreshable braille tester on real hardware and someone who works with
+augmentative communication. A.100 forbids claiming braille or AAC compatibility
+without them; the README claims neither and tests now pin that it goes on
+claiming neither. Nothing else stands between here and a release.
+
 ### A9 — The accessibility toggle and its feature picker
 
 1222 tests. axe clean at every severity with the panel open, including in high

@@ -622,7 +622,8 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [ ] A8   Assistive-technology validation  <-- BLOCKED: needs a braille
          tester and an AAC reviewer (questions.md 3)
 [~] M30  WITHDRAWN -- superseded by the A-track (A.106)
-[ ] M31  Release candidate
+[~] M31  Release candidate  -- audit done, 1243 py; NOT releasable:
+         A8 is the only blocker and it needs people, not code
 [ ] M32  Upstream PR
 [ ] M33  Voice input + speech accessibility
 ```

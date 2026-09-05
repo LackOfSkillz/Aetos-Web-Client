@@ -262,7 +262,11 @@ class TestThePanelIsItselfAccessible(TestCase):
         player uses. A hand-built one starts at none of that.
 
         """
-        for native in ('input.type = "checkbox"', 'input.type = "range"', 'createElement("select")'):
+        for native in (
+            'input.type = "checkbox"',
+            'input.type = "range"',
+            'createElement("select")',
+        ):
             self.assertIn(native, PANEL)
         self.assertNotIn('role="slider"', PANEL)
         self.assertNotIn('role="switch"', PANEL)

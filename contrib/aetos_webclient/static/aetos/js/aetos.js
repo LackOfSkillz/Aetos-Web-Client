@@ -1180,6 +1180,10 @@
             updateConnection("closed");
             // Allow the next connection to handshake afresh.
             helloSent = false;
+            // The next connection has to ask again, and be watched again.
+            manifestReceived = false;
+            handshakeAttempts = 0;
+            clearHandshakeWatch();
         });
 
         /* --- Aetos protocol ------------------------------------------- */
@@ -1188,6 +1192,81 @@
         // below can reach this, and the flag is cleared on close so that a
         // reconnect handshakes again.
         var helloSent = false;
+
+        /*
+         * Whether the server has ever answered the handshake on this
+         * connection, and the timer watching for the case where it does not.
+         *
+         * M31. Found by installing into a clean game and opening the client
+         * while the server was still starting: the websocket connects to the
+         * **Portal**, which is up seconds before the Server behind it. The
+         * Portal accepts the socket, creates no session, and the client sits
+         * there reporting "Connected" with an empty console -- indefinitely,
+         * because nothing ever tells it otherwise. A raw websocket opened a
+         * minute later received the greeting immediately, which is what proved
+         * where the silence was.
+         *
+         * Aetos cannot see this from the socket; `Evennia.isConnected()` is
+         * true and honest, because the socket really is open. It *can* see it
+         * from its own protocol: it sends a hello and expects a manifest.
+         * Silence there means connected to a Portal with nothing behind it.
+         *
+         * This is the M24 family again -- the client presenting something as
+         * true that it had no way to know was still true -- and the answer is
+         * the same one: say so.
+         */
+        var HANDSHAKE_TIMEOUT_MS = 8000;
+        var HANDSHAKE_ATTEMPTS = 4;
+        var manifestReceived = false;
+        var handshakeTimer = null;
+        var handshakeAttempts = 0;
+
+        function clearHandshakeWatch() {
+            if (handshakeTimer !== null) {
+                window.clearTimeout(handshakeTimer);
+                handshakeTimer = null;
+            }
+        }
+
+        /*
+         * Re-send the handshake, or give up and say so.
+         *
+         * Retrying is safe here in a way that retrying a *command* is not
+         * (see M24): a hello asks a question and changes nothing, so a second
+         * one cannot execute a decision the player has since moved past. It
+         * also makes the client heal itself the moment the server finishes
+         * starting, which is the common case by far.
+         *
+         * Bounded rather than forever. A client quietly retrying for an hour
+         * looks exactly like a client that is working.
+         */
+        function watchHandshake() {
+            clearHandshakeWatch();
+            handshakeTimer = window.setTimeout(function () {
+                handshakeTimer = null;
+                if (manifestReceived) {
+                    return;
+                }
+                if (handshakeAttempts < HANDSHAKE_ATTEMPTS) {
+                    if (handshakeAttempts === 0) {
+                        announcer.announce(
+                            "Connected, but the game has not answered yet. It may still "
+                            + "be starting.",
+                            { category: "connection", priority: "important" }
+                        );
+                    }
+                    handshakeAttempts += 1;
+                    helloSent = false;
+                    sendHello();
+                    return;
+                }
+                announcer.announce(
+                    "Connected, but the game is not answering. Reloading the page may "
+                    + "help.",
+                    { category: "connection", priority: "critical" }
+                );
+            }, HANDSHAKE_TIMEOUT_MS);
+        }
 
         function sendHello() {
             if (helloSent) {
@@ -1199,9 +1278,14 @@
                 client: "aetos",
                 capabilities: AETOS_CAPABILITIES.slice()
             });
+            watchHandshake();
         }
 
         emitter.on(AETOS_MSG.MANIFEST, function (args, kwargs) {
+            // The question the handshake watch was waiting on has an answer.
+            manifestReceived = true;
+            handshakeAttempts = 0;
+            clearHandshakeWatch();
             if (store) {
                 store.set("manifest", kwargs || {});
             }
