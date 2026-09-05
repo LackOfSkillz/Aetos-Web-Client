@@ -98,21 +98,27 @@ does not claim the command works today.
 
 ---
 
-## 5. Which track should I prioritise?
+## 5. Which track should I prioritise?  — ANSWERED
 
-**Status:** I am proceeding in roadmap order. Say the word if that is wrong.
+**Answered 2026-09-04:** proceed in roadmap order.
 
-There are now three tracks, and they are independent:
+Addendum C then added the one hard ordering constraint: **E0 and E1 come before
+M17**, because M17 builds the canonical log that display rules, announcements,
+replay and diagnostics all sit on.
 
-- **A-track** (accessibility) — A0 done, A1 done, A2 next.
-- **D-track** (developer integration) — D0 next. This is the one that most
-  changes who *can* use Aetos, since today a game developer must write a Python
-  class to show a health bar.
-- **M-track** (features) — M17 next.
+Working order from here:
 
-My default is to keep going down the A-track, because Addendum A made it the
-gate for everything else and half of it is retrofit work that gets more
-expensive the more widgets exist.
+```text
+A2  Current State View + semantic values     <-- current
+A3  Accessible map completion
+E0  Event pipeline contract
+E1  Capture + replay
+M17 Rich chat + event history + Review Mode
+...
+D0  Discovery architecture spike             (independent; can move earlier on request)
+```
 
-But if you want the easy button working sooner — it is the thing most likely to
-get other people using this — say so and I will take D0–D2 next instead.
+The D-track remains movable. If getting the Easy Button working matters more
+than finishing the accessibility retrofit, say so and I will take D0–D2 next —
+it is the thing most likely to get other people using this, since today a
+developer must write a Python class to show a health bar.
