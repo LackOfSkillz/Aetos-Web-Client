@@ -151,7 +151,161 @@ uninstall, delete the three lines and restart.
 Aetos documents itself. `F1` opens a searchable reference covering every feature
 with worked examples, and `Ctrl+K` opens the command palette.
 
-### Teaching it about your game
+That is the whole installation. Everything below is optional — and if you want
+the shortest path from here to *your* game's health bars appearing, read
+[the easy button](#the-easy-button) next.
+
+---
+
+## The easy button
+
+*Planned — the D-track. Described here because it is the intended path, and
+because knowing it is coming should stop you writing a provider class you may
+not need.*
+
+**The fastest route from install to playing your own game**, for a developer who
+does not want to learn how Aetos works first.
+
+It is entirely optional. Aetos works without it, and you can skip straight to
+[bindings](#level-1--tell-aetos-where-your-data-is-planned-d-track) or
+[providers](#level-2--write-a-provider) if you already know where your data
+lives.
+
+```bash
+evennia aetos discover
+```
+
+### What it actually does
+
+Nothing hidden, nothing clever, and nothing you cannot check. Six steps:
+
+**1. It asks which character to look at.**
+By dbref, by key, or whichever one you have puppeted. It tells you exactly what
+it picked, so you are never guessing which object it is describing.
+
+```text
+Inspecting:  #42 TestCharacter
+Typeclass:   typeclasses.characters.Character
+```
+
+**2. It looks — three ways, and says which found what.**
+Your live character's attributes and their types; your typeclasses, command sets
+and command keys; and, optionally, your source under `typeclasses/`, `commands/`
+and `world/` — parsed, never executed. A file containing `os.system(...)` sits
+there inert.
+
+**3. It shows you what it found, and why it thinks so.**
+Every suggestion carries its evidence and how confident it is. You are never
+asked to trust a scanner you cannot interrogate.
+
+```text
+Possible resource found
+-----------------------
+Suggested name:  Health
+Current:         db.hp
+Maximum:         db.hp_max
+Test values:     82 / 100
+
+Evidence:
+  ✓ both attributes exist        ✓ names appear related
+  ✓ both are numeric             ✓ current <= maximum
+
+Confidence: HIGH
+
+[Y] Use   [E] Edit   [N] Ignore   [?] Explain
+```
+
+**4. You correct anything it got wrong.**
+Edit the label or either path in place. No Python, no file editing.
+
+**5. It tests the binding against your live character before generating
+anything.**
+
+```text
+Testing db.hp...       ✓ found  ✓ integer  ✓ 82
+Testing db.hp_max...   ✓ found  ✓ integer  ✓ 100
+
+Preview:  Health 82/100
+```
+
+This is the step that earns the whole tool. A typo in a path is otherwise
+discovered as a silently empty widget after a reload, which is the single most
+annoying way to learn you made a mistake.
+
+**6. It writes suggestions to a directory and stops.**
+
+```text
+aetos-discovery/
+├── report.md
+├── suggested_bindings.py
+└── suggested_provider.py    (only if your game needs one)
+```
+
+You read it, you paste what you want into `settings.py`, you reload.
+
+### What it will not do
+
+This is the transparent part, and it is deliberate:
+
+- **It never edits your game.** Not `settings.py`, not your typeclasses, not
+  your commands. It writes to its own directory and leaves the decision to you.
+- **It never executes your code.** Source is parsed with Python's `ast` module
+  and discarded. Nothing is imported, instantiated or called.
+- **It never runs during play.** It is a development-time command. There is no
+  protocol message that reaches it, so a connected player has no route in.
+- **It never leaves your machine.** No upload, no telemetry, no "phone home".
+- **It redacts anything that looks like a credential** — `password`, `token`,
+  `api_key` and friends are reported as `<redacted>` and never become
+  suggestions.
+- **It stays out of directories that are none of its business** — `.env`,
+  `.git/`, virtualenvs, logs, keys, backups, `node_modules/`, and anything
+  outside your game via a symlink.
+- **It will not guess.** Where two candidates both fit, it says so and asks:
+
+  ```text
+  Two possible maximum-health fields found.
+    db.max_hp
+    db.hp_cap
+  Aetos cannot determine which is correct.
+  ```
+
+  `unknown` is preferable to wrong, everywhere in Aetos.
+
+### And it will tell you when it cannot help
+
+If a value is *calculated* rather than stored — a method call, a derived stat —
+a binding genuinely cannot express it, and Discovery says so instead of
+generating something that half-works:
+
+```text
+This integration requires Python logic.
+
+Observed pattern:
+  character.stats.get("health").current
+
+AETOS_BINDINGS does not allow method calls.
+
+Recommended:
+  Custom AetosResourceProvider
+```
+
+It can generate a starter provider for that case, labelled
+**GENERATED STARTER CODE — REVIEW BEFORE USE**, because static analysis cannot
+know what you meant.
+
+### The bar it has to clear
+
+The acceptance test is deliberately unforgiving: hand an Evennia developer who
+has never seen Aetos a game with `db.hp` and `db.hp_max`, this README, and no
+help. They must reach working resource meters on their own.
+
+> If they have to write a provider class, the easy button has failed.
+
+Design detail: [Addendum B](docs/addendum-b-discovery.md).
+
+---
+
+## Teaching it about your game
 
 Three levels. Most games never need the third.
 
