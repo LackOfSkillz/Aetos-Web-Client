@@ -1,0 +1,13 @@
+{
+  "name": "aetos-browser-qa",
+  "private": true,
+  "description": "Development-only QA tooling for the Aetos Web Client. NOT a dependency of the Evennia contrib -- a game developer installing Aetos needs no Node and no npm.",
+  "version": "0.0.0",
+  "license": "BSD-3-Clause",
+  "scripts": {
+    "postinstall": "node -e \"console.log('axe-core installed. See qa-axe.js for how it is served to the lab client.')\""
+  },
+  "dependencies": {
+    "axe-core": "^4.13.0"
+  }
+}

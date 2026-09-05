@@ -111,12 +111,31 @@ class TestHelpIsReachable(TestCase):
 
     """
 
-    def test_f1_opens_it(self):
-        self.assertIn('=== "F1"', HELP)
+    def test_f1_is_registered_with_the_shortcut_manager(self):
+        """
+        Not bound inside help.js.
 
-    def test_the_shortcut_works_from_the_game_input(self):
-        """Bound with capture at the document, where a player's hands are."""
-        self.assertIn("}, true);", HELP)
+        A0 moved every global binding to `AetosShortcutManager`, because a key a
+        module binds for itself cannot be listed, rebound or disabled -- and a
+        binding that collides with someone's screen reader with no recourse is
+        not a shortcut, it is an obstacle (Addendum A.23).
+
+        """
+        self.assertIn('id: "help.toggle"', SHELL)
+        self.assertIn('defaultBinding: "F1"', SHELL)
+
+    def test_help_no_longer_binds_its_own_global_key(self):
+        self.assertNotIn('=== "F1"', HELP, "help.js still binds F1 itself")
+        self.assertNotIn("bindKeys", HELP)
+
+    def test_the_shortcut_names_the_command_it_accelerates(self):
+        """
+        A.23: no feature may exist only behind a shortcut. Registration is
+        refused without a palette command, so disabling the key never removes
+        the feature.
+
+        """
+        self.assertIn('paletteCommand: "help.open"', SHELL)
 
     def test_it_is_in_the_palette(self):
         self.assertIn('"help.open"', SHELL)
@@ -217,8 +236,7 @@ class TestServicesAreWiredOnce(TestCase):
                 SHELL.count(service),
                 1,
                 "%r appears %d times in aetos.js; a global replace has "
-                "injected it somewhere it does not belong"
-                % (service, SHELL.count(service)),
+                "injected it somewhere it does not belong" % (service, SHELL.count(service)),
             )
 
     def test_help_is_defined_before_it_is_exported(self):

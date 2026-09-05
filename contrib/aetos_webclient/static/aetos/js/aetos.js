@@ -345,7 +345,8 @@
         );
 
         var consoleWidget = ConsoleWidget(consoleEl, {});
-        var announcer = Announcer(document.getElementById("aetos-announcer"));
+        // The announcer is created below, once storage exists: the
+        // accessibility subsystem needs it for preferences and keybindings.
         var emitter = AetosEmitter();
         var store = window.AetosStore ? window.AetosStore.create() : null;
 
@@ -358,6 +359,50 @@
         var profile = (storage && window.AetosProfile)
             ? window.AetosProfile.create(storage)
             : null;
+
+        /*
+         * The accessibility subsystem.  Addendum A.4.
+         *
+         * Owns the only two live regions in the client (A11Y-ANN-001), the
+         * focus stack, the shortcut table and the player's accessibility
+         * preferences.
+         *
+         * Created here rather than at the top of boot() because it needs
+         * `storage`: preferences and keybindings are the player's data like any
+         * other, so they live in the same per-game store and are exported,
+         * counted and cleared with everything else (A.75). Nothing above this
+         * line announces.
+         */
+        var accessibility = window.AetosAccessibility
+            ? window.AetosAccessibility.create({
+                root: document.documentElement,
+                storage: storage,
+                politeRegion: document.getElementById("aetos-announcer"),
+                urgentRegion: document.getElementById("aetos-announcer-urgent"),
+                // Where focus goes when the element that opened a dialog no
+                // longer exists -- a note deleted from its own editor, say.
+                focusFallback: function () {
+                    return document.getElementById("aetos-input");
+                }
+            })
+            : null;
+
+        /*
+         * Compatibility shim.
+         *
+         * Existing call sites pass a bare string and keep working. New ones may
+         * pass a category and priority, which is what lets the manager honour a
+         * player who has asked not to hear about combat.
+         *
+         * Kept as a shim rather than a rename so that A0 does not touch a
+         * hundred call sites at once; they gain categories as each milestone
+         * revisits its own widget.
+         */
+        var announcer = {
+            announce: function (message, options) {
+                return accessibility ? accessibility.announce(message, options) : null;
+            }
+        };
 
         // Local player data. None of this is ever sent to the game server
         // (blueprint section 2.3): there is no code path from here to the
@@ -390,6 +435,23 @@
 
         function updateConnection(state) {
             indicator.set(state);
+            /*
+             * The only category routed to the urgent region (A.15).
+             *
+             * A dropped connection is not merely news: everything else the
+             * client is showing became potentially stale the moment it
+             * happened, so a player needs to know before they act on it. That
+             * is the bar for interrupting, and gameplay does not meet it.
+             */
+            if (state === "closed") {
+                announcer.announce("Connection lost.", {
+                    category: "connection", priority: "critical"
+                });
+            } else if (state === "open") {
+                announcer.announce("Connected.", {
+                    category: "connection", priority: "important"
+                });
+            }
             if (store) {
                 store.merge("connection", { state: state });
             }
@@ -1140,9 +1202,6 @@
             })
             : null;
 
-        if (help) {
-            help.bindKeys(document);
-        }
 
         var palette = window.AetosPalette
             ? window.AetosPalette.create({
@@ -1151,7 +1210,8 @@
             : null;
 
         if (palette) {
-            palette.bindKeys(document);
+            // No self-binding: Ctrl+K is registered with the shortcut manager
+            // below, so a player can see it, rebind it or turn it off (A.23).
 
             function addCommand(id, label, group, description, run, when, shortcut) {
                 palette.register({
@@ -1249,6 +1309,74 @@
                 function () { inputEl.focus(); });
         }
 
+        /*
+         * Global shortcuts.  Addendum A.22, A.23.
+         *
+         * Every one of these names the palette command it accelerates. That is
+         * enforced, not conventional: `register` throws without it, because a
+         * feature reachable only by keystroke is a feature that does not exist
+         * for anyone who does not already know the keystroke.
+         *
+         * None is a bare character. The manager refuses those outright --
+         * NVDA and JAWS use single letters to move between headings, buttons
+         * and lists, and taking one is taking away navigation, invisibly.
+         */
+        if (accessibility && accessibility.shortcuts) {
+            var shortcuts = accessibility.shortcuts;
+
+            if (palette) {
+                shortcuts.register({
+                    id: "palette.toggle",
+                    label: "Command palette",
+                    description: "Search everything this client can do.",
+                    defaultBinding: "Ctrl+K",
+                    paletteCommand: "palette.toggle",
+                    run: function () { palette.toggle(); }
+                });
+            }
+            if (help) {
+                shortcuts.register({
+                    id: "help.toggle",
+                    label: "Help",
+                    description: "Documentation for every feature, with examples.",
+                    defaultBinding: "F1",
+                    paletteCommand: "help.open",
+                    run: function () { help.toggle(); }
+                });
+            }
+            if (workspaces) {
+                shortcuts.register({
+                    id: "layout.edit",
+                    label: "Edit layout",
+                    description: "Move, resize, hide and restore widgets.",
+                    defaultBinding: "Ctrl+Shift+L",
+                    paletteCommand: "layout.edit",
+                    run: function () { workspaces.toggleEditing(); }
+                });
+            }
+        }
+
+        // A.50: help stays in the same place regardless of workspace. Someone
+        // who is lost should not have to find it somewhere new.
+        var helpButton = document.getElementById("aetos-open-help");
+        if (helpButton && help) {
+            helpButton.addEventListener("click", function () { help.open(null); });
+        } else if (helpButton) {
+            helpButton.hidden = true;
+        }
+
+        /*
+         * Bring the subsystem up.
+         *
+         * Last, because it loads the player's stored preferences and bindings,
+         * and those must be applied over a client that is already fully
+         * assembled -- a preference applied to half a client is a preference
+         * silently ignored by the other half.
+         */
+        if (accessibility) {
+            accessibility.start();
+        }
+
         window.Aetos = {
             version: 1,
             protocol: AETOS_PROTOCOL_VERSION,
@@ -1271,6 +1399,7 @@
             settings: settings,
             palette: palette,
             help: help,
+            accessibility: accessibility,
             reloadTriggers: reloadTriggers,
             macros: macros,
             editMacro: editMacro,

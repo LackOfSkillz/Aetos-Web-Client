@@ -73,6 +73,88 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ---
 
+### A0 — Accessibility Foundation
+
+First stage of the A-track. Blocked M17, and did.
+
+**Added**
+
+- An accessibility subsystem under `static/aetos/js/accessibility/`, loaded
+  before everything else: preferences, announcement manager, focus manager and
+  shortcut manager.
+- Skip links, `<nav>` and `<aside>` landmarks, and a second (assertive)
+  announcement region.
+- `accessibility.css`: focus indicator, pointer targets, reduced motion,
+  presentation intensity, a high-contrast palette and forced-colours handling.
+- `browser-qa/qa-axe.js`, a development-only axe-core audit. Not a dependency of
+  the contrib — a game developer needs no Node.
+
+**Changed**
+
+- **Every global keyboard shortcut moved out of its module.** `palette.js`,
+  `help.js` and `workspaces.js` each bound their own key; all three now register
+  with `AetosShortcutManager`. A key a module binds for itself cannot be listed,
+  rebound or disabled, which leaves a player no recourse when it collides with
+  their screen reader.
+- Two rules are now enforced rather than encouraged, both by throwing:
+  registering a bare character is refused (screen readers use single letters for
+  structural navigation), and registering a shortcut without naming the palette
+  command it accelerates is refused (no feature may exist only behind a
+  keystroke).
+- All announcements route through one manager with categories and priorities.
+  Only connection and session failure reach the interrupting region. Combat is
+  off by default; resources announce on thresholds only.
+
+**Fixed — found by axe, invisible to a mouse**
+
+- `scrollable-region-focusable`: the help article scrolls, and `tabindex="-1"`
+  made it programmatically focusable but kept it out of the tab order — so a
+  keyboard user could see there was more text and had no way to scroll to it.
+- The same defect in the privacy panel's list.
+- And a third, introduced by the first attempt at fixing the second:
+  `role="group"` on the `<ul>` stripped its implicit list role and orphaned all
+  fifteen `<li>` children. An accessibility fix is as capable of causing an
+  accessibility defect as any other change.
+
+**Tests** — 467 Python tests passing (up from 409). axe-core 4.13 clean across
+six views including the high-contrast and minimal-stimulation presets.
+
+---
+
+### Addendum B — server-side discovery and easy game integration
+
+**Added**
+
+- [`docs/addendum-b-discovery.md`](docs/addendum-b-discovery.md), a normative
+  specification for a declarative `AETOS_BINDINGS` layer and a server-side
+  Discovery tool. `DISC-` IDs are release requirements.
+- A **D-track** (D0–D6) in the roadmap, parallel to the M and A tracks and
+  independent of both. It produces no player interface.
+
+**Changed**
+
+- The README's integration story inverts. It led with "write a provider class",
+  which is correct and is also a wall; it now presents three levels — zero
+  config, bindings, providers — with the provider example moved to Advanced.
+- The claim that Aetos "never reaches into your data directly" was true of the
+  runtime and became ambiguous once a development-time inspector was planned. It
+  now distinguishes the two explicitly: the client never guesses during
+  gameplay; Discovery is a separate server-side developer tool.
+
+**The boundary this establishes**
+
+- Bindings describe *where* data is; providers describe *how* it is calculated.
+  `db.hp` is a location, `stats.get("health").current` is a method call. Keeping
+  that line sharp is what stops the binding grammar becoming an undocumented
+  programming language with no debugger.
+- Discovery never runs during play, is unreachable from the player protocol,
+  never transmits source to the browser, never modifies game files, and never
+  executes the code it reads.
+- Its hardest test is the one that sounds easiest: pointed at a pristine Evennia
+  game it must find nothing at all.
+
+---
+
 ### M16 — Inventory, equipment, target and effects
 
 **Added**

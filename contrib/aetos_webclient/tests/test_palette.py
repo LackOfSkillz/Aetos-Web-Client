@@ -131,16 +131,29 @@ class TestDiscoverability(TestCase):
     def test_at_least_one_registered_command_advertises_a_shortcut(self):
         self.assertIn('"Ctrl+Shift+L"', SHELL)
 
-    def test_the_palette_itself_is_reachable_by_shortcut(self):
-        self.assertIn('=== "k"', PALETTE)
-
-    def test_the_shortcut_works_from_the_game_input(self):
+    def test_ctrl_k_is_registered_with_the_shortcut_manager(self):
         """
-        Bound with capture at the document, because that is where a player's
-        hands actually are.
+        Not bound inside palette.js.
+
+        A0 moved every global binding to `AetosShortcutManager` so it can be
+        viewed, rebound and disabled (Addendum A.23).
 
         """
-        self.assertIn("true)", PALETTE)
+        self.assertIn('id: "palette.toggle"', SHELL)
+        self.assertIn('defaultBinding: "Ctrl+K"', SHELL)
+
+    def test_the_palette_no_longer_binds_its_own_global_key(self):
+        self.assertNotIn("bindKeys", PALETTE, "palette.js still binds Ctrl+K itself")
+
+    def test_the_palette_still_owns_its_internal_keys(self):
+        """
+        Arrows, Home, End and Escape stay in palette.js. They apply only while
+        the palette has focus, so they belong to the combobox pattern rather
+        than being global shortcuts -- exactly the case A11Y-KEY-002 permits.
+
+        """
+        for key in ("ArrowDown", "ArrowUp", "Home", "End", "Escape"):
+            self.assertIn(key, PALETTE)
 
 
 class TestPrivacyPanelReportsReality(TestCase):

@@ -318,7 +318,11 @@
             var target = event.target;
             var inInput = target && (target.tagName === "TEXTAREA" || target.tagName === "INPUT");
 
-            // Ctrl+Shift+L toggles edit mode from anywhere, including the input.
+            // Ctrl+Shift+L is also registered with AetosShortcutManager so it
+            // can be rebound (A.23). This local handler stays as a fallback:
+            // edit mode must not become unreachable because one module failed
+            // to load. The manager calls toggleEditing() directly, so a rebound
+            // key and this default both end up in the same place.
             if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "l") {
                 event.preventDefault();
                 toggleEditing();

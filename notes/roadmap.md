@@ -304,7 +304,11 @@ governs gameplay automation only.
 
 ## The A-track
 
-### A0 — Accessibility Foundation  ← NEXT. Blocks M17.
+### A0 — Accessibility Foundation  ✅ COMPLETE
+
+Record: [`a0-accessibility-foundation.md`](a0-accessibility-foundation.md).
+467 Python tests OK; axe clean on six views. Two real keyboard defects found
+and fixed, plus a third introduced by the first fix and caught by the same gate.
 
 Addendum A.4, A.7, A.8, A.13, A.15, A.19, A.23, A.52, A.53, A.70, A.86.
 
@@ -469,8 +473,8 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 
 ```text
 [x] M16  Inventory + equipment + target + effects
-[ ] A0   Accessibility Foundation                      <-- NEXT, blocks M17
-[ ] A1   Widget accessibility contract                 (retrofits M6, M7)
+[x] A0   Accessibility Foundation                      -- 467 py, axe clean
+[ ] A1   Widget accessibility contract                 <-- NEXT (retrofits M6, M7)
 [ ] A2   Current State View + semantic values          (retrofits M8, M16)
 [ ] A3   Accessible map completion                     (retrofits M9)
 [ ] M17  Rich chat + event history + Review Mode       (absorbs A4)
@@ -514,3 +518,272 @@ PR description lists voice as part of the solution. Addendum A does not touch
 voice, so that decision remains outstanding. It should be settled before A8,
 because voice input is an accessibility surface and A8 would otherwise validate
 an interface that is about to gain a major new input mode.
+
+
+---
+
+# Addendum B — Server-Side Discovery and Easy Game Integration
+
+Normative specification: [`docs/addendum-b-discovery.md`](../docs/addendum-b-discovery.md).
+Requirement IDs beginning `DISC-` are release requirements for the D-track.
+
+A **parallel developer track**, deliberately separate from the M and A tracks so
+it does not muddy the player-facing roadmap. Nothing in the D-track changes what
+a player sees or what the client does at runtime.
+
+## The problem it solves
+
+The provider architecture is correct and it is also a wall. Aetos must never
+guess whether a game keeps health at `db.hp`, `db.health`,
+`stats.health.current` or `traits["health"]` — but *writing a Python class*
+should not be the minimum skill required to put a health bar on screen.
+
+So three levels, not one:
+
+```text
+LEVEL 0   Zero configuration   stock Evennia data          (built, M4–M16)
+LEVEL 1   AETOS_BINDINGS       "my health is at db.hp"     (D1, D2)
+LEVEL 2   Aetos Providers      arbitrary Python            (built, M4–M16)
+```
+
+plus **Aetos Discovery**, a server-side tool that inspects the developer's own
+game and suggests which bindings to write.
+
+## The line that must not be crossed
+
+```text
+Bindings describe WHERE data is.
+Providers describe HOW data is calculated.
+```
+
+`db.hp` is a location. `character.stats.get("health").current` is a method call
+and therefore a provider's job. Discovery must detect that difference and say
+so, rather than growing the binding grammar until it becomes an undocumented
+programming language with no debugger (B.73).
+
+## What Discovery is not
+
+Worth stating plainly, because "a tool that scans your game" invites the wrong
+mental model:
+
+- **Not a runtime scanner.** It runs during development, never during play
+  (`DISC-001`).
+- **Not reachable by players.** No protocol message exposes it; there is no
+  route in from a connected session (`DISC-002`).
+- **Not a code reader for the browser.** Game source is never transmitted to the
+  client (`DISC-003`).
+- **Not an autoconfigurator.** It writes to `aetos-discovery/`, never to
+  `settings.py` or `typeclasses/`. The developer applies the output
+  (`DISC-005`).
+- **Not an executor.** Static analysis parses with `ast` and discards. It never
+  imports, execs, instantiates or calls the code it reads (B.26).
+
+The last one carries a real security obligation: Discovery reads files a
+developer may have downloaded from anywhere. It must be safe to point at hostile
+source, and that is tested with fixtures containing `os.system(...)` and
+file-writing statements which must never run (B.60).
+
+## Where it sits relative to the existing tracks
+
+**Placement: after A0, before or alongside M21.** A0 is done, so D0 may begin
+whenever it is scheduled.
+
+The D-track is *not* a blocker for the A-track or the M-track, and neither
+blocks it. Its one hard ordering constraint is that D6 lands with M27
+(configuration validation) and M28 (documentation), because those milestones
+must describe and validate bindings rather than pretending providers are still
+the only integration path.
+
+## D-track stages
+
+### D0 — Discovery architecture spike
+
+```text
+confirm the canonical server-side command entry point
+define the discovery package boundary
+define the candidate data model
+define the binding schema
+define approved scan roots
+define the security model
+prove AST parsing without imports
+prove representative runtime Character inspection
+```
+
+**Gate:** no browser dependency; no player protocol surface; no source mutation;
+no source execution; architecture reviewed against Evennia contrib constraints.
+
+The open question D0 must settle is the entry point. `evennia aetos discover` is
+the experience the addendum asks for (B.34), but Evennia's launcher may not
+support contrib-supplied subcommands. Whatever mechanism is chosen, the
+documentation exposes **one** canonical command, and the implementation stays
+self-contained in the contrib.
+
+### D1 — Safe AETOS_BINDINGS foundation
+
+```text
+AETOS_BINDINGS setting
+AetosBindingResolver          db.name and db.name.child only
+AetosBindingError             beginner-readable
+schema validation
+provider precedence           custom > binding > default
+automatic feature derivation  a binding implies its capability
+```
+
+**Gate:** a health bar appears from nothing but
+
+```python
+AETOS_BINDINGS = {
+    "resources": {
+        "health": {"label": "Health", "value": "db.hp", "maximum": "db.hp_max"},
+    },
+}
+```
+
+with no custom Python class anywhere.
+
+The security tests are the substance of D1, not an afterthought: `__class__`,
+`__globals__`, `method()`, `foo[0]`, `foo + bar`, `lambda`, `import`, and
+semicolon and newline injection must all fail cleanly (B.59). A resolver that
+quietly accepts one of those has reintroduced `eval` with extra steps.
+
+### D2 — Declarative provider suite
+
+```text
+DeclarativeResourceProvider    DeclarativeEquipmentProvider
+DeclarativeTargetProvider      DeclarativeEffectProvider
+DeclarativeActionProvider
+```
+
+**Gate:** each emits exactly the payload a hand-written provider would, through
+the same `character_state` and `resources` normalisers. The client must be
+unable to tell which integration path supplied the data — and since M16 already
+routes everything through those normalisers, this is a matter of feeding them
+rather than of a second code path.
+
+### D3 — Runtime and structural discovery
+
+```text
+representative Character selection    Attribute inspection
+safe value/type inspection            typeclass inspection
+CmdSet and command discovery          candidate pairing
+evidence generation                   confidence engine
+redaction
+```
+
+**Gate:** a known test game produces explainable candidates, with no suggestion
+presented as certain.
+
+Redaction is a hard requirement rather than a nicety: anything whose name
+resembles a credential is reported as `<redacted>` and never becomes a candidate
+(B.46). Runtime inspection reads a live game's Attributes, and a developer
+running a tool against their own server should not have it print secrets to a
+report file.
+
+### D4 — Static AST discovery
+
+```text
+allowlisted directory scanner    real-path containment
+AST parsing, never execution     AttributeProperty recognition
+.db access recognition           Command subclass/key recognition
+source-location evidence         scan bounds
+syntax-error containment
+```
+
+**Gate:** hostile test source cannot execute; secret and excluded directories
+are never read; a symlink inside `world/` pointing outside the game root does
+not escape the project.
+
+One unparseable file must not abort the run — it is reported and skipped (B.57).
+A tool that dies on the first legacy file is a tool nobody finishes running.
+
+### D5 — Setup wizard and generator
+
+The canonical workflow, end to end: choose runtime/static/both, select a
+representative object, scan, review each candidate with its evidence, explain,
+edit, **test the binding**, accept or ignore, generate.
+
+Output to `aetos-discovery/`: `report.txt`, `suggested_bindings.py`,
+`suggested_provider.py`. Nothing activated automatically.
+
+**Gate:** an inexperienced Evennia developer can go from a custom
+`db.hp`/`db.hp_max` Character to a working resource meter without writing a
+provider.
+
+The test step is what makes this more than a code generator. Resolving the
+binding against a live Character before generating anything catches the mistake
+at the point it is cheap, rather than after a reload against a silent empty
+widget.
+
+### D6 — Hardening, documentation and validation
+
+Integrates with M21, M27, M28, M29 and M31.
+
+```text
+security review           path and symlink tests
+large-project test        fresh Evennia test
+unusual game-data test    error-message review
+README rewrite            in-client developer help update
+provider-reference update generated-code formatting
+integration walkthrough
+```
+
+**Gate:** bindings and Discovery are supported public developer APIs.
+
+## The test that matters most
+
+**Fresh Evennia (B.64).** Point Discovery at a pristine game and it must find
+no resources, no equipment, no target and no effects — because that game has
+none — while the zero-config integration it already has (entities, inventory,
+map, basic actions) keeps working.
+
+A discovery tool that manufactures a health bar for a game with no health system
+has failed in exactly the way this whole project is built to avoid. Genre
+neutrality is not preserved by the client alone if the tooling in front of it
+invents genres.
+
+The companion test is the nontraditional one (B.65): `hull_integrity` /
+`hull_capacity` and `oxygen` / `oxygen_capacity` must be discoverable through
+*structural* pairing, not because someone added them to a list of fantasy stat
+names.
+
+## Effect on the documentation
+
+The current README says Aetos "never reaches into your data directly". That
+stays true of the runtime and becomes ambiguous once a development-time
+inspector exists, so B.51 replaces it with a statement that distinguishes the
+two:
+
+> The Aetos Web Client never guesses, scans, or assumes your game's data model
+> during gameplay. You explicitly bind game data to Aetos fields or supply a
+> provider. The optional server-side Aetos Discovery tool can inspect your game
+> during development and suggest those bindings for you.
+
+The integration learning path inverts (B.50): zero config → run Discovery → use
+bindings → write a provider only when the game actually needs one. The existing
+provider example moves under "Advanced" rather than being the first thing a
+newcomer meets.
+
+## Revised track summary
+
+```text
+M-track   player-facing features           M17 onward
+A-track   accessibility                    A1 next
+D-track   developer integration            D0 next, independent
+```
+
+```text
+[x] A0   Accessibility Foundation
+[ ] A1   Widget accessibility contract          <-- next on the A-track
+[ ] D0   Discovery architecture spike           <-- next on the D-track
+[ ] D1   Safe AETOS_BINDINGS foundation
+[ ] D2   Declarative provider suite
+[ ] D3   Runtime + structural discovery
+[ ] D4   Static AST discovery
+[ ] D5   Interactive setup wizard + generation
+[ ] D6   Hardening, docs and integration validation   (with M27, M28)
+```
+
+The D-track has no accessibility gates of its own, because it produces no player
+interface. Its A.97 answers are all "not applicable — server-side developer
+tooling", and that should be stated in each D-stage record rather than left to
+inference.

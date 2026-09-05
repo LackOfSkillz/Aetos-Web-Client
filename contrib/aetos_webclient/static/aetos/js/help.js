@@ -759,10 +759,21 @@
     function renderTopic(topic) {
         var article = document.createElement("article");
         article.className = "aetos-help__article";
-        // Focusable so choosing a topic can move focus here. A screen-reader
-        // user then lands on the content instead of having to hunt for where
-        // it appeared.
-        article.setAttribute("tabindex", "-1");
+        /*
+         * tabindex="0", not "-1".
+         *
+         * Two requirements meet here. Choosing a topic moves focus to the
+         * article, so a screen-reader user lands on the content rather than
+         * hunting for where it appeared -- "-1" would satisfy that alone.
+         *
+         * But the article sits in a scrolling container, and a region that
+         * scrolls must be reachable by Tab or a keyboard user cannot scroll it
+         * at all: arrow keys scroll whatever has focus, and "-1" keeps it out
+         * of the tab order. Found by axe as `scrollable-region-focusable`,
+         * which is precisely the class of defect that is invisible to anyone
+         * testing with a mouse.
+         */
+        article.setAttribute("tabindex", "0");
         article.setAttribute("aria-label", topic.title);
 
         var title = document.createElement("h2");
@@ -990,23 +1001,26 @@
             return true;
         }
 
-        function bindKeys(target) {
-            // Capture, so F1 works from the game input too -- which is where a
-            // player's hands are when they realise they need help.
-            target.addEventListener("keydown", function (event) {
-                if (event.key === "F1") {
-                    event.preventDefault();
-                    if (!close()) {
-                        openHelp(null);
-                    }
-                }
-            }, true);
+        /*
+         * Toggle: open, or close if already open.
+         *
+         * F1 is registered with AetosShortcutManager rather than bound here, so
+         * it is listed, rebindable and disableable alongside everything else
+         * (A.23). F1 is one of the few keys safe to bind bare -- screen readers
+         * claim single *characters* for structural navigation, not function
+         * keys.
+         */
+        function toggle() {
+            if (!close()) {
+                return openHelp(null);
+            }
+            return false;
         }
 
         return {
             open: openHelp,
             close: close,
-            bindKeys: bindKeys,
+            toggle: toggle,
             topics: availableTopics,
             isOpen: function () { return !!open; }
         };

@@ -4,6 +4,7 @@
 | --- | --- |
 | [Feature reference](features.md) | Every feature, with worked examples. **Generated** from the client's own help topics -- edit `help.js` and run `node scripts/export_help_docs.js` rather than editing it here. |
 | [Addendum A](addendum-a-accessibility.md) | Normative accessibility specification. WCAG 2.2 AA, NVDA/JAWS/Orca, braille, cognitive support and AAC. `A11Y-` IDs are release gates. |
+| [Addendum B](addendum-b-discovery.md) | Normative specification for `AETOS_BINDINGS` and server-side Discovery — the easy integration path for game developers. `DISC-` IDs are release requirements. |
 
 Also worth reading:
 

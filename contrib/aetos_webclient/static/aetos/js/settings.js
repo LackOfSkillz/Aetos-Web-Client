@@ -249,6 +249,27 @@
 
                     var table = document.createElement("ul");
                     table.className = "aetos-privacy__list";
+                    /*
+                     * Focusable, because it scrolls.
+                     *
+                     * Arrow keys scroll whatever has focus, so a scrolling
+                     * region outside the tab order cannot be scrolled by
+                     * keyboard at all -- the player can see there is more and
+                     * has no way to reach it. Found by axe as
+                     * `scrollable-region-focusable`; invisible to anyone
+                     * testing with a mouse wheel.
+                     *
+                     * A focusable region needs a name, or it is announced as
+                     * an unlabelled group.
+                     *
+                     * The name goes on the <ul> without touching its role. An
+                     * earlier attempt set role="group" here, which stripped the
+                     * implicit `list` role and orphaned every <li> -- axe
+                     * caught it immediately as `listitem`. A list can carry an
+                     * accessible name perfectly well as a list.
+                     */
+                    table.setAttribute("tabindex", "0");
+                    table.setAttribute("aria-label", "Stored data by category");
                     var total = 0;
                     storage.namespaces.forEach(function (namespace) {
                         var count = counts[namespace] || 0;

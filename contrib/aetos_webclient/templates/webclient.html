@@ -22,9 +22,20 @@ unmodified from Evennia's own static files, and the Portal is not involved.
 {% block styles %}
     <link rel="stylesheet" type="text/css" media="screen" href={% aetos_static "aetos/css/ansi.css" %} />
     <link rel="stylesheet" type="text/css" media="screen" href={% aetos_static "aetos/css/aetos.css" %} />
+    <link rel="stylesheet" type="text/css" media="screen" href={% aetos_static "aetos/css/accessibility.css" %} />
 {% endblock %}
 
 {% block scripts %}
+    {% comment %}
+    The accessibility subsystem loads before everything else. Every module
+    after it may announce, trap focus or register a shortcut, and one that
+    loads late is one the rest of the client silently did without.
+    {% endcomment %}
+    <script src={% aetos_static "aetos/js/accessibility/preferences.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/accessibility/announcer.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/accessibility/focus.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/accessibility/shortcuts.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/accessibility/accessibility.js" %} type="text/javascript" charset="utf-8"></script>
     <script src={% aetos_static "aetos/js/store.js" %} type="text/javascript" charset="utf-8"></script>
     <script src={% aetos_static "aetos/js/storage.js" %} type="text/javascript" charset="utf-8"></script>
     <script src={% aetos_static "aetos/js/profile.js" %} type="text/javascript" charset="utf-8"></script>
@@ -53,6 +64,24 @@ unmodified from Evennia's own static files, and the Portal is not involved.
 {% endblock %}
 
 {% block client %}
+{% comment %}
+Skip links. A11Y-NAV-001.
+
+First in the document, because that is the only position that helps: a skip
+link a keyboard user reaches after tabbing through the interface has skipped
+nothing. They are visually hidden until focused, so they cost sighted players
+nothing and save keyboard players the entire widget tree.
+
+Ordered by how often someone needs them. The command input comes first because
+it is where a player wants to be nearly every time.
+{% endcomment %}
+<nav class="aetos-skiplinks" aria-label="Skip links">
+  <a class="aetos-skiplink" href="#aetos-input">Skip to command input</a>
+  <a class="aetos-skiplink" href="#aetos-console">Skip to game output</a>
+  <a class="aetos-skiplink" href="#aetos-workspace">Skip to widgets</a>
+  <a class="aetos-skiplink" href="#aetos-toolbar">Skip to navigation</a>
+</nav>
+
 <div id="aetos-root" class="aetos-root" data-aetos-protocol="1">
 
   <header class="aetos-statusbar">
@@ -66,17 +95,41 @@ unmodified from Evennia's own static files, and the Portal is not involved.
       <span id="aetos-connection-label" class="aetos-connection__label">Connecting</span>
     </span>
     <span class="aetos-statusbar__title">{{ game_name }}</span>
-    <button id="aetos-edit-layout" class="aetos-statusbar__button" type="button"
-            aria-pressed="false">Edit Layout</button>
+
+    {% comment %}
+    A11Y-DOM-002 and A.7: the client stays an ordinary document, so a screen
+    reader can jump by landmark. This is the navigation landmark, and A.50
+    requires that it stay in the same place regardless of which workspace is
+    active -- someone who is lost should not have to find the help button
+    somewhere new.
+
+    role="toolbar" would be wrong here: these are unrelated controls, not a
+    group sharing one arrow-key model.
+    {% endcomment %}
+    <nav id="aetos-toolbar" class="aetos-statusbar__nav" aria-label="Aetos navigation">
+      <button id="aetos-edit-layout" class="aetos-statusbar__button" type="button"
+              aria-pressed="false">Edit Layout</button>
+      <button id="aetos-open-help" class="aetos-statusbar__button" type="button">Help</button>
+    </nav>
   </header>
 
   {% comment %}
-  Announcer: the single place Aetos speaks to assistive technology on purpose.
-  Threshold announcements (blueprint section 48) and command feedback go here,
-  deliberately and sparingly -- never the raw output stream.
+  The two announcement regions. Addendum A.15, A11Y-ANN-001.
+
+  These are the only live regions in Aetos. Widgets never create their own: a
+  player has one pair of ears and one braille display, so thirty independent
+  live regions do not produce thirty conversations, they produce one
+  conversation with thirty interruptions in render order.
+
+  The urgent region interrupts and is reserved for connection and session
+  failure. Gameplay never reaches it -- a channel that interrupts constantly
+  stops being an interruption, and then the one message that truly needed to
+  interrupt is the one that gets ignored.
   {% endcomment %}
   <div id="aetos-announcer" class="aetos-visually-hidden" role="status"
        aria-live="polite" aria-atomic="true"></div>
+  <div id="aetos-announcer-urgent" class="aetos-visually-hidden" role="alert"
+       aria-atomic="true"></div>
 
   <main id="aetos-workspace" class="aetos-workspace">
 
@@ -109,10 +162,10 @@ unmodified from Evennia's own static files, and the Portal is not involved.
   reversible without discarding the rest of the layout, so the palette is part
   of the hide operation rather than an extra.
   {% endcomment %}
-  <section id="aetos-palette" class="aetos-palette" aria-labelledby="aetos-palette-heading" hidden>
+  <aside id="aetos-palette" class="aetos-palette" aria-labelledby="aetos-palette-heading" hidden>
     <h2 id="aetos-palette-heading" class="aetos-widget__title">Widgets</h2>
     <ul id="aetos-palette-list" class="aetos-list"></ul>
-  </section>
+  </aside>
 
   <footer class="aetos-inputbar">
     <label for="aetos-input" class="aetos-visually-hidden">Command input</label>

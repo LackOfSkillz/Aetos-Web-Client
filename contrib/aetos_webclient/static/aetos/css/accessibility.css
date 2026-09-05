@@ -1,0 +1,246 @@
+/*
+ * Aetos accessibility styles.
+ *
+ * Kept in its own file rather than folded into aetos.css so that it is
+ * obvious when it is missing, and so a theme can be read alongside it without
+ * either being able to quietly drop the other. A theme may restyle Aetos; it
+ * may not restyle away a focus indicator.
+ *
+ * Everything here is unconditional. None of it is behind a preference, because
+ * A11Y-BASE-001 says core accessibility behaviour is not a toggle -- for the
+ * player or the game developer. What preferences control is *more* than this,
+ * never less.
+ */
+
+/* ----------------------------------------------------------------------
+ * Skip links.  A11Y-NAV-001.
+ *
+ * Hidden until focused, then unmissable. The usual failure is a skip link that
+ * stays invisible when focused, which is worse than none: it exists in the tab
+ * order, does something, and gives a sighted keyboard user no idea where they
+ * are.
+ * ---------------------------------------------------------------------- */
+
+.aetos-skiplinks {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 100;
+}
+
+.aetos-skiplink {
+    position: absolute;
+    top: 0;
+    left: 0;
+    /* Moved off-screen rather than display:none -- a hidden element is not
+       focusable, and a skip link that cannot be focused is decoration. */
+    transform: translateY(-200%);
+    padding: 10px 16px;
+    background: var(--aetos-panel);
+    color: var(--aetos-text);
+    border: 2px solid var(--aetos-accent);
+    border-radius: 0 0 var(--aetos-radius) 0;
+    text-decoration: underline;
+    white-space: nowrap;
+}
+
+.aetos-skiplink:focus,
+.aetos-skiplink:focus-visible {
+    transform: translateY(0);
+    outline: 3px solid var(--aetos-accent);
+    outline-offset: 2px;
+}
+
+/* ----------------------------------------------------------------------
+ * Focus visibility.  A11Y-FOCUS-004.
+ *
+ * A visible focus indicator on everything focusable, with no exceptions and no
+ * way for a theme to remove it. WCAG 2.2's enhanced guidance wants at least a
+ * 2px perimeter at 3:1 against its surroundings; 3px against the panel
+ * background clears that with room to spare.
+ * ---------------------------------------------------------------------- */
+
+.aetos-root :focus-visible,
+.aetos-dialog :focus-visible,
+.aetos-help :focus-visible,
+.aetos-palette-box :focus-visible {
+    outline: 3px solid var(--aetos-focus, var(--aetos-accent));
+    outline-offset: 2px;
+    /* A second ring in the background colour, so the indicator stays visible
+       against both light and dark content beneath it. */
+    box-shadow: 0 0 0 5px var(--aetos-bg);
+}
+
+/* Never remove the outline without replacing it. Kept as a named rule so that
+   the intent survives someone later "tidying" the stylesheet. */
+.aetos-root *:focus {
+    outline-offset: 2px;
+}
+
+/* ----------------------------------------------------------------------
+ * Visually hidden.
+ *
+ * Present for assistive technology, absent visually. Not display:none, which
+ * removes it from the accessibility tree as well and defeats the purpose.
+ * ---------------------------------------------------------------------- */
+
+.aetos-visually-hidden {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    /* inset(50%) rather than rect(): rect() is deprecated and clips
+       inconsistently once transforms are involved. */
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ----------------------------------------------------------------------
+ * Pointer targets.  A.57, WCAG 2.2 Target Size.
+ *
+ * 24px is the AA minimum; 44px is the enhanced target Aetos aims for on touch.
+ * Applied as a minimum rather than a fixed size so a control with more content
+ * simply grows.
+ * ---------------------------------------------------------------------- */
+
+.aetos-root button,
+.aetos-root [role="button"],
+.aetos-root a[href] {
+    min-height: 24px;
+}
+
+@media (pointer: coarse) {
+    .aetos-root button,
+    .aetos-root [role="button"] {
+        min-height: 44px;
+    }
+}
+
+/* ----------------------------------------------------------------------
+ * Motion.  A.52, A.53, A11Y-VIS.
+ *
+ * Three states, in precedence order:
+ *
+ *   1. an explicit player choice, either direction
+ *   2. the operating system's preference
+ *   3. full motion
+ *
+ * The explicit choice wins over the system setting in BOTH directions. A player
+ * may want motion their OS is suppressing, and overriding them "for their own
+ * good" is the same paternalism pointed the other way.
+ * ---------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+    :root:not([data-aetos-motion="full"]) *,
+    :root:not([data-aetos-motion="full"]) *::before,
+    :root:not([data-aetos-motion="full"]) *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+:root[data-aetos-motion="reduced"] *,
+:root[data-aetos-motion="reduced"] *::before,
+:root[data-aetos-motion="reduced"] *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+}
+
+/* ----------------------------------------------------------------------
+ * Presentation intensity.  A.52.
+ *
+ * "Reduced" removes decoration that carries no information. "Minimal" goes
+ * further and flattens the interface to text and separators.
+ *
+ * Neither ever hides content. Reducing stimulation must not reduce what a
+ * player can find out -- that would make it a worse client rather than a
+ * calmer one.
+ * ---------------------------------------------------------------------- */
+
+:root[data-aetos-stimulation="reduced"] .aetos-root,
+:root[data-aetos-stimulation="minimal"] .aetos-root {
+    --aetos-decoration: none;
+}
+
+:root[data-aetos-stimulation="reduced"] .aetos-widget,
+:root[data-aetos-stimulation="minimal"] .aetos-widget {
+    box-shadow: none;
+}
+
+:root[data-aetos-stimulation="minimal"] .aetos-widget {
+    background: transparent;
+    border-radius: 0;
+}
+
+:root[data-aetos-stimulation="minimal"] .aetos-resource__fill {
+    /* The bar stays -- the number was always there too, and removing the bar
+       would remove an at-a-glance reading some players rely on. Only the
+       gradient and animation go. */
+    transition: none;
+}
+
+/* ----------------------------------------------------------------------
+ * Type scale.
+ *
+ * A multiplier composed with the client's own clamp(), rather than a font-size
+ * override on <html>. Overriding that would fight the browser's zoom instead of
+ * composing with it, and browser zoom is what most low-vision users actually
+ * reach for first.
+ * ---------------------------------------------------------------------- */
+
+.aetos-root {
+    font-size: calc(var(--aetos-font-size) * var(--aetos-scale, 1));
+}
+
+/* ----------------------------------------------------------------------
+ * High contrast.  A11Y-VIS-003.
+ *
+ * A deliberate palette rather than a filter. `filter: contrast()` produces
+ * unpredictable ratios and can push a passing colour pair into failure, which
+ * is the opposite of what the setting is for.
+ * ---------------------------------------------------------------------- */
+
+:root[data-aetos-contrast="high"] {
+    --aetos-bg: #000000;
+    --aetos-panel: #000000;
+    --aetos-border: #ffffff;
+    --aetos-text: #ffffff;
+    /* 7.4:1 on black. The muted colour is where contrast themes usually fail,
+       because it is chosen to recede and then recedes past legibility. */
+    --aetos-text-muted: #c8c8c8;
+    --aetos-accent: #63b3ff;
+    --aetos-success: #5ce68a;
+    --aetos-warning: #ffc400;
+    --aetos-danger: #ff6b5e;
+    --aetos-focus: #ffff00;
+}
+
+:root[data-aetos-contrast="high"] .aetos-widget {
+    border-width: 2px;
+}
+
+/* Windows and macOS forced-colours modes. Honour the system palette rather
+   than fighting it, and keep the borders that carry structure. */
+@media (forced-colors: active) {
+    .aetos-widget,
+    .aetos-dialog,
+    .aetos-help {
+        border: 1px solid CanvasText;
+    }
+    .aetos-root :focus-visible {
+        outline: 3px solid Highlight;
+    }
+    .aetos-resource__fill {
+        /* Otherwise the bar is painted away entirely and the meter reads as
+           empty at every value. */
+        forced-color-adjust: none;
+        background: Highlight;
+    }
+}

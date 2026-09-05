@@ -148,9 +148,40 @@ why a pristine game gets a clean client rather than empty widgets:
 AETOS_FEATURES = {"resources": True, "map": True}
 ```
 
-### Providers
+### Bindings -- the easy path (planned, see the project roadmap)
 
-How Aetos reads your game's data. Aetos never assumes where you store anything:
+Most games only need to say *where* their data lives:
+
+```python
+AETOS_BINDINGS = {
+    "resources": {
+        "health": {"label": "Health", "value": "db.hp", "maximum": "db.hp_max"},
+    },
+}
+```
+
+No provider class and no import. Declaring a binding is enough to expose the
+matching feature.
+
+If you are not sure what to write, the server-side discovery tool inspects your
+own game and suggests it:
+
+```
+evennia aetos discover
+```
+
+It shows its evidence and confidence, tests each binding against a live
+character, and writes suggestions to `aetos-discovery/` for you to review. It
+never edits your game, never executes your code, and is not reachable by
+players.
+
+Bindings say where data *is*. If a value is *calculated* -- a method call, a
+derived stat -- bindings deliberately stop and you write a provider instead.
+
+### Providers -- the advanced path
+
+For anything bindings cannot express. Aetos never assumes where you store
+anything:
 
 ```python
 AETOS_PROVIDERS = {

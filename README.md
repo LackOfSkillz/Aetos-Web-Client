@@ -78,6 +78,15 @@ refreshable braille.
 > compatibility until the assistive-technology testing that would justify those
 > claims has actually happened.
 
+### For game developers
+
+Zero configuration gets you a working client. Beyond that the plan is a
+declarative `AETOS_BINDINGS` layer — *"my health is at `db.hp`"* — and
+`evennia aetos discover`, a development-time tool that inspects your own game
+and suggests those bindings, with its evidence and its confidence shown. You
+write a provider class only when a value is genuinely calculated rather than
+stored. See [the easy button](#teaching-it-about-your-game).
+
 ### On the roadmap
 
 Rich chat and event history · audio and multimedia with captions · themes with
@@ -132,8 +141,64 @@ with worked examples, and `Ctrl+K` opens the command palette.
 
 ### Teaching it about your game
 
-Aetos never reaches into your data directly — it asks a provider, and you replace
-any provider through one setting.
+Three levels. Most games never need the third.
+
+#### Level 0 — nothing
+
+You already have a working client: console, room, exits, people, items,
+inventory, map, context menus, route walking. No configuration at all.
+
+#### Level 1 — tell Aetos where your data is *(planned, D-track)*
+
+```python
+# server/conf/settings.py
+AETOS_BINDINGS = {
+    "resources": {
+        "health": {"label": "Health", "value": "db.hp", "maximum": "db.hp_max"},
+        "mana":   {"label": "Mana",   "value": "db.mana", "maximum": "db.mana_max"},
+    },
+    "target": {"object": "db.current_target"},
+}
+```
+
+No class, no import, no feature flag. A binding says *where the data is*, and
+declaring one is enough to turn the matching interface on.
+
+**Don't know where your data is?** That's the easy button:
+
+```bash
+evennia aetos discover
+```
+
+Discovery is a development-time tool that inspects **your own** game — a
+representative character, your typeclasses, your command set — and suggests the
+bindings. It shows its evidence and its confidence, lets you correct anything,
+**tests the binding against a live character before generating anything**, and
+writes the result to `aetos-discovery/` for you to paste in. It never edits your
+game, never runs your code, and is not reachable by players.
+
+```text
+Possible resource found
+-----------------------
+Suggested name:  Health
+Current:         db.hp
+Maximum:         db.hp_max
+Test values:     82 / 100
+
+Evidence:
+  ✓ both attributes exist        ✓ names appear related
+  ✓ both are numeric             ✓ current <= maximum
+
+Confidence: HIGH
+
+Use this integration?   [Y] Yes  [E] Edit  [N] Ignore  [?] Explain
+```
+
+#### Level 2 — write a provider
+
+When the data is *calculated* rather than stored — a method call, a derived
+stat, an unusual model — bindings deliberately stop and you write twenty lines
+instead:
 
 ```python
 # world/aetos.py
@@ -144,12 +209,13 @@ from evennia.contrib.base_systems.aetos_webclient.providers.base import (
 
 class MyResources(AetosResourceProvider):
     def get_resources(self, character):
+        health = character.stats.get("health")
         return [
             {
                 "id": "health",
                 "label": "Health",
-                "value": character.db.hp or 0,
-                "maximum": character.db.hp_max or 100,
+                "value": health.current,
+                "maximum": health.maximum,
                 "thresholds": [
                     {"at": 0.25, "level": "warning", "message": "Health is low."},
                 ],
@@ -160,14 +226,23 @@ class MyResources(AetosResourceProvider):
 ```python
 # server/conf/settings.py
 AETOS_PROVIDERS = {"resources": "world.aetos.MyResources"}
-AETOS_FEATURES = {"resources": True}
 ```
 
-That is the whole pattern. Twenty lines gets you resource meters with thresholds,
-spoken announcements when they are crossed, and a target's bars rendered
-identically to the player's own.
+A custom provider always wins over a binding for the same slot, so you can start
+with bindings and graduate one slot at a time without touching the rest.
+
+That is the whole pattern. Twenty lines — or four, at Level 1 — gets you
+resource meters with thresholds, spoken announcements when they are crossed, and
+a target's bars rendered identically to the player's own.
+
+> **On guessing.** The Aetos Web Client never guesses, scans, or assumes your
+> game's data model *during gameplay*. You explicitly bind your data or supply a
+> provider. Discovery is a separate development-time tool that inspects your
+> game and suggests those bindings — it is server-side only, and the running
+> client knows nothing about it.
 
 Full provider reference: [`contrib/aetos_webclient/README.md`](contrib/aetos_webclient/README.md).
+Design spec: [Addendum B](docs/addendum-b-discovery.md).
 
 ---
 
@@ -262,9 +337,19 @@ Colour never carries meaning alone. `innerHTML` is never used.
 | A7 | AAC and simplified workspace |
 | M20 | PWA shell and touch gestures *(responsive layout done)* |
 | M21–M29 | Inspector, widget SDK, server-described manifest, and hardening |
+| **D0–D6** | **`AETOS_BINDINGS` and `evennia aetos discover` — the easy button above** |
 | A8 | Assistive-technology validation — NVDA, JAWS, Orca, braille, cognitive, AAC |
 | M31–M32 | Release candidate and upstream pull request |
 | M33 | Voice input and speech accessibility |
+
+The **D-track** comes from
+[Addendum B](docs/addendum-b-discovery.md) and runs in parallel: a declarative
+`AETOS_BINDINGS` layer, and a server-side Discovery tool that inspects a
+developer's own game and suggests the bindings. It changes nothing a player
+sees. Its hardest requirement is the one that sounds easiest — pointed at a
+pristine Evennia game it must find *nothing*, because a discovery tool that
+invents a health bar for a game with no health system has failed in exactly the
+way this project exists to avoid.
 
 The **A-track** comes from
 [Addendum A](docs/addendum-a-accessibility.md), a normative accessibility

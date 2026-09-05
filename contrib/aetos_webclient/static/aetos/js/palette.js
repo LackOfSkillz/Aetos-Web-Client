@@ -293,21 +293,24 @@
          * Bound at the document with capture, so it works while focus is in the
          * game input -- which is where a player's hands actually are.
          */
-        function bindKeys(target) {
-            (target || document).addEventListener("keydown", function (event) {
-                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-                    event.preventDefault();
-                    toggle();
-                }
-            }, true);
-        }
+        /*
+         * The palette no longer binds its own global key.
+         *
+         * Ctrl+K is registered with AetosShortcutManager instead, so it can be
+         * viewed, rebound and disabled like every other shortcut (A.23). A
+         * binding a player cannot change will collide with something on
+         * somebody's machine and leave them no recourse.
+         *
+         * The palette still owns the keys used *inside* it -- arrows, Home,
+         * End, Enter, Escape -- because those apply only while it has focus and
+         * belong to the combobox pattern rather than being global shortcuts.
+         */
 
         return {
             register: register,
             open: open,
             close: close,
             toggle: toggle,
-            bindKeys: bindKeys,
             search: search,
             commands: function () { return commands.slice(); },
             available: available,
