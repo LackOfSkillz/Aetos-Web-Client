@@ -15,7 +15,7 @@ still subject to locks, permissions, cooldowns and game rules.
 
 from django.conf import settings
 
-from evennia.contrib.base_systems.aetos_webclient import constants, providers
+from evennia.contrib.base_systems.aetos_webclient import constants, providers, ui_manifest
 
 # --- Automation policy ---------------------------------------------------
 
@@ -153,13 +153,21 @@ def build_manifest(character=None):
     features = get_features()
     automation = get_automation_policy()
 
+    # What the game says about its own interface (M23). Descriptive only --
+    # labels, order and thresholds -- never a source of values.
+    described = ui_manifest.get_ui_description()
+
     payload = {
         "protocol": constants.PROTOCOL_VERSION,
         "features": features,
         "automation": automation,
-        # Populated by providers in M3. Declared here so the shape is stable from
-        # protocol v1 onward and a client can rely on the keys existing.
-        "resources": [],
+        # A game may describe a resource before any provider supplies its
+        # value, so a gauge can render labelled-and-pending rather than as an
+        # empty panel somebody cannot interpret.
+        "resources": described["resources"],
+        "panels": described["panels"],
+        # Declared so the shape is stable from protocol v1 onward and a client
+        # can rely on the keys existing, even where nothing populates them yet.
         "widgets": [],
         "actions": [],
         "map": {},

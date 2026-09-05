@@ -26,6 +26,7 @@ from evennia.contrib.base_systems.aetos_webclient import (
     protocol,
     providers,
     resources,
+    ui_manifest,
 )
 from evennia.contrib.base_systems.aetos_webclient.providers import base
 from evennia.utils.ansi import parse_ansi
@@ -319,6 +320,18 @@ def build_sync(character, active_providers=None):
     # not cost the player every other one.
     raw_resources = base.safe_call(resolved["resources"], "get_resources", [], character)
     resource_list = resources.normalize_resources(raw_resources)
+    # Declared order wins over arrival order (M23). A gauge that moves between
+    # second and fourth place between syncs is not a cosmetic problem for
+    # somebody navigating by position or by screen reader.
+    try:
+        resource_list = ui_manifest.order_resources(
+            resource_list, ui_manifest.get_ui_description()["resources"]
+        )
+    except ui_manifest.AetosUIError:
+        # A malformed AETOS_UI is reported loudly at handshake, where a
+        # developer will see it. Here it must not cost the player their
+        # resources as well.
+        pass
     actions = base.safe_call(resolved["actions"], "get_actions", [], character)
     map_data = base.safe_call(
         resolved["map"], "get_map", {"rooms": [], "exits": [], "current": None}, character

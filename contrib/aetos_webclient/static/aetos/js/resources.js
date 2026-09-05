@@ -145,6 +145,36 @@
         return worst;
     }
 
+    /*
+     * A gauge for a resource the game declared but has not yet sent a value
+     * for.  M23.
+     *
+     * Rendered rather than omitted, because an empty panel and a panel whose
+     * numbers have not arrived are different situations that look identical.
+     * A player reconnecting mid-fight, or on a slow link, otherwise sees a
+     * blank space and cannot tell whether this game has a health bar at all.
+     *
+     * "Waiting" rather than a zero or a spinner: a zero is a *value*, and
+     * showing one for a health bar that simply has not loaded is the worst
+     * possible wrong answer.
+     */
+    function renderPending(descriptor) {
+        var row = document.createElement("div");
+        row.className = "aetos-resource aetos-resource--pending";
+
+        var label = document.createElement("span");
+        label.className = "aetos-resource__label";
+        label.textContent = descriptor.label || descriptor.id;
+        row.appendChild(label);
+
+        var value = document.createElement("span");
+        value.className = "aetos-resource__value";
+        value.textContent = "waiting";
+        row.appendChild(value);
+
+        return row;
+    }
+
     function renderResource(resource) {
         var row = document.createElement("div");
         row.className = "aetos-resource aetos-resource--" + resource.display;
@@ -237,15 +267,32 @@
                 var items = (data && data.items) || [];
                 context.element.textContent = "";
 
+                /*
+                 * What the game said it has, from the manifest (M23).
+                 *
+                 * Used only to fill gaps: anything the provider actually sent
+                 * wins, always. A descriptor is a promise about the interface,
+                 * not a second source of truth about the numbers.
+                 */
+                var manifest = (context.store && context.store.get("manifest")) || {};
+                var declared = manifest.resources || [];
+                var supplied = {};
+                items.forEach(function (resource) { supplied[resource.id] = true; });
+                var pending = declared.filter(function (descriptor) {
+                    return !supplied[descriptor.id];
+                });
+
                 var panel = context.element.closest
                     ? context.element.closest("[data-aetos-widget]")
                     : null;
                 if (panel) {
-                    // Emptiness, not the player's visibility choice.
+                    // Emptiness, not the player's visibility choice. A declared
+                    // resource counts as content even before its value lands.
                     panel.setAttribute(
-                        "data-aetos-empty", items.length ? "false" : "true");
+                        "data-aetos-empty",
+                        (items.length || pending.length) ? "false" : "true");
                 }
-                if (!items.length) {
+                if (!items.length && !pending.length) {
                     return;
                 }
 
@@ -256,6 +303,17 @@
                     if (announcement) {
                         announce(announcement.message);
                     }
+                });
+
+                /*
+                 * Declared-but-absent gauges last, and never announced.
+                 *
+                 * Announcing "waiting" would be announcing the absence of news,
+                 * which is exactly the kind of interruption Quiet Mode exists
+                 * to stop -- and it would fire on every reconnect.
+                 */
+                pending.forEach(function (descriptor) {
+                    context.element.appendChild(renderPending(descriptor));
                 });
             },
 

@@ -440,7 +440,7 @@ is served from your own host.
 ## What is built
 
 Roughly 10,900 lines of Python, 17,300 of JavaScript and 2,200 of CSS, with
-**1000 Python tests** passing, plus hand-written browser checks and an axe-core
+**1036 Python tests** passing, plus hand-written browser checks and an axe-core
 audit clean across every view — including the high-contrast and
 minimal-stimulation presets.
 
@@ -465,7 +465,7 @@ minimal-stimulation presets.
 
 | | |
 | --- | --- |
-| **Resources** | Any numbers you declare, with thresholds and spoken announcements |
+| **Resources** | Any numbers you declare, with thresholds and spoken announcements — declarable in settings, so a gauge shows labelled and pending before its first value |
 | **Equipment** | By slot; empty slots stated rather than blank |
 | **Target** | Rendered with the same resource renderer as the player's own |
 | **Effects** | Countdowns that show *expiring*, never removing on the client's clock |
@@ -561,7 +561,8 @@ Colour never carries meaning alone. `innerHTML` is never used.
 | ~~M20~~ | ~~PWA shell and touch gestures~~ — **done**; the service worker is unverified in a real browser ([lab-hazard-003](notes/lab-hazard-003-no-service-workers.md)) |
 | ~~M21~~ | ~~Developer inspector~~ — **done** |
 | ~~M22~~ | ~~Widget SDK~~ — **done**; see [`docs/widget-sdk.md`](docs/widget-sdk.md) |
-| **M23** | **Server-described manifest — next** |
+| ~~M23~~ | ~~Server-described UI manifest~~ — **done** |
+| **E6** | **Mapper metadata — next** *(the SDK half landed at M22)* |
 | M21–M29 | Inspector, widget SDK, server-described manifest, and hardening |
 | **D0–D6** | **`AETOS_BINDINGS` and `evennia aetos discover` — the easy button above** |
 | E6 | Weighted map routing and widget SDK hardening |

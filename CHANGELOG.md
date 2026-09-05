@@ -11,6 +11,53 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### M23 — Server-described UI manifest
+
+1036 tests. [`notes/m23-ui-manifest.md`](notes/m23-ui-manifest.md)
+
+**Added**
+
+- `AETOS_UI`, letting a game describe its interface in settings: what its
+  resources are called, what order they sit in, what thresholds announce, and
+  what to title a panel. The manifest's `resources` key had been an empty
+  placeholder since protocol v1; this fills it, and adds `panels`.
+- A declared resource renders **labelled and pending** before its first value
+  arrives. Without it the panel is blank until the first sync, so a player on a
+  slow link cannot tell whether the game has no health bar or has not spoken
+  yet. It says "waiting", never a zero — a zero is a *value*, and showing one
+  for a health bar that merely has not loaded is the worst available wrong
+  answer. Pending gauges are never announced, since announcing the absence of
+  news would fire on every reconnect.
+- Declared order wins over arrival order. A gauge that moves between second and
+  fourth place between syncs is not cosmetic for somebody navigating by position
+  or by screen reader. Undeclared resources are kept and sorted last rather than
+  dropped, because a vanished resource is much harder to diagnose than a
+  misplaced one.
+
+**The boundary it holds**
+
+- This is **description, not data**. It says a resource exists and what to call
+  it; it says nothing about where the number comes from, which is the D-track's
+  job. Tests refuse a `bindings` section, drop a `value` on a descriptor, and
+  assert the module never touches `.db.`, `.attributes` or a character class.
+- It cannot escalate: `features` and `automation` sections are refused, so a UI
+  description cannot switch on a capability `AETOS_FEATURES` already owns.
+
+**Fixed**
+
+- **The wrong threshold keys were accepted silently.** Writing the lab settings
+  from A.77's example produced `{"at": 0.25, "state_text": ..., "announce": ...}`
+  — but `state_text` belongs to a *resource*, and the canonical threshold shape
+  has been `at`/`label`/`level` since M8. The result was a threshold with an
+  empty label that would never announce anything useful, with nothing to say why.
+  Unknown threshold keys and empty labels are now refused **in the settings path
+  only**: a provider is runtime game code and stays tolerant, a setting is a
+  developer typing a literal and is strict. Tolerant at runtime, strict at
+  configuration.
+- A malformed `AETOS_UI` raises at the handshake, where a developer sees it, and
+  is caught in the sync path, so one settings typo cannot also empty the
+  player's resource panel.
+
 ### M22 — Widget SDK and failure isolation
 
 1000 tests. Addendum C.20. [`notes/m22-widget-sdk.md`](notes/m22-widget-sdk.md)

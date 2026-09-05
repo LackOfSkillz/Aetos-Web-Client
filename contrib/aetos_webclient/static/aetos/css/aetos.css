@@ -1652,3 +1652,15 @@ body {
     font-size: 0.9em;
     word-break: break-word;
 }
+
+/*
+ * A declared resource whose value has not arrived yet.  M23.
+ *
+ * Muted, but the word "waiting" carries the meaning -- a player who cannot
+ * distinguish the colour still reads that it is pending rather than zero.
+ */
+.aetos-resource--pending .aetos-resource__value,
+.aetos-resource--pending .aetos-resource__label {
+    color: var(--aetos-text-muted);
+    font-style: italic;
+}
