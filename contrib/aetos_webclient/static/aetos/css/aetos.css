@@ -1,0 +1,1264 @@
+/*
+ * Aetos Web Client -- shell styles.
+ *
+ * Theme values are declared as custom properties so that the theme engine
+ * (blueprint section 44) can later swap palettes without touching widget CSS.
+ * Nothing here assumes a genre.
+ */
+
+:root {
+    --aetos-bg: #14171c;
+    --aetos-panel: #1b1f26;
+    --aetos-border: #2b313b;
+    --aetos-text: #d7dce3;
+    --aetos-text-muted: #8d97a5;
+    --aetos-accent: #5aa9e6;
+    --aetos-success: #4caf72;
+    --aetos-warning: #d8a13a;
+    --aetos-danger: #d2564b;
+    --aetos-font-mono: "Cascadia Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+    --aetos-radius: 4px;
+
+    /*
+     * Fluid tokens.
+     *
+     * Spacing and type scale with the viewport rather than stepping at a
+     * breakpoint, so the client looks deliberate at every size instead of
+     * only at the sizes someone remembered to test.
+     *
+     * `clamp` bounds both ends: text never shrinks below readable, and never
+     * grows into something cartoonish on a large monitor.
+     */
+    --aetos-space: clamp(6px, 0.6vw, 12px);
+    --aetos-font-size: clamp(13px, 0.85vw, 16px);
+
+    /* Side columns are a proportion of the width, bounded so they stay useful
+       on a small screen and do not sprawl on a large one. */
+    --aetos-column: clamp(200px, 20vw, 340px);
+
+    /* Touch targets. Pointer-dependent, set under `pointer: coarse` below. */
+    --aetos-target: 0px;
+}
+
+/*
+ * The client fills the window, and the window is dark all the way out.
+ *
+ * `html` needs the background too. Setting it only on `body` leaves any area the
+ * body does not cover painted the browser's default white, which shows as a
+ * bright L-shape around the client -- glaring against a dark UI, and the first
+ * thing anyone notices.
+ *
+ * The root is fixed to the viewport rather than sized at 100vh. On mobile
+ * browsers 100vh is the *largest* viewport height, so a page sized that way is
+ * taller than the visible area while the address bar is showing, pushing the
+ * command input off-screen. `inset: 0` tracks the actual viewport instead.
+ */
+html {
+    height: 100%;
+    background: var(--aetos-bg);
+}
+
+body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: var(--aetos-bg);
+    color: var(--aetos-text);
+}
+
+.aetos-root {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--aetos-bg);
+    color: var(--aetos-text);
+    font-family: var(--aetos-font-mono);
+    font-size: var(--aetos-font-size);
+}
+
+/* Status bar ---------------------------------------------------------- */
+
+.aetos-statusbar {
+    display: flex;
+    align-items: center;
+    gap: var(--aetos-space);
+    padding: var(--aetos-space);
+    background: var(--aetos-panel);
+    border-bottom: 1px solid var(--aetos-border);
+}
+
+.aetos-statusbar__title {
+    margin-left: auto;
+    color: var(--aetos-text-muted);
+}
+
+.aetos-connection {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.aetos-connection__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--aetos-text-muted);
+}
+
+/*
+ * Connection state is always carried by the adjacent text label as well as the
+ * dot colour. Colour is never the only channel (blueprint section 45).
+ */
+.aetos-connection--open .aetos-connection__dot {
+    background: var(--aetos-success);
+}
+
+.aetos-connection--pending .aetos-connection__dot {
+    background: var(--aetos-warning);
+}
+
+.aetos-connection--closed .aetos-connection__dot {
+    background: var(--aetos-danger);
+}
+
+/* Workspace ----------------------------------------------------------- */
+
+/*
+ * The workspace is a grid, not a flex row.
+ *
+ * As a single flex row a "bottom" region sat beside `main` and competed with it
+ * for width, squeezing the console -- the primary reading surface -- into a
+ * narrow column. A grid lets `bottom` span the full width underneath, which is
+ * what "bottom" means.
+ *
+ * `main` takes 1fr so the console gets whatever the side columns do not, and the
+ * side columns collapse to nothing when their region is empty.
+ */
+.aetos-workspace {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas:
+        "sidebar main aside"
+        "bottom  bottom bottom";
+    gap: var(--aetos-space);
+    min-height: 0;
+    padding: var(--aetos-space);
+}
+
+.aetos-region--sidebar { grid-area: sidebar; }
+.aetos-region--main { grid-area: main; }
+.aetos-region--aside { grid-area: aside; }
+.aetos-region--bottom { grid-area: bottom; }
+
+.aetos-widget {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    background: var(--aetos-panel);
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+}
+
+.aetos-console {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--aetos-space);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.45;
+}
+
+.aetos-console:focus-visible {
+    outline: 2px solid var(--aetos-accent);
+    outline-offset: -2px;
+}
+
+.aetos-console__line {
+    padding: 1px 0;
+}
+
+/* Input bar ----------------------------------------------------------- */
+
+.aetos-inputbar {
+    display: flex;
+    gap: var(--aetos-space);
+    padding: var(--aetos-space);
+    background: var(--aetos-panel);
+    border-top: 1px solid var(--aetos-border);
+}
+
+.aetos-input {
+    flex: 1 1 auto;
+    resize: none;
+    padding: 6px 8px;
+    background: var(--aetos-bg);
+    color: var(--aetos-text);
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.aetos-input:focus-visible,
+.aetos-send:focus-visible {
+    outline: 2px solid var(--aetos-accent);
+    outline-offset: 1px;
+}
+
+.aetos-send {
+    padding: 6px 16px;
+    background: var(--aetos-accent);
+    color: #0d1117;
+    border: none;
+    border-radius: var(--aetos-radius);
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Utilities ----------------------------------------------------------- */
+
+.aetos-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Sidebar and surroundings widgets ------------------------------------ */
+
+
+
+.aetos-widget--panel {
+    flex: 0 0 auto;
+    padding: var(--aetos-space);
+}
+
+.aetos-widget__title {
+    margin: 0 0 6px 0;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--aetos-text-muted);
+}
+
+.aetos-room__name {
+    margin: 0 0 4px 0;
+    font-weight: 600;
+    color: var(--aetos-accent);
+}
+
+.aetos-room__description {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: var(--aetos-text);
+}
+
+.aetos-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.aetos-list__button {
+    padding: 3px 8px;
+    background: var(--aetos-bg);
+    color: var(--aetos-text);
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
+}
+
+.aetos-list__button:hover:not(:disabled) {
+    border-color: var(--aetos-accent);
+    color: var(--aetos-accent);
+}
+
+.aetos-list__button:focus-visible {
+    outline: 2px solid var(--aetos-accent);
+    outline-offset: 1px;
+}
+
+.aetos-list__button:disabled {
+    cursor: default;
+    color: var(--aetos-text-muted);
+}
+
+/* ======================================================================
+ * Responsive layout
+ *
+ * Driven by `data-aetos-size` on the root, which responsive.js sets from a
+ * ResizeObserver on the client element itself. Keying off the element rather
+ * than a media query means the layout is also correct when something outside
+ * the page takes width -- a browser side panel, a devtools dock, an embedding
+ * frame -- which a `@media` rule cannot see.
+ * ====================================================================== */
+
+/* --- Phone: one column -------------------------------------------------
+ *
+ * The side regions STACK rather than being hidden. Hiding them would remove
+ * the only non-visual route to exits and room contents, which is precisely
+ * what a screen-reader user on a phone depends on (sections 46, 53).
+ *
+ * Each region is capped and scrolls, so the console -- the thing a player is
+ * actually reading -- always keeps the majority of the screen.
+ */
+.aetos-root[data-aetos-size="phone"] .aetos-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    /*
+     * `main` is given a floor of 45vh and takes the remaining space.
+     *
+     * Without the floor, several stacked side panels squeeze the console down
+     * to a few lines -- and the console is the thing the player is actually
+     * reading. On a phone the surroundings are a reference you glance at; the
+     * game text is the game.
+     */
+    grid-template-rows: auto minmax(45vh, 1fr) auto auto;
+    grid-template-areas:
+        "sidebar"
+        "main"
+        "aside"
+        "bottom";
+}
+
+.aetos-root[data-aetos-size="phone"] .aetos-region--sidebar,
+.aetos-root[data-aetos-size="phone"] .aetos-region--aside {
+    width: auto;
+    /* Each strip is capped and scrolls internally, so adding a widget never
+       steals height from the console. */
+    max-height: 18vh;
+}
+
+/* Compact panels when stacked: a phone cannot afford a title line plus
+   generous padding on every widget. */
+.aetos-root[data-aetos-size="phone"] .aetos-widget--panel {
+    padding: 4px 6px;
+}
+
+.aetos-root[data-aetos-size="phone"] .aetos-widget__title {
+    margin-bottom: 2px;
+    font-size: 10px;
+}
+
+/*
+ * On a phone the side strips scroll HORIZONTALLY, one panel per swipe.
+ *
+ * Stacking them vertically inside a short strip buries the later widgets: the
+ * map ended up below the fold of an 18vh box, reachable only by noticing that
+ * the box scrolled. A horizontal strip keeps every widget one familiar gesture
+ * away, and is what section 53 means by swipeable panels.
+ *
+ * This matters beyond convenience. On a phone these panels are the only
+ * non-visual route to exits and room contents, so a widget that is hard to
+ * reach is a widget a screen-reader user effectively loses.
+ */
+.aetos-root[data-aetos-size="phone"] .aetos-region--sidebar,
+.aetos-root[data-aetos-size="phone"] .aetos-region--aside {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    overflow-x: auto;
+    overflow-y: hidden;
+    /* Snap so a swipe lands on a panel rather than between two. */
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+
+.aetos-root[data-aetos-size="phone"] .aetos-widget--panel {
+    flex: 0 0 min(78%, 260px);
+    scroll-snap-align: start;
+    overflow-y: auto;
+}
+
+/* --- Tablet: two columns ------------------------------------------------
+ *
+ * The aside folds into the sidebar rather than being dropped, so no widget
+ * disappears just because the screen got narrower.
+ */
+.aetos-root[data-aetos-size="tablet"] .aetos-workspace {
+    grid-template-columns: var(--aetos-column) minmax(0, 1fr);
+    grid-template-areas:
+        "sidebar main"
+        "aside   main"
+        "bottom  bottom";
+    grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.aetos-root[data-aetos-size="tablet"] .aetos-region--aside {
+    width: var(--aetos-column);
+}
+
+/* --- Wide: keep the reading line sane -----------------------------------
+ *
+ * On a very large monitor the extra width goes to the side columns, not into
+ * an unreadably long line of game text. A 200-character line is worse to read
+ * than a 100-character one, so the console is capped and centred.
+ */
+.aetos-root[data-aetos-size="wide"] .aetos-console {
+    max-width: 120ch;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* --- Short viewports ----------------------------------------------------
+ *
+ * A phone in landscape, or a short window. Vertical space is the scarce
+ * resource, so the stacked regions shrink and the hotbar tightens.
+ */
+.aetos-root[data-aetos-short="true"] .aetos-region--sidebar,
+.aetos-root[data-aetos-short="true"] .aetos-region--aside {
+    max-height: 22vh;
+}
+
+.aetos-root[data-aetos-short="true"] .aetos-widget__title {
+    margin-bottom: 2px;
+}
+
+/* --- Touch input --------------------------------------------------------
+ *
+ * Not "small screen": a touchscreen laptop needs large targets at desktop
+ * width, and a phone driven by a mouse does not. `pointer: coarse` asks the
+ * right question.
+ *
+ * 44px is the smallest target most people can hit reliably (section 49).
+ */
+@media (pointer: coarse) {
+    :root {
+        --aetos-target: 44px;
+    }
+
+    .aetos-list__button,
+    .aetos-hotbar__button,
+    .aetos-menu__item,
+    .aetos-send,
+    .aetos-statusbar__button {
+        min-height: var(--aetos-target);
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+
+    .aetos-input {
+        min-height: var(--aetos-target);
+        /* 16px prevents iOS zooming the page when the field is focused, which
+           would leave the player zoomed in with no obvious way back. */
+        font-size: max(16px, var(--aetos-font-size));
+    }
+}
+
+/* --- Respect an explicit request for less motion or more contrast -------- */
+@media (prefers-contrast: more) {
+    :root {
+        --aetos-border: #6d7684;
+        --aetos-text-muted: #b7c0cc;
+    }
+}
+
+/* Regions, panels and Edit Layout ------------------------------------- */
+
+.aetos-region {
+    display: flex;
+    flex-direction: column;
+    gap: var(--aetos-space);
+    min-height: 0;
+}
+
+.aetos-region--sidebar,
+.aetos-region--aside {
+    width: var(--aetos-column);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.aetos-region--main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+
+
+/* An empty region must not reserve space, or a game with few widgets shows
+   large blank columns. */
+.aetos-region:empty { display: none; }
+
+.aetos-statusbar__button {
+    padding: 3px 10px;
+    margin-left: var(--aetos-space);
+    background: transparent;
+    color: var(--aetos-text-muted);
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.aetos-statusbar__button:hover,
+.aetos-statusbar__button[aria-pressed="true"] {
+    color: var(--aetos-accent);
+    border-color: var(--aetos-accent);
+}
+
+.aetos-statusbar__button:focus-visible {
+    outline: 2px solid var(--aetos-accent);
+    outline-offset: 1px;
+}
+
+/*
+ * Edit mode. The selected panel is marked with a border AND aria-current, so
+ * the selection is available to assistive technology rather than being a purely
+ * visual cue (blueprint sections 45, 49).
+ */
+.aetos-editing .aetos-widget--panel {
+    outline: 1px dashed var(--aetos-border);
+}
+
+.aetos-editing .aetos-widget--selected {
+    outline: 2px solid var(--aetos-accent);
+    outline-offset: 2px;
+}
+
+.aetos-widget--panel:focus-visible {
+    outline: 2px solid var(--aetos-accent);
+    outline-offset: 2px;
+}
+
+.aetos-noscript {
+    padding: var(--aetos-space);
+    color: var(--aetos-danger);
+    font-family: var(--aetos-font-mono);
+}
+
+/*
+ * The `hidden` attribute must beat our own display rules.
+ *
+ * `.aetos-widget { display: flex }` is an author rule and therefore wins over
+ * the user-agent's `[hidden] { display: none }`. Without this, a widget that
+ * hides itself because it has nothing to show still rendered as an empty box --
+ * exactly the clutter blueprint section 11 says must not appear.
+ */
+[hidden] {
+    display: none !important;
+}
+
+/* Panel bodies scroll rather than clip. A builder can write a room description
+   of any length; truncating it silently loses game content. */
+.aetos-widget__body {
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.aetos-widget--panel {
+    overflow: hidden;
+}
+
+/* Widget palette (Edit Layout mode) ------------------------------------ */
+
+.aetos-palette {
+    padding: var(--aetos-space);
+    background: var(--aetos-panel);
+    border-top: 1px solid var(--aetos-border);
+}
+
+.aetos-palette__unavailable {
+    display: inline-block;
+    padding: 3px 8px;
+    color: var(--aetos-text-muted);
+    font-style: italic;
+}
+
+/* Shown/hidden is carried by a text marker and aria-pressed, not colour alone. */
+.aetos-palette .aetos-list__button[aria-pressed="true"] {
+    border-color: var(--aetos-accent);
+    color: var(--aetos-accent);
+}
+
+.aetos-palette .aetos-list__button[aria-pressed="true"]::before {
+    content: "\2713\00a0";
+}
+
+.aetos-palette .aetos-list__button[aria-pressed="false"]::before {
+    content: "\002b\00a0";
+}
+
+/* Resources ------------------------------------------------------------ */
+
+.aetos-resource {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px var(--aetos-space);
+    align-items: baseline;
+    padding: 3px 0;
+}
+
+.aetos-resource__label {
+    color: var(--aetos-text-muted);
+}
+
+.aetos-resource__value {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Severity is stated in words by the markup; colour only reinforces it. */
+.aetos-resource__severity {
+    text-transform: uppercase;
+    font-size: 0.85em;
+    letter-spacing: 0.04em;
+}
+
+.aetos-resource--warning .aetos-resource__value { color: var(--aetos-warning); }
+.aetos-resource--critical .aetos-resource__value { color: var(--aetos-danger); }
+
+.aetos-resource__track {
+    grid-column: 1 / -1;
+    height: 6px;
+    background: var(--aetos-bg);
+    border: 1px solid var(--aetos-border);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.aetos-resource__fill {
+    height: 100%;
+    background: var(--aetos-accent);
+}
+
+.aetos-resource--warning .aetos-resource__fill { background: var(--aetos-warning); }
+.aetos-resource--critical .aetos-resource__fill { background: var(--aetos-danger); }
+
+.aetos-resource--vertical .aetos-resource__track { height: 48px; }
+
+/* Inventory, equipment, effects and target (M16) ------------------------
+
+   Every distinction here is carried by text in the markup as well. Colour and
+   weight reinforce meaning; they never are the meaning. */
+
+.aetos-list__count {
+    color: var(--aetos-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.aetos-equipment {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px var(--aetos-space);
+    align-items: baseline;
+    margin: 0;
+}
+
+.aetos-equipment__slot {
+    color: var(--aetos-text-muted);
+}
+
+.aetos-equipment__item {
+    margin: 0;
+    min-width: 0;
+}
+
+/* An empty slot is dimmed and italicised, but it still says "empty" -- the
+   styling is a shortcut for a sighted player, not the information itself. */
+.aetos-equipment__item[data-aetos-empty-slot="true"] {
+    color: var(--aetos-text-muted);
+    font-style: italic;
+}
+
+.aetos-effects {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.aetos-effect {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 4px;
+    padding: 3px 0 3px 8px;
+    /* A left rule rather than a background wash: it survives a high-contrast
+       theme, where background colours are frequently overridden away. */
+    border-left: 3px solid var(--aetos-border);
+}
+
+.aetos-effect--helpful { border-left-color: var(--aetos-success); }
+.aetos-effect--harmful { border-left-color: var(--aetos-danger); }
+
+.aetos-effect__kind {
+    text-transform: uppercase;
+    font-size: 0.8em;
+    letter-spacing: 0.04em;
+    color: var(--aetos-text-muted);
+}
+
+.aetos-effect__stacks,
+.aetos-effect__remaining {
+    color: var(--aetos-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* The client's own estimate has run out and the server has not confirmed the
+   effect is gone. Shown as uncertain rather than removed, because removing it
+   would be the client asserting something only the server knows. */
+.aetos-effect[data-aetos-expiring="true"] {
+    opacity: 0.6;
+}
+
+.aetos-effect__description {
+    flex-basis: 100%;
+    color: var(--aetos-text-muted);
+    font-size: 0.9em;
+}
+
+.aetos-target__name {
+    margin: 0;
+    font-weight: 600;
+}
+
+.aetos-target__relationship {
+    font-weight: 400;
+    color: var(--aetos-text-muted);
+}
+
+/* The target's own bars sit inside the target panel, using the identical
+   resource styling as the player's -- deliberately, so one reading skill
+   serves both. */
+.aetos-target .aetos-resource {
+    padding-left: 0;
+}
+
+/* In-client help (documentation overlay) --------------------------------
+
+   A two-pane reading surface. Both panes scroll independently so a long topic
+   never scrolls the topic list out of reach. */
+
+.aetos-help__overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--aetos-space);
+    background: rgba(0, 0, 0, 0.6);
+    /* Overlays attach to <body>, outside the client root, so they must state
+       their own typography rather than inheriting it. */
+    font-family: var(--aetos-font-mono);
+    font-size: var(--aetos-font-size);
+    color: var(--aetos-text);
+}
+
+.aetos-help {
+    display: flex;
+    flex-direction: column;
+    width: min(1000px, 100%);
+    height: min(760px, 100%);
+    background: var(--aetos-panel);
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+    overflow: hidden;
+}
+
+.aetos-help__header {
+    display: flex;
+    align-items: center;
+    gap: var(--aetos-space);
+    padding: var(--aetos-space);
+    border-bottom: 1px solid var(--aetos-border);
+}
+
+.aetos-help__brand {
+    margin: 0;
+    font-size: 1em;
+    white-space: nowrap;
+}
+
+.aetos-help__search { flex: 1; min-width: 0; }
+
+.aetos-help__body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(180px, 240px) 1fr;
+    min-height: 0;
+}
+
+.aetos-help__nav {
+    overflow-y: auto;
+    padding: var(--aetos-space);
+    border-right: 1px solid var(--aetos-border);
+}
+
+.aetos-help__group {
+    margin: var(--aetos-space) 0 4px;
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--aetos-text-muted);
+}
+
+.aetos-help__nav .aetos-list__button { width: 100%; text-align: left; }
+
+/* The current topic is marked with a rule as well as colour, so it is still
+   identifiable without colour perception. */
+.aetos-help__nav .aetos-list__button[aria-current="page"] {
+    border-left: 3px solid var(--aetos-accent);
+    color: var(--aetos-accent);
+}
+
+.aetos-help__content {
+    overflow-y: auto;
+    padding: calc(var(--aetos-space) * 2);
+}
+
+.aetos-help__article:focus-visible {
+    outline: 2px solid var(--aetos-accent);
+    outline-offset: 4px;
+}
+
+.aetos-help__title { margin: 0 0 4px; font-size: 1.3em; }
+
+.aetos-help__summary {
+    margin: 0 0 var(--aetos-space);
+    color: var(--aetos-text-muted);
+}
+
+.aetos-help__section { margin-bottom: calc(var(--aetos-space) * 2); }
+
+.aetos-help__heading {
+    margin: 0 0 6px;
+    font-size: 1em;
+    color: var(--aetos-accent);
+}
+
+.aetos-help__section p {
+    margin: 0 0 var(--aetos-space);
+    max-width: 68ch;
+    line-height: 1.55;
+}
+
+/* Examples are meant to be copied, so they stay selectable text and scroll
+   sideways rather than wrapping code at arbitrary points. */
+.aetos-help__example {
+    margin: 0 0 var(--aetos-space);
+    padding: var(--aetos-space);
+    background: var(--aetos-bg);
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.5;
+}
+
+.aetos-help__keys {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px var(--aetos-space);
+    margin: 0 0 var(--aetos-space);
+    align-items: baseline;
+}
+
+.aetos-help__keys dt { margin: 0; }
+.aetos-help__keys dd { margin: 0; color: var(--aetos-text-muted); }
+
+.aetos-help__keys kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    background: var(--aetos-bg);
+    border: 1px solid var(--aetos-border);
+    border-radius: 3px;
+    white-space: nowrap;
+}
+
+.aetos-help__none { color: var(--aetos-text-muted); }
+
+/* On a phone the topic list stacks above the article rather than squeezing
+   both into columns too narrow to read. */
+@media (max-width: 700px) {
+    .aetos-help__body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    .aetos-help__nav {
+        border-right: none;
+        border-bottom: 1px solid var(--aetos-border);
+        max-height: 30%;
+    }
+}
+
+/* Map ------------------------------------------------------------------ */
+
+.aetos-map__svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin-bottom: var(--aetos-space);
+}
+
+.aetos-map__link {
+    stroke: var(--aetos-border);
+    stroke-width: 2;
+}
+
+.aetos-map__room {
+    fill: var(--aetos-panel);
+    stroke: var(--aetos-border);
+    stroke-width: 1.5;
+}
+
+.aetos-map__room--walkable { cursor: pointer; }
+.aetos-map__room--walkable:hover { stroke: var(--aetos-accent); }
+
+/* The current room is marked by a heavier stroke as well as colour, so it is
+   still distinguishable without colour perception. */
+.aetos-map__room--current {
+    fill: var(--aetos-accent);
+    stroke: var(--aetos-text);
+    stroke-width: 3;
+}
+
+.aetos-map__location {
+    margin: 0 0 6px 0;
+}
+
+.aetos-map__subheading {
+    margin: 8px 0 4px 0;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--aetos-text-muted);
+}
+
+.aetos-map__note {
+    margin: 8px 0 0 0;
+    color: var(--aetos-warning);
+    font-size: 0.9em;
+}
+
+/* Context menu --------------------------------------------------------- */
+
+.aetos-menu {
+    position: absolute;
+    z-index: 40;
+    min-width: 150px;
+    margin: 0;
+    padding: 4px;
+    list-style: none;
+    background: var(--aetos-panel);
+    border: 1px solid var(--aetos-accent);
+    border-radius: var(--aetos-radius);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.aetos-menu__item {
+    display: block;
+    width: 100%;
+    padding: 5px 10px;
+    background: transparent;
+    color: var(--aetos-text);
+    border: none;
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.aetos-menu__item:hover,
+.aetos-menu__item:focus {
+    background: var(--aetos-bg);
+    color: var(--aetos-accent);
+}
+
+.aetos-menu__item:focus-visible {
+    outline: 2px solid var(--aetos-accent);
+    outline-offset: -2px;
+}
+
+/* An element that opens a menu says so, so the affordance is not mouse-only. */
+.aetos-list__button[aria-haspopup="menu"]::after {
+    content: "\00a0\25be";
+    color: var(--aetos-text-muted);
+}
+
+/* Menu groups ---------------------------------------------------------- */
+
+.aetos-menu__separator {
+    height: 1px;
+    margin: 4px 2px;
+    background: var(--aetos-border);
+}
+
+/* Local actions are visually distinct as well as separated, because they do
+   something categorically different: they never reach the game. */
+.aetos-menu__item--local {
+    font-style: italic;
+}
+
+/* Notes ---------------------------------------------------------------- */
+
+.aetos-notes__search {
+    width: 100%;
+    margin-bottom: var(--aetos-space);
+}
+
+.aetos-notes__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.aetos-notes__empty {
+    margin: 0;
+    color: var(--aetos-text-muted);
+    font-style: italic;
+}
+
+.aetos-note {
+    padding: 6px 0;
+    border-bottom: 1px solid var(--aetos-border);
+}
+
+.aetos-note__subject {
+    margin: 0 0 2px 0;
+    font-size: 13px;
+    color: var(--aetos-accent);
+}
+
+.aetos-note__tags {
+    margin: 0 0 4px 0;
+    font-size: 0.85em;
+    color: var(--aetos-text-muted);
+}
+
+.aetos-note__body {
+    margin: 0 0 4px 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.aetos-note__controls {
+    display: flex;
+    gap: 4px;
+}
+
+/* Dialog --------------------------------------------------------------- */
+
+.aetos-dialog__overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.aetos-dialog {
+    width: min(480px, 92vw);
+    max-height: 86vh;
+    overflow-y: auto;
+    padding: var(--aetos-space);
+    background: var(--aetos-panel);
+    border: 1px solid var(--aetos-accent);
+    border-radius: var(--aetos-radius);
+}
+
+.aetos-dialog__title {
+    margin: 0 0 4px 0;
+    font-size: 15px;
+}
+
+.aetos-dialog__description {
+    margin: 0 0 var(--aetos-space) 0;
+    color: var(--aetos-text-muted);
+    font-size: 0.9em;
+}
+
+.aetos-dialog__field {
+    margin-bottom: var(--aetos-space);
+}
+
+.aetos-dialog__label {
+    display: block;
+    margin-bottom: 3px;
+    font-size: 12px;
+    color: var(--aetos-text-muted);
+}
+
+.aetos-dialog__field .aetos-input {
+    width: 100%;
+}
+
+.aetos-dialog__field input[type="checkbox"].aetos-input {
+    width: auto;
+}
+
+.aetos-dialog__controls {
+    display: flex;
+    gap: var(--aetos-space);
+}
+
+/* Hotbar --------------------------------------------------------------- */
+
+.aetos-hotbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.aetos-hotbar__button {
+    padding: 5px 12px;
+    background: var(--aetos-bg);
+    color: var(--aetos-text);
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
+}
+
+.aetos-hotbar__button:hover {
+    border-color: var(--aetos-accent);
+    color: var(--aetos-accent);
+}
+
+.aetos-hotbar__button:focus-visible {
+    outline: 2px solid var(--aetos-accent);
+    outline-offset: 1px;
+}
+
+
+
+/*
+ * A widget hides itself when it has nothing to show.
+ *
+ * Separate from `[hidden]`, which is the player's own show/hide choice. Both
+ * must win over the panel's own `display: flex`, which is an author rule and
+ * would otherwise beat the user agent's hiding.
+ */
+[data-aetos-empty="true"] {
+    display: none !important;
+}
+
+/* Command palette ------------------------------------------------------- */
+
+.aetos-palette-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 12vh;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.aetos-palette-box {
+    width: min(560px, 92vw);
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--aetos-panel);
+    border: 1px solid var(--aetos-accent);
+    border-radius: var(--aetos-radius);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+}
+
+.aetos-palette__input {
+    margin: var(--aetos-space);
+    width: auto;
+}
+
+.aetos-palette__results {
+    list-style: none;
+    margin: 0;
+    padding: 0 var(--aetos-space) var(--aetos-space);
+    overflow-y: auto;
+}
+
+.aetos-palette__option {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0 var(--aetos-space);
+    padding: 6px 8px;
+    border-radius: var(--aetos-radius);
+    cursor: pointer;
+}
+
+/* Selection is marked by aria-selected, so the styling follows the state
+   rather than being maintained separately. */
+.aetos-palette__option[aria-selected="true"] {
+    background: var(--aetos-bg);
+    outline: 1px solid var(--aetos-accent);
+}
+
+.aetos-palette__label {
+    color: var(--aetos-text);
+}
+
+.aetos-palette__shortcut {
+    color: var(--aetos-text-muted);
+    font-family: inherit;
+    font-size: 0.85em;
+}
+
+.aetos-palette__description {
+    grid-column: 1 / -1;
+    color: var(--aetos-text-muted);
+    font-size: 0.85em;
+}
+
+/* Privacy panel --------------------------------------------------------- */
+
+.aetos-privacy__list {
+    list-style: none;
+    margin: 0 0 var(--aetos-space) 0;
+    padding: 0;
+    max-height: 40vh;
+    overflow-y: auto;
+}
+
+.aetos-privacy__row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    border-bottom: 1px solid var(--aetos-border);
+}
+
+.aetos-privacy__count {
+    font-variant-numeric: tabular-nums;
+    color: var(--aetos-accent);
+}
+
+/*
+ * Overlays are appended to <body>, outside `.aetos-root`, so they do not
+ * inherit the client's font or colours. Without this the palette and dialogs
+ * render in the browser's default serif -- visibly not part of the client.
+ */
+.aetos-dialog__overlay,
+.aetos-palette-overlay {
+    font-family: var(--aetos-font-mono);
+    font-size: var(--aetos-font-size);
+    color: var(--aetos-text);
+}

@@ -1,0 +1,240 @@
+/*
+ * Aetos state store.
+ *
+ * The single source of truth the browser renders from. Widgets subscribe to a
+ * section and are told when it changes; they never parse websocket messages and
+ * never reach for each other's data (blueprint sections 7 and 12).
+ *
+ * Two properties matter more than the API surface:
+ *
+ *   - Notifications are BATCHED. A combat round can deliver resources, effects,
+ *     entities and target in the same tick. Notifying synchronously per message
+ *     would lay out the page several times per frame; instead subscribers are
+ *     called once per animation frame with whatever changed.
+ *
+ *   - A full sync REPLACES authoritative state rather than merging into it.
+ *     Merging would let a stale entity from before a reconnect survive forever,
+ *     which is exactly the class of bug that makes reconnect handling untrustworthy.
+ */
+
+(function (window) {
+    "use strict";
+
+    // The canonical sections. Fixed at protocol v1 so a widget can subscribe to
+    // a section that is merely empty rather than absent.
+    var SECTIONS = [
+        "connection",
+        "manifest",
+        "character",
+        "room",
+        "entities",
+        "resources",
+        "target",
+        "effects",
+        "map",
+        "actions",
+        "mode",
+        "media"
+    ];
+
+    function emptyState() {
+        var state = {};
+        SECTIONS.forEach(function (section) {
+            state[section] = {};
+        });
+        return state;
+    }
+
+    function createStore(options) {
+        var opts = options || {};
+        var state = emptyState();
+        var subscribers = {};
+        var pending = {};
+        var frameHandle = null;
+
+        /*
+         * Scheduler for batched notifications.
+         *
+         * requestAnimationFrame alone is WRONG here. Browsers do not run rAF in
+         * a hidden or backgrounded tab, so a player who switches away would keep
+         * receiving state that never reaches a widget -- and would come back to
+         * a client showing the world as it was when they left. Blueprint section
+         * 60 lists browser sleep and tab resume as cases that must work.
+         *
+         * So rAF and a timeout are armed together and whichever fires first
+         * wins. Visible tabs still coalesce updates to paint; hidden tabs still
+         * get their updates.
+         */
+        var schedule = opts.schedule || function (fn) {
+            var done = false;
+            var run = function () {
+                if (done) {
+                    return;
+                }
+                done = true;
+                fn();
+            };
+            if (typeof window.requestAnimationFrame === "function") {
+                window.requestAnimationFrame(run);
+            }
+            // Also covers environments with no rAF at all.
+            return window.setTimeout(run, 50);
+        };
+
+        function isKnownSection(section) {
+            return SECTIONS.indexOf(section) !== -1;
+        }
+
+        function get(section) {
+            return state[section];
+        }
+
+        function snapshot() {
+            // A shallow copy per section: enough to stop a widget mutating the
+            // store by accident, without the cost of deep-cloning every frame.
+            var copy = {};
+            SECTIONS.forEach(function (name) {
+                copy[name] = state[name];
+            });
+            return copy;
+        }
+
+        function subscribe(section, listener) {
+            if (typeof listener !== "function") {
+                return function () {};
+            }
+            if (!isKnownSection(section)) {
+                window.console.error("Aetos store: unknown section " + section);
+                return function () {};
+            }
+            if (!subscribers[section]) {
+                subscribers[section] = [];
+            }
+            subscribers[section].push(listener);
+            return function unsubscribe() {
+                subscribers[section] = subscribers[section].filter(function (entry) {
+                    return entry !== listener;
+                });
+            };
+        }
+
+        function markChanged(section) {
+            pending[section] = true;
+            if (frameHandle !== null) {
+                return;
+            }
+            frameHandle = schedule(flush);
+        }
+
+        function flush() {
+            frameHandle = null;
+            var changed = Object.keys(pending);
+            pending = {};
+            changed.forEach(function (section) {
+                var listeners = subscribers[section];
+                if (!listeners || !listeners.length) {
+                    return;
+                }
+                listeners.slice().forEach(function (listener) {
+                    // One broken widget must not stop the others updating.
+                    try {
+                        listener(state[section], section);
+                    } catch (err) {
+                        window.console.error(
+                            "Aetos store: subscriber for " + section + " threw", err);
+                    }
+                });
+            });
+        }
+
+        // Replace a section outright. Used for deltas that carry a complete new
+        // value for their section.
+        function set(section, value) {
+            if (!isKnownSection(section)) {
+                window.console.error("Aetos store: unknown section " + section);
+                return;
+            }
+            state[section] = value;
+            markChanged(section);
+        }
+
+        // Merge keys into a section, for partial updates.
+        function merge(section, values) {
+            if (!isKnownSection(section)) {
+                window.console.error("Aetos store: unknown section " + section);
+                return;
+            }
+            var current = state[section] || {};
+            var next = {};
+            Object.keys(current).forEach(function (key) {
+                next[key] = current[key];
+            });
+            Object.keys(values || {}).forEach(function (key) {
+                next[key] = values[key];
+            });
+            state[section] = next;
+            markChanged(section);
+        }
+
+        /*
+         * Apply a full authoritative sync.
+         *
+         * Authoritative sections are REPLACED, not merged: anything the server
+         * did not mention is cleared. After a reconnect the server's view is the
+         * truth, and a merge would strand entities, effects or a target that no
+         * longer exist.
+         *
+         * Two sections are exempt, because a sync is not their source:
+         *
+         *   - `connection` is client-observed transport state, which the server
+         *     never reports.
+         *   - `manifest` arrives in its own `aetos_manifest` message, once per
+         *     handshake. Clearing it here would wipe the game's declared
+         *     capabilities on the very first sync, silently disabling every
+         *     capability-gated widget for the rest of the session.
+         */
+        function applySync(payload) {
+            var data = payload || {};
+            SECTIONS.forEach(function (section) {
+                if (section === "connection" || section === "manifest") {
+                    return;
+                }
+                state[section] = Object.prototype.hasOwnProperty.call(data, section)
+                    ? data[section]
+                    : {};
+                markChanged(section);
+            });
+        }
+
+        function reset() {
+            var connection = state.connection;
+            state = emptyState();
+            state.connection = connection;
+            SECTIONS.forEach(markChanged);
+        }
+
+        // Exposed so tests can assert synchronously without waiting a frame.
+        function flushNow() {
+            if (frameHandle !== null && typeof window.cancelAnimationFrame === "function") {
+                window.cancelAnimationFrame(frameHandle);
+            }
+            frameHandle = null;
+            flush();
+        }
+
+        return {
+            sections: SECTIONS.slice(),
+            get: get,
+            snapshot: snapshot,
+            subscribe: subscribe,
+            set: set,
+            merge: merge,
+            applySync: applySync,
+            reset: reset,
+            flushNow: flushNow
+        };
+    }
+
+    window.AetosStore = { create: createStore, SECTIONS: SECTIONS.slice() };
+
+})(window);

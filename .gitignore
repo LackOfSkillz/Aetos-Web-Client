@@ -1,0 +1,33 @@
+# The Evennia source clone is its own git repository (the eventual PR work tree).
+# It is never tracked by the outer lab repo.
+/evennia/
+
+# Pristine test game -- regenerable via `evennia --init aetos_testgame`
+/aetos_testgame/
+
+# Virtual environments
+/.venv/
+/venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Browser-automation session debris. These transcripts capture whatever was on
+# screen or typed, including the login line, so they must never be published.
+/.playwright-mcp/
+
+# Node (browser QA harness only; never required by the contrib itself)
+node_modules/
+/browser-qa/test-results/
+/browser-qa/playwright-report/
+
+# Local tooling state
+/.claude/
+
+# OS / editor
+Thumbs.db
+.DS_Store
+.idea/
+.vscode/

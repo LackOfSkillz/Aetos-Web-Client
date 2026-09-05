@@ -1,0 +1,106 @@
+{% load static aetos_tags %}<!DOCTYPE HTML>
+{% comment %}
+Aetos base template.
+
+Aetos deliberately does NOT extend Evennia's `webclient/base.html`. That template
+loads eight third-party resources -- jQuery, Bootstrap, Popper, Favico and
+GoldenLayout -- for the benefit of the stock GUI. Aetos is vanilla JavaScript and
+uses none of them, and loading them anyway would mean:
+
+  * the client breaks on an offline or firewalled network
+  * every player's browser contacts five third parties to play a MUD
+  * one of the URLs is unpinned (`golden-layout.com/files/latest/`), so an
+    upstream change could break every Aetos install without warning
+  * one host (cdn.rawgit.com) is a deprecated service
+
+Blueprint section 2.2 sets a core-only dependency target. This page therefore
+loads nothing but Evennia's own static files and Aetos's own.
+
+What this template does replicate is the transport bootstrap: the four template
+variables `evennia.js` expects, and the script tag that loads it. That file is
+Evennia's own, served unmodified from Evennia's own static directory -- Aetos
+neither copies nor patches it, and Evennia's Portal is untouched. The variables
+come from Evennia's documented webclient view and context processor
+(`game_name`, `websocket_enabled`, `websocket_port`, `websocket_url`,
+`browser_sessid`).
+{% endcomment %}
+<html dir="ltr" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ game_name }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="generator" content="Aetos Web Client" />
+    <meta name="color-scheme" content="dark light" />
+
+    {% comment %}
+    This page must not be cached.
+
+    It embeds `browser_sessid` as the websocket's `csessid`, so a cached copy
+    hands the transport a session that no longer exists -- presenting as a client
+    that connects and then does nothing. Caching also pins the asset URLs, so an
+    upgraded Aetos keeps being ignored until the visitor clears their cache,
+    which they have no reason to suspect.
+
+    The stock webclient view sets no cache headers, and a contrib cannot add
+    response headers without owning the view, so this is declared in the document.
+    {% endcomment %}
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+
+    {% comment %}
+    Inline favicon. Without one the browser requests /favicon.ico on every load,
+    which Evennia redirects to a media path that does not exist in a fresh game,
+    producing a 404 in every player's console. A data URI costs no request.
+    {% endcomment %}
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>&#9679;</text></svg>" />
+
+    {% block styles %}{% endblock %}
+
+    <script type="text/javascript">
+        // Transport parameters read by evennia.js. Names and semantics match the
+        // stock webclient base template exactly.
+        {% if websocket_enabled %}
+            var wsactive = true;
+        {% else %}
+            var wsactive = false;
+        {% endif %}
+
+        {% if browser_sessid %}
+            var csessid = "{{ browser_sessid }}";
+        {% else %}
+            var csessid = false;
+        {% endif %}
+
+        {% if websocket_url %}
+            var wsurl = "{{ websocket_url }}";
+        {% else %}
+            var wsurl = "ws://" + window.location.hostname + ":{{ websocket_port }}";
+        {% endif %}
+
+        // Distinguishes multiple tabs of the same browser session.
+        var cuid = (function () {
+            var random = function () { return Math.random().toString(36).substring(2, 15); };
+            return random() + random();
+        })();
+    </script>
+
+    <!-- Minimal shim for the single jQuery call at the end of evennia.js.
+         Must load before it. See compat.js for the reasoning. -->
+    <script src={% aetos_static "aetos/js/compat.js" %} type="text/javascript" charset="utf-8"></script>
+
+    <!-- Evennia's own transport library, unmodified, from Evennia's static files. -->
+    <script src={% static "webclient/js/evennia.js" %} type="text/javascript" charset="utf-8"></script>
+
+    {% block scripts %}{% endblock %}
+  </head>
+  <body>
+    <noscript>
+      <p class="aetos-noscript">
+        The Aetos web client requires JavaScript. Enable it, or connect with a
+        telnet MUD client instead.
+      </p>
+    </noscript>
+
+    {% block client %}{% endblock %}
+  </body>
+</html>

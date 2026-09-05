@@ -1,0 +1,125 @@
+{% extends "aetos/base.html" %}
+{% load static aetos_tags %}
+
+{% comment %}
+Aetos Web Client page.
+
+This template wins over Evennia's own `webclient.html` because a game prepends
+the Aetos template directory to `TEMPLATES[0]["DIRS"]` (see README.md). It cannot
+be found by the app-directory loader alone: Django searches every DIRS entry
+before any installed app, and Evennia always has its own webclient template
+directory in DIRS.
+
+Aetos extends its own base (`aetos/base.html`) rather than Evennia's stock
+`webclient/base.html`. The stock base loads eight third-party CDN resources for
+the benefit of the stock GUI; Aetos is vanilla JavaScript and uses none of them.
+See `aetos/base.html` for the full reasoning.
+
+Evennia's transport is still entirely untouched: `evennia.js` is loaded
+unmodified from Evennia's own static files, and the Portal is not involved.
+{% endcomment %}
+
+{% block styles %}
+    <link rel="stylesheet" type="text/css" media="screen" href={% aetos_static "aetos/css/ansi.css" %} />
+    <link rel="stylesheet" type="text/css" media="screen" href={% aetos_static "aetos/css/aetos.css" %} />
+{% endblock %}
+
+{% block scripts %}
+    <script src={% aetos_static "aetos/js/store.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/storage.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/profile.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/widgets.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/layout.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/resources.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/timers.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/scripting.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/aliases.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/triggers.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/queue.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/macros.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/dialog.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/relationships.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/notes.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/menu.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/map.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/builtins.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/character.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/workspaces.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/help.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/palette.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/settings.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/responsive.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/aetos.js" %} type="text/javascript" charset="utf-8"></script>
+{% endblock %}
+
+{% block client %}
+<div id="aetos-root" class="aetos-root" data-aetos-protocol="1">
+
+  <header class="aetos-statusbar">
+    {% comment %}
+    Only the connection indicator is a live region, not the whole bar. Wrapping
+    the bar would re-announce the static game name on every status change.
+    {% endcomment %}
+    <span id="aetos-connection" class="aetos-connection aetos-connection--pending"
+          role="status" aria-atomic="true">
+      <span class="aetos-connection__dot" aria-hidden="true"></span>
+      <span id="aetos-connection-label" class="aetos-connection__label">Connecting</span>
+    </span>
+    <span class="aetos-statusbar__title">{{ game_name }}</span>
+    <button id="aetos-edit-layout" class="aetos-statusbar__button" type="button"
+            aria-pressed="false">Edit Layout</button>
+  </header>
+
+  {% comment %}
+  Announcer: the single place Aetos speaks to assistive technology on purpose.
+  Threshold announcements (blueprint section 48) and command feedback go here,
+  deliberately and sparingly -- never the raw output stream.
+  {% endcomment %}
+  <div id="aetos-announcer" class="aetos-visually-hidden" role="status"
+       aria-live="polite" aria-atomic="true"></div>
+
+  <main id="aetos-workspace" class="aetos-workspace">
+
+    {% comment %}
+    Regions are created by the layout adapter, and widgets are mounted into them
+    from the registry -- see builtins.js. The markup is no longer hardcoded here,
+    so a widget can be added, moved or removed without touching this template.
+
+    Blueprint section 46 requires named regions for a screen-reader layout; the
+    adapter gives every widget panel a heading and an accessible name, so the
+    landmark structure survives the move to dynamic mounting.
+    {% endcomment %}
+
+    <section id="aetos-console-widget" class="aetos-widget" aria-labelledby="aetos-console-heading">
+      <h2 id="aetos-console-heading" class="aetos-visually-hidden">Game output</h2>
+      {% comment %}
+      aria-live is explicitly "off". role="log" carries an implicit polite live
+      region, which would make a screen reader announce every line of game output
+      -- unusable during combat spam or a long room listing. The log stays
+      navigable and readable on demand; announcements are opt-in and go through
+      the announcer above instead. Blueprint sections 48 and 100.
+      {% endcomment %}
+      <div id="aetos-console" class="aetos-console" role="log" aria-live="off"
+           tabindex="0" aria-label="Game output, scrollable"></div>
+    </section>
+  </main>
+
+  {% comment %}
+  Widget palette, shown only in Edit Layout mode. Hiding a widget must be
+  reversible without discarding the rest of the layout, so the palette is part
+  of the hide operation rather than an extra.
+  {% endcomment %}
+  <section id="aetos-palette" class="aetos-palette" aria-labelledby="aetos-palette-heading" hidden>
+    <h2 id="aetos-palette-heading" class="aetos-widget__title">Widgets</h2>
+    <ul id="aetos-palette-list" class="aetos-list"></ul>
+  </section>
+
+  <footer class="aetos-inputbar">
+    <label for="aetos-input" class="aetos-visually-hidden">Command input</label>
+    <textarea id="aetos-input" class="aetos-input" rows="1" autocomplete="off"
+              autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
+    <button id="aetos-send" class="aetos-send" type="button">Send</button>
+  </footer>
+
+</div>
+{% endblock %}
