@@ -498,8 +498,8 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] A2   Current State View + semantic values          -- 486 py
 [x] A3   Accessible map completion                     -- 508 py
 [x] E0   Event pipeline contract                       -- 534 py
-[ ] E1   Capture + replay                              <-- NEXT (before M17)
-[ ] M17  Rich chat + event history + Review Mode       (absorbs A4)
+[x] E1   Capture + replay                              -- 560 py
+[ ] M17  Rich chat + event history + Review Mode       <-- NEXT
 [ ] A5   Cognitive and orientation layer
 [ ] M18  Audio + multimedia + captions                 (absorbs A6)
 [ ] M19  Themes  (+ contrast validation, A11Y-VIS-003)
@@ -922,7 +922,11 @@ route, script, voice and AAC all converge on one dispatcher, and **no source
 gains special authority**. That is §2.4 restated as an architectural boundary
 rather than a promise.
 
-### E1 — Capture and replay  ← before or alongside M17
+### E1 — Capture and replay  ✅ COMPLETE
+
+Record: [`e1-capture-replay.md`](e1-capture-replay.md). 560 Python tests OK.
+Gate proven: a captured room/resource/combat sequence reproduced an identical
+state snapshot with no live server. **M17 is now unblocked.**
 
 ```text
 versioned JSONL format    capture API        sanitisation

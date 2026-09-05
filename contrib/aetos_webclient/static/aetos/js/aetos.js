@@ -439,6 +439,21 @@
             ? window.AetosCanonicalLog.create()
             : null;
 
+        /*
+         * Developer capture and replay.  E1.
+         *
+         * Idle until a developer starts it. Nothing is recorded by default:
+         * a client that quietly accumulated a session log would be storing
+         * game text nobody asked it to keep.
+         */
+        var capture = window.AetosCapture
+            ? window.AetosCapture.create({
+                protocolVersion: AETOS_PROTOCOL_VERSION,
+                clientVersion: 1,
+                manifest: function () { return store ? store.get("manifest") : null; }
+            })
+            : null;
+
         var pipeline = window.AetosPipeline
             ? window.AetosPipeline.create({
                 store: store,
@@ -454,6 +469,15 @@
                         failure.eventId, failure.error);
                 }
             })
+            : null;
+
+        /*
+         * Replay feeds records through `pipeline.ingest` -- the same seam the
+         * websocket uses. There is deliberately no second path: a harness that
+         * exercises different code from production tests the harness.
+         */
+        var replay = (pipeline && window.AetosReplay)
+            ? window.AetosReplay.create({ pipeline: pipeline })
             : null;
 
         if (pipeline) {
@@ -488,6 +512,21 @@
                     consoleWidget.append(event.originalText);
                 }
             });
+
+            /*
+             * Capture observes the announce stage.  E1.
+             *
+             * Last, so a capture records what the client actually decided --
+             * after state, after the log, after automation. Recording at the
+             * transport instead would capture what arrived rather than what the
+             * client made of it, and the bugs worth reproducing live in the
+             * second thing.
+             */
+            if (capture) {
+                pipeline.observe("announce", function (event) {
+                    capture.recordInbound(event);
+                });
+            }
         }
 
         emitter.on("text", function (args) {
@@ -511,6 +550,9 @@
              * happened, so a player needs to know before they act on it. That
              * is the bar for interrupting, and gameplay does not meet it.
              */
+            if (capture) {
+                capture.recordConnection(state);
+            }
             if (state === "closed") {
                 announcer.announce("Connection lost.", {
                     category: "connection", priority: "critical"
@@ -1101,6 +1143,14 @@
         // through here rather than talking to the transport themselves.
         function sendCommand(text) {
             if (dispatcher.send(text)) {
+                // Recorded here rather than at each call site, because this is
+                // the single point every command source converges on (C.11) --
+                // keyboard, button, macro, route, script, voice and AAC alike.
+                // A capture that missed one of them would be a capture that
+                // could not reproduce the session.
+                if (capture) {
+                    capture.recordOutbound(text);
+                }
                 requestSync();
                 return true;
             }
@@ -1508,6 +1558,8 @@
             accessibility: accessibility,
             pipeline: pipeline,
             canonicalLog: canonicalLog,
+            capture: capture,
+            replay: replay,
             reloadTriggers: reloadTriggers,
             macros: macros,
             editMacro: editMacro,
