@@ -11,6 +11,63 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### M18 — Audio, multimedia and captions
+
+791 tests. Absorbs A6. Addendum A.58, A.79, A.84.
+[`notes/m18-audio-captions.md`](notes/m18-audio-captions.md)
+
+**Added**
+
+- A `media` provider slot, so a game declares its sound the same way it
+  declares resources or a map. Inert by default: Evennia models no media, and a
+  client that invented some would be guessing at a game's art direction.
+- `state.push_media()` for one-off sound, alongside ambient media from the
+  provider. Ambient media is **state** and is diffed, so a sync every few
+  seconds does not restart the music; one-off media is an **event** and is not,
+  because a door slamming twice is two sounds.
+- A Sound panel: per-category volume for music, ambience, effects, interface
+  and voice, plus a master, mute-all and stop-all — all native `<input>` and
+  `<button>` elements, because a custom slider a screen reader cannot operate is
+  a volume control that does not exist for the person most likely to need it.
+- A durable caption list, and images shown with their description as `alt`.
+- `audio.*` accessibility preferences; palette entries for stop and mute.
+
+**The gate**
+
+- `A11Y-MEDIA-001`: every non-decorative sound is also **text**, emitted
+  *before* any attempt to play it and regardless of whether that attempt
+  succeeds. Muted, volume at zero, no speakers, missing file, autoplay blocked
+  — the caption goes out in every case. Tying it to successful playback would
+  mean the players who most need the text are the least likely to get it.
+- Uncaptioned audio is **reported**, not swallowed. Aetos will not invent a
+  caption: an invented description is confidently wrong to exactly the player
+  who cannot check it. The server counts uncaptioned items so a developer sees
+  a number rather than auditing a list.
+- `A11Y-MEDIA-002`: a category with no volume slider is refused on the server
+  rather than played uncontrollably.
+
+**Security**
+
+- Media URLs are checked against a scheme **allowlist** — `http`, `https`,
+  relative. A denylist would have to anticipate every scheme a browser has ever
+  supported. `data:` is excluded and backslashes are refused, because browsers
+  treat them as forward slashes in some positions.
+
+**Fixed**
+
+- **Numeric preferences never persisted.** The preferences normaliser handled
+  enums, one special-cased number, booleans and strings — so any *other* number
+  fell through to the string branch and was silently discarded. Every volume
+  slider would have appeared to work while nothing it set survived a reload.
+  Replaced with a range table, plus a load-time warning and a test for any
+  numeric default that lacks one.
+- A partial provider dict passed to `build_sync` raised `KeyError` for any slot
+  added since the caller was written. It now fills gaps from the defaults, so a
+  new slot degrades to "this game exposes none of that".
+- `role="region"` on the caption list orphaned every caption (`listitem`), the
+  same mistake A0 made once while *fixing* a scrollable region. The wrong
+  version looks more accessible than the right one.
+
 ### A5 — Cognitive and orientation layer
 
 741 tests. Addendum A.36–A.51. [`notes/a5-cognitive-orientation.md`](notes/a5-cognitive-orientation.md)

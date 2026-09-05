@@ -36,6 +36,7 @@ PROVIDER_SLOTS = {
     "equipment": base.AetosEquipmentProvider,
     "target": base.AetosTargetProvider,
     "effects": base.AetosEffectProvider,
+    "media": base.AetosMediaProvider,
 }
 
 #: Defaults used when a game does not override a slot.
@@ -63,6 +64,7 @@ DEFAULT_PROVIDERS = {
     "equipment": base.AetosEquipmentProvider,
     "target": base.AetosTargetProvider,
     "effects": base.AetosEffectProvider,
+    "media": base.AetosMediaProvider,
 }
 
 

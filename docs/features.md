@@ -29,6 +29,7 @@ In the client, press `F1` for the same content, searchable and filtered to the f
 **Your data**
 
 - [Notes, tags and relationships](#notes-tags-and-relationships) — Private records about people, places and things.
+- [Sound and captions](#sound-and-captions) — Volume you control, and text for everything you hear.
 - [Where am I, and how did I get here](#where-am-i-and-how-did-i-get-here) — Pick up where you left off after an interruption.
 - [Privacy and your data](#privacy-and-your-data) — What is stored, where, and how to take it or delete it.
 - [Accessibility](#accessibility) — Keyboard operation, screen readers and announcements.
@@ -336,6 +337,36 @@ None of this reaches the game server. It is not a friends list the game knows ab
 ### Which means
 
 Nobody else can see them -- not other players, not staff. Equally, they do not follow you to another computer unless you export and import them, and clearing your browser data clears them too. Export from the Privacy panel if they matter to you.
+
+---
+
+## Sound and captions
+
+*Volume you control, and text for everything you hear.*
+
+If your game sends sound, the Sound panel lists every volume control -- overall, music, ambience, effects, interface and voice -- plus mute and a stop-everything button. All of them are ordinary sliders and buttons, so they work with a keyboard, a screen reader or a switch device without Aetos reinventing anything.
+
+A game that sends no sound gets no panel, rather than six dead sliders.
+
+### Everything is captioned
+
+Every sound that carries information also appears as text, in the Sound panel and to your screen reader. That text is written *before* the sound is played, and it appears whether or not the sound plays at all -- muted, volume at zero, file missing, no speakers, browser blocking audio. Tying the text to a successful playback would mean the people who most need the text are the least likely to get it.
+
+Sounds a game marks decorative -- a wind loop, a click -- play without a caption, because they carry nothing to caption.
+
+### If a sound has no caption
+
+You will see "Uncaptioned effect audio", or similar.
+
+That is not Aetos failing. It is Aetos reporting that the game published a sound without saying what it means. Aetos cannot listen to a sound file and describe it, and it will not invent a caption -- a made-up description is confidently wrong to exactly the person who cannot check it. So it says what it knows and no more.
+
+If you see these often, it is worth telling the game's staff.
+
+### Nothing starts on its own
+
+Browsers block audio until you have interacted with the page, and Aetos does not fight that. If sound is waiting on you, it says so once, in text, rather than failing silently.
+
+Images are shown one at a time and stay until you hide them. Nothing disappears on a timer.
 
 ---
 

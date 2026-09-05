@@ -258,6 +258,50 @@ class AetosEffectProvider(AetosProvider):
         return []
 
 
+class AetosMediaProvider(AetosProvider):
+    """
+    Supplies sound and imagery for the player's current situation.
+
+    A media descriptor is a dict. `url` and `category` are required; everything
+    else is metadata that decides what a player who cannot hear it, or cannot
+    see it, is told instead.
+
+    Inert by default. Evennia models no media, and a client that invented some
+    would be guessing at a game's art direction.
+
+    **No caption can be invented reliably.** Aetos cannot listen to a sound file
+    and describe it, and it will not try. A game that supplies audio without a
+    caption is supplying audio that some of its players simply do not receive --
+    which is why `A11Y-MEDIA-001` makes it the game developer's obligation
+    rather than a nicety (A.79).
+
+    """
+
+    name = "media"
+
+    def get_media(self, character):
+        """
+        Return the media currently appropriate for a character.
+
+        This is *ambient* media -- what should be playing or shown while the
+        player is here. It is state, not an event: the client compares it with
+        what is already playing and starts or stops the difference, so sending
+        the same descriptor twice does not restart the track.
+
+        For a one-off sound, use `state.push_media()` instead.
+
+        Args:
+            character (Object): The character to describe.
+
+        Returns:
+            list: Media dicts with at least `url` and `category`, and
+                optionally `id`, `caption`, `description`, `decorative`,
+                `loop` and `volume`.
+
+        """
+        return []
+
+
 def safe_call(provider, method_name, default, *args, **kwargs):
     """
     Call a provider method, containing any failure.

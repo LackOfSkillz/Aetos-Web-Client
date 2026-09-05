@@ -22,6 +22,7 @@ provider, and the default providers honour Evennia's own visibility rules.
 from evennia.contrib.base_systems.aetos_webclient import (
     character_state,
     map_layout,
+    media,
     protocol,
     providers,
     resources,
@@ -296,6 +297,20 @@ def build_sync(character, active_providers=None):
 
     """
     resolved = active_providers if active_providers is not None else providers.get_providers()
+    if active_providers is not None:
+        # A caller supplying providers may not know about a slot added since
+        # they wrote the call -- a test fixture, or a game calling build_sync
+        # from its own hook. Filling the gaps from the defaults means a new
+        # slot degrades to "this game exposes none of that", which is what a
+        # game that has said nothing about it means anyway. The alternative is
+        # a KeyError that takes down the entire sync over one absent section.
+        missing = {
+            slot: default()
+            for slot, default in providers.DEFAULT_PROVIDERS.items()
+            if slot not in resolved
+        }
+        if missing:
+            resolved = dict(resolved, **missing)
 
     entities = base.safe_call(resolved["entities"], "get_room_entities", [], character)
     entities = _attach_actions(entities, character, resolved["actions"])
@@ -324,6 +339,12 @@ def build_sync(character, active_providers=None):
     )
     target = character_state.normalize_target(
         base.safe_call(resolved["target"], "get_target", {}, character)
+    )
+    # Ambient media. State rather than events: the client compares this with
+    # what is already playing and starts or stops only the difference, so a
+    # sync arriving every few seconds does not restart the music.
+    media_data = media.normalize_media(
+        base.safe_call(resolved["media"], "get_media", [], character)
     )
 
     # Exits are entities too, but the client wants them as a first-class list for
@@ -359,9 +380,9 @@ def build_sync(character, active_providers=None):
         "equipment": {"slots": equipment},
         "effects": {"items": effects},
         "target": target,
-        # Sections with no default source yet. Present and empty so the client
-        # can rely on the shape at protocol v1.
-        "media": {},
+        "media": media_data,
+        # No default source yet. Present and empty so the client can rely on
+        # the shape at protocol v1.
         "mode": {},
     }
 
@@ -381,6 +402,62 @@ def push_sync(session, character=None):
     """
     puppet = character if character is not None else getattr(session, "puppet", None)
     session.msg(**{protocol.MSG_SYNC: ((), build_sync(puppet))})
+
+
+def push_media(
+    session,
+    url,
+    category,
+    caption=None,
+    description=None,
+    decorative=False,
+    loop=False,
+    volume=1.0,
+    media_id=None,
+):
+    """
+    Play or show one piece of media, once.
+
+    For a door slamming or a spell landing -- something that happens rather than
+    something that is true. Ambient media belongs in the media provider, where
+    the client can tell "still playing" from "started again".
+
+    The descriptor goes through the same validation as provider media, so a
+    caption obligation cannot be dodged by using the convenience helper, and an
+    unsafe URL is refused on both paths.
+
+    Args:
+        session (Session): The session to play it on.
+        url (str): Where the media lives. `http`, `https` or relative.
+        category (str): One of `media.MEDIA_CATEGORIES`.
+        caption (str, optional): What a player who cannot hear it is told.
+            Required unless `decorative` is True.
+        description (str, optional): A longer description.
+        decorative (bool): True when the media carries no information.
+        loop (bool): Whether it repeats.
+        volume (float): 0.0 to 1.0, scaled by the player's own volume.
+        media_id (str, optional): A stable identifier.
+
+    Returns:
+        bool: True if it was sent, False if the descriptor was rejected.
+
+    """
+    item = media.normalize_media_item(
+        {
+            "id": media_id,
+            "url": url,
+            "category": category,
+            "caption": caption,
+            "description": description,
+            "decorative": decorative,
+            "loop": loop,
+            "volume": volume,
+        }
+    )
+    if item is None:
+        return False
+    session.msg(**{protocol.MSG_MEDIA: ((), {"play": [item]})})
+    return True
 
 
 #: Categories a game may declare on an event (Addendum A.11). Structural rather

@@ -498,6 +498,67 @@
         },
 
         {
+            id: "sound",
+            title: "Sound and captions",
+            group: "Your data",
+            summary: "Volume you control, and text for everything you hear.",
+            sections: [
+                {
+                    body: [
+                        "If your game sends sound, the Sound panel lists every " +
+                            "volume control -- overall, music, ambience, effects, " +
+                            "interface and voice -- plus mute and a stop-everything " +
+                            "button. All of them are ordinary sliders and buttons, so " +
+                            "they work with a keyboard, a screen reader or a switch " +
+                            "device without Aetos reinventing anything.",
+                        "A game that sends no sound gets no panel, rather than six " +
+                            "dead sliders."
+                    ]
+                },
+                {
+                    heading: "Everything is captioned",
+                    body: [
+                        "Every sound that carries information also appears as text, " +
+                            "in the Sound panel and to your screen reader. That text " +
+                            "is written *before* the sound is played, and it appears " +
+                            "whether or not the sound plays at all -- muted, volume " +
+                            "at zero, file missing, no speakers, browser blocking " +
+                            "audio. Tying the text to a successful playback would " +
+                            "mean the people who most need the text are the least " +
+                            "likely to get it.",
+                        "Sounds a game marks decorative -- a wind loop, a click -- " +
+                            "play without a caption, because they carry nothing to " +
+                            "caption."
+                    ]
+                },
+                {
+                    heading: "If a sound has no caption",
+                    body: [
+                        "You will see \"Uncaptioned effect audio\", or similar.",
+                        "That is not Aetos failing. It is Aetos reporting that the " +
+                            "game published a sound without saying what it means. " +
+                            "Aetos cannot listen to a sound file and describe it, and " +
+                            "it will not invent a caption -- a made-up description is " +
+                            "confidently wrong to exactly the person who cannot check " +
+                            "it. So it says what it knows and no more.",
+                        "If you see these often, it is worth telling the game's staff."
+                    ]
+                },
+                {
+                    heading: "Nothing starts on its own",
+                    body: [
+                        "Browsers block audio until you have interacted with the " +
+                            "page, and Aetos does not fight that. If sound is waiting " +
+                            "on you, it says so once, in text, rather than failing " +
+                            "silently.",
+                        "Images are shown one at a time and stay until you hide them. " +
+                            "Nothing disappears on a timer."
+                    ]
+                }
+            ]
+        },
+
+        {
             id: "orientation",
             title: "Where am I, and how did I get here",
             group: "Your data",

@@ -440,7 +440,7 @@ is served from your own host.
 ## What is built
 
 Roughly 10,900 lines of Python, 17,300 of JavaScript and 2,200 of CSS, with
-**741 Python tests** passing, plus hand-written browser checks and an axe-core
+**791 Python tests** passing, plus hand-written browser checks and an axe-core
 audit clean across every view — including the high-contrast and
 minimal-stimulation presets.
 
@@ -467,6 +467,7 @@ minimal-stimulation presets.
 | **Equipment** | By slot; empty slots stated rather than blank |
 | **Target** | Rendered with the same resource renderer as the player's own |
 | **Effects** | Countdowns that show *expiring*, never removing on the client's clock |
+| **Sound** | Per-category volume, mute and stop-all — and a caption for every sound that carries meaning |
 | **Actions** | Your own commands in context menus |
 
 ### Player tools, browser-local
@@ -524,8 +525,8 @@ Colour never carries meaning alone. `innerHTML` is never used.
 | ~~E0–E5~~ | ~~Event pipeline, capture/replay, display rules, automation groups, validator, diagnostics~~ — **done** |
 | ~~M17~~ | ~~Rich chat, event history and Review Mode~~ — **done** |
 | ~~A5~~ | ~~Cognitive and orientation layer~~ — **done** |
-| **M18** | **Audio and multimedia, with captions — next** |
-| M19 | Themes, with contrast validation |
+| ~~M18~~ | ~~Audio, multimedia and captions~~ — **done** |
+| **M19** | **Themes, with contrast validation — next** |
 | A7 | AAC and simplified workspace |
 | M20 | PWA shell and touch gestures *(responsive layout done)* |
 | M21–M29 | Inspector, widget SDK, server-described manifest, and hardening |

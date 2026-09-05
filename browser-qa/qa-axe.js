@@ -171,6 +171,32 @@
             function () { window.AetosDialog.close(null); });
     }
 
+    /*
+     * M18. Scanned with captions in the list and an image shown, because an
+     * empty panel hides every per-row defect -- and the first version of this
+     * widget had two: a role on a <ul> that orphaned every caption, and the
+     * `aria-allowed-role` that came with it.
+     */
+    if (A.audio && A.captions) {
+        await scan("sound and captions",
+            function () {
+                A.audio.sync({ items: [
+                    { id: "qa-a", url: "/static/qa/silence.ogg", category: "ambience",
+                      caption: "Waves against the wharf.", decorative: false,
+                      loop: true, volume: 1, uncaptioned: false },
+                    { id: "qa-b", url: "/static/qa/silence.ogg", category: "effect",
+                      caption: null, decorative: false, loop: false, volume: 1,
+                      uncaptioned: true }
+                ] });
+                A.captions.showImage({ url: "/static/qa/nothing.png",
+                    description: "A chart of the harbour.", category: "image" });
+            },
+            function () {
+                A.captions.showImage(null);
+                A.audio.sync({ items: [] });
+            });
+    }
+
     if (A.workspaces) {
         await scan("edit layout",
             function () { A.workspaces.toggleEditing(); },

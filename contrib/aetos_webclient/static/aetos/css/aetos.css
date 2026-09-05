@@ -1452,3 +1452,65 @@ body {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
 }
+
+/*
+ * Sound and captions.  M18.
+ *
+ * The caption list is styled like the console rather than like a status panel,
+ * because that is what it is: a transcript of everything the game said in
+ * sound. It scrolls, so it is focusable.
+ */
+.aetos-media__controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.aetos-media__slider {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.aetos-media__slider label {
+    flex: 0 0 9em;
+    font-size: 0.9em;
+}
+
+.aetos-media__slider input[type="range"] {
+    flex: 1 1 auto;
+    min-width: 5em;
+}
+
+.aetos-media__captions {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    max-height: 14em;
+}
+
+.aetos-caption {
+    display: flex;
+    gap: 6px;
+    padding: 2px 0;
+    border-bottom: 1px solid var(--aetos-border);
+}
+
+/* The category is a label, not a colour. Colour never carries meaning alone. */
+.aetos-caption__category {
+    flex: 0 0 5em;
+    color: var(--aetos-accent);
+    font-size: 0.85em;
+}
+
+.aetos-caption__text { flex: 1 1 auto; }
+
+.aetos-media__image {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin-bottom: 4px;
+}

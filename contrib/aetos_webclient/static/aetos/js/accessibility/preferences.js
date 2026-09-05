@@ -97,6 +97,24 @@
             automaticWorkspaceSwitching: "never"
         },
 
+        /*
+         * Sound.  A11Y-MEDIA-002.
+         *
+         * One control per category, because a sound a player cannot turn down
+         * is a sound they cannot escape. The master starts below full: a
+         * client that arrives loud is a client somebody closes before they
+         * find the slider.
+         */
+        audio: {
+            muted: false,
+            master: 0.7,
+            music: 1.0,
+            ambience: 1.0,
+            effect: 1.0,
+            ui: 1.0,
+            voice: 1.0
+        },
+
         visual: {
             scale: 1.0,
             contrast: "standard",
@@ -117,6 +135,32 @@
     //: Allowed values. Anything outside these falls back to the default rather
     //: than being stored, so a hand-edited import cannot produce a client in a
     //: state no code path expects.
+    /*
+     * Numeric preferences, and the range each is clamped to.
+     *
+     * A table rather than a branch per key. `visual.scale` used to be the only
+     * number here and had its own special case; adding the volumes exposed
+     * what that shape cost -- a number with no branch fell through to the
+     * string check and was silently discarded, so every volume slider appeared
+     * to work while nothing it set survived a reload. A player would have
+     * concluded the client was broken, and they would have been right.
+     */
+    var SCALE_MIN = 0.75;
+    var SCALE_MAX = 2.5;
+
+    var RANGES = {
+        // The scale bounds by reference, not by repetition: an earlier draft
+        // of this table wrote 2.0 here and silently narrowed a range that had
+        // been 2.5 since A0.
+        "visual.scale": [SCALE_MIN, SCALE_MAX],
+        "audio.master": [0, 1],
+        "audio.music": [0, 1],
+        "audio.ambience": [0, 1],
+        "audio.effect": [0, 1],
+        "audio.ui": [0, 1],
+        "audio.voice": [0, 1]
+    };
+
     var ENUMS = {
         "screenReader.announcementMode": ["selective", "all", "minimal"],
         "screenReader.announceResources": ["never", "thresholds", "always"],
@@ -132,8 +176,6 @@
 
     //: Bounds on the one numeric setting, so a bad value cannot render the
     //: interface unreadably small or large.
-    var SCALE_MIN = 0.75;
-    var SCALE_MAX = 2.5;
 
     function clone(value) {
         return JSON.parse(JSON.stringify(value));
@@ -174,10 +216,12 @@
                     }
                     return;
                 }
-                if (path === "visual.scale") {
+                if (RANGES[path]) {
                     var number = parseFloat(value);
                     if (isFinite(number)) {
-                        result[group][key] = Math.min(SCALE_MAX, Math.max(SCALE_MIN, number));
+                        result[group][key] = Math.min(
+                            RANGES[path][1], Math.max(RANGES[path][0], number)
+                        );
                     }
                     return;
                 }
@@ -350,10 +394,36 @@
         };
     }
 
+    /*
+     * Every numeric default must appear in RANGES.
+     *
+     * Checked at load rather than asserted in a test alone, because the
+     * failure it prevents is silent: a number with no range is dropped by
+     * `normalize`, and the only symptom is a setting that will not stick.
+     * Better to be loud in the console of whoever added it.
+     */
+    Object.keys(DEFAULTS).forEach(function (group) {
+        if (group === "version" || typeof DEFAULTS[group] !== "object") {
+            return;
+        }
+        Object.keys(DEFAULTS[group]).forEach(function (key) {
+            if (typeof DEFAULTS[group][key] !== "number") {
+                return;
+            }
+            if (!RANGES[group + "." + key] && window.console) {
+                window.console.warn(
+                    "Aetos: numeric preference " + group + "." + key +
+                    " has no entry in RANGES and will not persist."
+                );
+            }
+        });
+    });
+
     window.AetosAccessibilityPreferences = {
         create: createPreferences,
         DEFAULTS: DEFAULTS,
         ENUMS: ENUMS,
+        RANGES: RANGES,
         VERSION: VERSION,
         DOC_ID: DOC_ID,
         normalize: normalize

@@ -105,7 +105,7 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M15  Command palette + automation editors + privacy panel
 [x] M16  Inventory + equipment + target + effects
 [ ] M17  Rich chat + event history
-[ ] M18  Audio + multimedia           (+ nonverbal cues, rev 2)
+[x] M18  Audio + multimedia + captions  (absorbs A6)
 [ ] M19  Themes                       (+ High Contrast ships in core)
 [~] M20  Mobile + responsive UI  (layout done; PWA + gestures remain)
 [ ] M21  Developer inspector + visual designer
@@ -510,9 +510,9 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] E4   Unified validator                             -- 667 py
 [x] E5   Diagnostic reporting                          -- 688 py
 [x] A5   Cognitive and orientation layer               -- 727 py
-[ ] M18  Audio + multimedia + captions                 <-- NEXT
+[x] M18  Audio + multimedia + captions  (absorbs A6)   -- 791 py
+[ ] M19  Themes  (+ contrast validation)               <-- NEXT
 [ ] M18  (absorbs A6)
-[ ] M19  Themes  (+ contrast validation, A11Y-VIS-003)
 [ ] A7   AAC + simplified workspace
 [ ] M20  PWA + touch gestures  (+ A.57 pointer targets)
 [ ] M21  Developer inspector
@@ -1105,7 +1105,7 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [ ] D1..D6
 
 [ ] A5   Cognitive and orientation layer
-[ ] M18  Audio + multimedia + captions
+[x] M18  Audio + multimedia + captions
 [ ] M19  Themes
 [ ] A7   AAC + simplified workspace
 [ ] M20  PWA + touch gestures

@@ -629,6 +629,46 @@
         }
 
         /*
+         * Sound, and the text that must accompany it.  M18.
+         *
+         * The captions widget is created before the audio engine because the
+         * engine writes into it. That ordering is the whole design in one
+         * line: the text is not a by-product of playing a sound, it is the
+         * primary channel, and it is emitted whether or not anything is
+         * audible (A11Y-MEDIA-001).
+         */
+        var captionsWidget = window.AetosCaptions
+            ? window.AetosCaptions.createWidget({
+                preferences: accessibility ? accessibility.preferences : null,
+                // Filled in below: the widget needs the engine for its
+                // controls, and the engine needs the widget for its captions.
+                audio: null
+            })
+            : null;
+
+        var audio = window.AetosAudio
+            ? window.AetosAudio.create({
+                preferences: accessibility ? accessibility.preferences : null,
+                announce: function (message, options) {
+                    announcer.announce(message, options);
+                },
+                caption: function (text, item) {
+                    if (captionsWidget) {
+                        captionsWidget.record(text, item);
+                    }
+                }
+            })
+            : null;
+
+        if (captionsWidget && audio) {
+            // Through the setter, not by assigning a property: the widget's
+            // controls close over their own `audio` variable, and setting a
+            // field on the returned object would leave every one of them
+            // inert while looking entirely correct.
+            captionsWidget.setAudio(audio);
+        }
+
+        /*
          * Focus Mode.  A.47.
          *
          * Visual quieting: the client drops to its essentials and the rest is
@@ -926,6 +966,40 @@
                     store.set(section, kwargs || {});
                 }
             });
+        });
+
+        /*
+         * Media arrives two ways, and they are not the same thing.
+         *
+         * `{items: [...]}` is *state*: what should be playing while the player
+         * is here. The engine diffs it, so a sync every few seconds does not
+         * restart the music.
+         *
+         * `{play: [...]}` is an *event*: something happened once. It is never
+         * diffed, because a door slamming twice is two sounds.
+         *
+         * Registered after the generic handler so the store still receives
+         * ambient state -- other widgets read it -- while playback is handled
+         * here.
+         */
+        emitter.on("aetos_media", function (args, kwargs) {
+            if (!audio) {
+                return;
+            }
+            var payload = kwargs || {};
+            if (payload.play) {
+                payload.play.forEach(function (item) {
+                    if (item && item.category === "image") {
+                        if (captionsWidget) {
+                            captionsWidget.showImage(item);
+                        }
+                    } else {
+                        audio.play(item);
+                    }
+                });
+                return;
+            }
+            audio.sync(payload);
         });
 
         // Anything Aetos does not yet model is logged rather than dropped
@@ -1384,6 +1458,10 @@
                     review: review,
                     registerRefresh: function (fn) { historyRefreshers.push(fn); }
                 }));
+            }
+
+            if (captionsWidget) {
+                registry.register(captionsWidget);
             }
 
             if (window.AetosStateView) {
@@ -1985,6 +2063,27 @@
                     });
             }
 
+            if (audio) {
+                addCommand("audio.stop", "Stop all sound", "Comfort",
+                    "Silence everything immediately.",
+                    function () { audio.stopAll(); });
+                addCommand("audio.mute", "Mute all sound", "Comfort",
+                    "Keep captions, drop the audio.",
+                    function () {
+                        var preferences = accessibility && accessibility.preferences;
+                        if (!preferences) {
+                            return;
+                        }
+                        var now = preferences.value("audio.muted", false);
+                        preferences.update({ audio: { muted: !now } });
+                        audio.applyVolumes();
+                        announcer.announce(
+                            now ? "Sound unmuted." : "Sound muted. Captions continue.",
+                            { category: "system", priority: "important" }
+                        );
+                    });
+            }
+
             /* Session */
             if (commandQueue) {
                 addCommand("queue.cancel", "Stop queued commands", "Session",
@@ -2196,6 +2295,8 @@
             diagnostics: diagnostics,
             orientation: orientation,
             cognitive: cognitive,
+            audio: audio,
+            captions: captionsWidget,
             reloadTriggers: reloadTriggers,
             macros: macros,
             editMacro: editMacro,
