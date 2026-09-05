@@ -11,6 +11,45 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### A7 follow-up — symbol packs, and a correction
+
+895 tests. Prompted by Gary pointing out that free AAC symbol libraries exist.
+
+**Corrected**
+
+- A7 originally said the symbol sets AAC users know are all restrictively
+  licensed. **That was wrong.** Checked properly: ARASAAC is CC BY-NC-SA (the
+  NonCommercial clause genuinely does block bundling in a BSD-3 client that
+  commercial games install), but **Mulberry is CC BY-SA 4.0 and its own
+  documentation permits use "in any project or product, commercial or
+  otherwise"**. Licensing was never the obstacle there.
+- The real obstacle for Mulberry turned out to be **coverage**, which only
+  showed up by going and looking: 3,436 symbols led by country flags, country
+  maps and professions, with no symbol for `yes`, `no`, `stop`, `please`,
+  `thank you`, `sorry` or `friend`. It is a vocabulary set to supplement a core
+  board, not to be one — and bundling it would leave the six most urgent words
+  as the only ones without a picture.
+- The correction is kept in the source rather than quietly replaced, with a test
+  asserting it stays. The wrong reason produced the right decision, which is
+  exactly how a bad assumption survives to be repeated somewhere it matters.
+
+**Added**
+
+- `aac_mappings/` — bundled concept-to-symbol mappings containing no artwork,
+  which is precisely what A.63 permits. Ships a verified Mulberry mapping: 33
+  concepts, every one checked against the set's own index and then against the
+  repository. Nothing guessed.
+- `scripts/build_symbol_pack.py` — downloads the mapped artwork and writes a
+  self-contained pack, keeping the licensing decision with whoever installs it.
+  `--check` re-verifies every mapping without downloading.
+- A **Symbol packs** panel that leads with coverage: it names every word the
+  installed pack cannot illustrate, so a player finds out there rather than by
+  hitting a blank key mid-sentence.
+- Packs report whether they are **self-contained**. A pack of remote URLs tells
+  its host, every time the board renders, that this browser is showing a
+  communication board — a disclosure about disability made silently to a third
+  party. Built packs inline their images and send nothing.
+
 ### A7 — AAC architecture and the simplified workspace
 
 885 tests. Addendum A.51, A.59–A.69. Gate A.94 **outstanding**.
@@ -36,10 +75,10 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 - **Invent W3C concept identifiers.** Every `waiAdaptConcept` is null. An
   identifier is a claim that this concept *is* that published concept, and a
   plausible-looking invented one propagates into other tools as though checked.
-- **Bundle symbol artwork.** The sets AAC users actually know are licensed, and
-  "it is for accessibility" is not a licence. Every key shows its word until a
-  player installs a pack they are licensed to use; a pack must state its licence
-  or registration is refused.
+- **Bundle symbol artwork.** Aetos ships *mappings*, which is the line A.63
+  draws. Every key shows its word until a player installs a pack; a pack must
+  state its licence or registration is refused, and the panel reports which
+  words it cannot illustrate before anyone relies on it.
 - **Guess a replacement symbol.** A symbol *is* the word for somebody using one,
   so a near-miss is a different word — and the player has no way to know it
   happened.

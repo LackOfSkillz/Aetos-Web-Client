@@ -1867,6 +1867,7 @@
                 cognitive: cognitive,
                 orientation: orientation,
                 themes: themes,
+                symbols: symbolProvider,
                 reloadTriggers: reloadTriggers,
                 gameName: gameName,
                 announce: function (message) { announcer.announce(message); }
@@ -2151,6 +2152,13 @@
                     "Four panels instead of a dozen. Nothing is removed -- " +
                     "everything is still here in the palette.",
                     function () { workspaces.applySimplifiedLayout(); });
+            }
+
+            if (symbolProvider && settings) {
+                addCommand("aac.packs", "Symbol packs", "Comfort",
+                    "Install pictures for the word board, and see which words " +
+                    "a pack does not cover.",
+                    function () { settings.openSymbolPacks(); });
             }
 
             if (aacBoard) {

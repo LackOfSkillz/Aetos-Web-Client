@@ -543,18 +543,37 @@
                 {
                     heading: "About pictures",
                     body: [
-                        "Aetos ships no symbol artwork, so every key shows its word. " +
-                            "That is not an oversight: the symbol sets that AAC users " +
-                            "actually know are licensed, and \"it is for " +
-                            "accessibility\" is not a licence. Shipping them " +
-                            "unverified would hand a copyright problem to every game " +
-                            "that installs this client.",
-                        "If you have a symbol pack you are licensed to use, it can be " +
-                            "installed and the keys will show its pictures beside the " +
-                            "words. A pack must state its licence, and if it has no " +
-                            "picture for a word you get the word -- never a " +
-                            "similar-looking substitute, because a near-miss symbol " +
-                            "is a different word and you would have no way to know."
+                        "Aetos ships no symbol artwork, so every key shows its word " +
+                            "until you install a symbol pack. Search the palette for " +
+                            "\"Symbol packs\".",
+                        "Free sets do exist. ARASAAC is a complete pictographic " +
+                            "system covering the core words, but its licence forbids " +
+                            "commercial use, so a client that games may charge money " +
+                            "for cannot ship it -- you can install it yourself. " +
+                            "Mulberry is freely licensed for any use, and Aetos " +
+                            "includes a mapping for it, but it is a vocabulary set " +
+                            "rather than a communication board: it has no picture for " +
+                            "yes, no, stop, please, thank you or sorry.",
+                        "Which set suits you depends on your game's licensing and on " +
+                            "which symbols you already know. That is your choice, so " +
+                            "Aetos does not make it for you."
+                    ]
+                },
+                {
+                    heading: "What a pack tells you before you rely on it",
+                    body: [
+                        "The Symbol packs panel lists exactly which words a pack has " +
+                            "no picture for, so you find out there rather than by " +
+                            "hitting a blank key in the middle of saying something.",
+                        "A missing picture always falls back to the word, never to a " +
+                            "similar-looking substitute -- a near-miss symbol is a " +
+                            "different word, and you would have no way to know it " +
+                            "happened.",
+                        "It also tells you whether a pack is self-contained. A pack " +
+                            "that loads its pictures from a website tells that site " +
+                            "every time you use the board, which is a thing about you " +
+                            "that you did not choose to share. Packs built with " +
+                            "Aetos's own tool embed their pictures and send nothing."
                     ]
                 },
                 {

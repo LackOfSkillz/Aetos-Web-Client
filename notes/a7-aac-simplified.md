@@ -71,15 +71,59 @@ to make the attribute appear.
 
 ## No bundled artwork (A.63)
 
-The symbol sets AAC users actually know are licensed, and "it is for
-accessibility" is not a licence. Shipping them unverified would hand a copyright
-problem to every hobbyist running a MUD with this contrib installed.
+**The first version of this note gave the wrong reason, and Gary caught it.** I
+wrote that the sets AAC users know are all restrictively licensed. That is not
+true, and it took one screenshot of a search result to show it.
 
-So the provider starts empty and every key falls back to its word. That is a
+What is actually the case, checked against the sources rather than remembered:
+
+| Set | Licence | Bundleable? |
+| --- | --- | --- |
+| ARASAAC | CC BY-NC-SA | **No** — NonCommercial. Aetos is BSD-3 and games may charge. |
+| Mulberry | CC BY-SA 4.0 | **Yes**, legally. Its own docs permit commercial use. |
+| Global Symbols / Open Symbols | mixed, per set | Aggregators; nothing uniform to verify. |
+
+So for Mulberry, licensing was never the obstacle. **Coverage is**, and this is
+the part I would not have found without going and looking: Mulberry has 3,436
+symbols whose largest categories are country flags (254), country maps (188) and
+professions (164). It has no symbol for `yes`, `no`, `stop`, `please`,
+`thank you`, `sorry` or `friend` — the entire Common category, the words that
+must never be more than one press away.
+
+It is a vocabulary set built to supplement a core board for adults, not to be
+one. Bundling it would produce a board where the six most urgent words are the
+only ones *without* a picture, which is worse than a board with none: the
+inconsistency is itself something to decode, and it is worst exactly where
+hesitation costs most.
+
+ARASAAC does cover that vocabulary, and is the one Aetos may not ship. That is
+not coincidence — a complete pictographic system is the kind of work whose
+authors reasonably attach conditions.
+
+**So the answer is an importer, not a bundle**, which is the line A.63 already
+drew: mappings may be bundled, imagery requires licensing review. Aetos ships a
+verified Mulberry mapping (33 concepts, every one checked against the set's own
+index and then against the repository), a `build_symbol_pack.py` that fetches
+the artwork and inlines it, and a panel that tells a player which words a pack
+cannot illustrate *before* they rely on it.
+
+The correction is kept in the source rather than quietly replaced, and a test
+asserts it stays. The wrong reason produced the right decision, and that is
+precisely how a bad assumption survives long enough to be repeated somewhere it
+matters.
+
+The provider still starts empty and every key falls back to its word. That is a
 real limitation, stated plainly in the help rather than papered over. The
 alternative -- drawing generic icons and calling them AAC symbols -- would be
 worse: an AAC user knows a *specific* set, and an unfamiliar picture is not a
 hint, it is noise on top of the word.
+
+Packs are also checked for whether they are **self-contained**. A pack of remote
+URLs tells whoever hosts them, every time the board renders, that this browser is
+showing a communication board — a disclosure about disability, made silently, to
+a third party the player never chose to tell. `build_symbol_pack.py` inlines
+images as `data:` URIs for that reason as much as for offline use, and the panel
+says which kind is installed.
 
 A pack **must** state its licence or registration is refused. Defaulting to
 "unknown" would let an unattributable pack spread anyway, with the question

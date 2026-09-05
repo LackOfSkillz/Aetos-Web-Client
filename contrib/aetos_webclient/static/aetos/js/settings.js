@@ -1208,6 +1208,170 @@
             return report;
         }
 
+        /* --- Symbol packs (A7) ------------------------------------------- */
+
+        /*
+         * Install and inspect AAC symbol packs.
+         *
+         * The panel leads with coverage rather than with the pack's name,
+         * because "which words have no picture" is the question that decides
+         * whether a pack is usable -- and it is the one a player would
+         * otherwise answer by running into a blank key mid-sentence.
+         */
+        function openSymbolPacks() {
+            var symbols = services.symbols;
+            if (!symbols || !dialog) {
+                return null;
+            }
+
+            var body = document.createElement("div");
+
+            var explanation = document.createElement("p");
+            explanation.className = "aetos-dialog__description";
+            explanation.textContent =
+                "Aetos ships no symbol artwork, so every key shows its word until " +
+                "you install a pack. Which set suits you depends on your game's " +
+                "licensing and on which symbols you already know, so that choice " +
+                "is yours rather than ours.";
+            body.appendChild(explanation);
+
+            var installed = symbols.allPacks();
+            var active = symbols.activePack();
+
+            if (!installed.length) {
+                var none = document.createElement("p");
+                none.className = "aetos-dialog__description";
+                none.textContent = "No packs installed.";
+                body.appendChild(none);
+            }
+
+            var list = document.createElement("ul");
+            list.className = "aetos-privacy__list";
+            list.setAttribute("tabindex", "0");
+            list.setAttribute("aria-label", "Installed symbol packs");
+
+            installed.forEach(function (pack) {
+                var row = document.createElement("li");
+                row.className = "aetos-privacy__row";
+
+                var choose = document.createElement("button");
+                choose.type = "button";
+                choose.className = "aetos-list__button";
+                choose.textContent = pack.name;
+                choose.setAttribute(
+                    "aria-pressed",
+                    active && active.id === pack.id ? "true" : "false"
+                );
+                choose.addEventListener("click", function () {
+                    symbols.usePack(active && active.id === pack.id ? null : pack.id);
+                    openSymbolPacks();
+                });
+                row.appendChild(choose);
+
+                var terms = document.createElement("span");
+                terms.className = "aetos-privacy__count";
+                terms.textContent = pack.count + " symbols, " + pack.license;
+                row.appendChild(terms);
+
+                list.appendChild(row);
+            });
+            body.appendChild(list);
+
+            if (active) {
+                var missing = symbols.missingConcepts();
+
+                var coverage = document.createElement("p");
+                coverage.className = "aetos-dialog__description";
+                coverage.textContent = missing.length
+                    ? missing.length + " words have no picture in this pack and will " +
+                      "show as text: " + missing.join(", ") + "."
+                    : "Every word in the board has a picture in this pack.";
+                body.appendChild(coverage);
+
+                /*
+                 * Said plainly rather than left for somebody to notice: a pack
+                 * of remote URLs tells its host, every time the board renders,
+                 * that this browser is showing a communication board.
+                 */
+                var privacy = document.createElement("p");
+                privacy.className = "aetos-dialog__description";
+                privacy.textContent = symbols.packSelfContained()
+                    ? "This pack is self-contained. Showing the board sends no " +
+                      "requests to anybody."
+                    : "This pack loads its pictures from a website, which tells " +
+                      "that site whenever you use the board. A self-contained pack " +
+                      "does not.";
+                body.appendChild(privacy);
+
+                if (active.attribution) {
+                    var credit = document.createElement("p");
+                    credit.className = "aetos-dialog__description";
+                    credit.textContent = active.attribution;
+                    body.appendChild(credit);
+                }
+            }
+
+            dialog.open({
+                title: "Symbol packs",
+                content: body,
+                submitLabel: "Close",
+                fields: [],
+                extraActions: [
+                    { label: "Install a pack file", run: function () { importSymbolPack(); } }
+                ],
+                onSubmit: function () {}
+            });
+            return installed;
+        }
+
+        /*
+         * Read a pack file the player chose.
+         *
+         * Same shape as the M5 profile importer: a local file, never a
+         * download. Reports what it refused as well as what it took.
+         */
+        function importSymbolPack() {
+            var symbols = services.symbols;
+            if (!symbols) {
+                return null;
+            }
+            var picker = document.createElement("input");
+            picker.type = "file";
+            picker.accept = "application/json,.json";
+            picker.addEventListener("change", function () {
+                var file = picker.files && picker.files[0];
+                if (!file) {
+                    return;
+                }
+                var reader = new window.FileReader();
+                reader.onload = function () {
+                    var result = symbols.importPack(String(reader.result));
+                    if (!result.ok) {
+                        announce(result.error, {
+                            category: "system", priority: "important"
+                        });
+                        return;
+                    }
+                    symbols.usePack(result.id);
+                    var message = "Installed " + result.name + ": " +
+                        result.accepted + " symbols.";
+                    if (result.refused) {
+                        message += " " + result.refused + " refused.";
+                    }
+                    var missing = symbols.missingConcepts().length;
+                    if (missing) {
+                        message += " " + missing + " words have no picture and will " +
+                            "show as text.";
+                    }
+                    announce(message, { category: "system", priority: "important" });
+                    openSymbolPacks();
+                };
+                reader.readAsText(file);
+            });
+            picker.click();
+            return true;
+        }
+
         return {
             editAlias: editAlias,
             editTrigger: editTrigger,
@@ -1220,6 +1384,8 @@
             editDisplayRule: editDisplayRule,
             openPrivacy: openPrivacy,
             openReminders: openReminders,
+            openSymbolPacks: openSymbolPacks,
+            importSymbolPack: importSymbolPack,
             openThemes: openThemes,
             editTheme: editTheme,
             showContrastReport: showContrastReport,

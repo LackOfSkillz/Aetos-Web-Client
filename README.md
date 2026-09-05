@@ -526,6 +526,14 @@ Everything that *can* be verified without that review is: no invented W3C
 concept identifiers, no guessed symbol substitutions, no generative inference,
 full keyboard operation, and a text preview before anything is sent.
 
+Aetos ships **mappings, not artwork** — the line Addendum A.63 draws. A player
+installs the set that suits their game's licensing and their own familiarity,
+and the client reports which words that set cannot illustrate before they rely
+on it. [`aac_mappings/`](contrib/aetos_webclient/aac_mappings/) explains why each
+candidate set is or is not bundled; the short version is that the one covering
+the core vocabulary (ARASAAC) forbids commercial use, and the one that permits
+it (Mulberry) is a vocabulary set with no symbol for *yes*, *no* or *stop*.
+
 ### Throughout
 
 Versioned protocol with a capability manifest. Everything keyboard-operable,

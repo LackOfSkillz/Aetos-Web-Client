@@ -92,11 +92,26 @@ What a reviewer would be asked to judge, none of which I can:
   capitalised is a real question I guessed at.
 - **The strip's cognitive load.** Twelve words maximum, with move-left,
   move-right and remove on each. Is that too many controls per word?
-- **Whether a text-only board is usable at all.** Aetos bundles no symbol
-  artwork (A.63 — the sets AAC users know are licensed, and "it is for
-  accessibility" is not a licence). So out of the box every key is a word. That
-  may make the whole feature useless to the people it is for, and if so I would
-  rather know now than ship it looking complete.
+- **Which symbol set should be the default** — and this got sharper once you
+  pointed me at the free libraries, because the answer is genuinely awkward.
+  ARASAAC is a complete pictographic system and covers the core words, but it is
+  CC BY-NC-SA, so a BSD-licensed client that commercial games install cannot
+  ship it. Mulberry is CC BY-SA 4.0 and legally bundleable, but it is a
+  vocabulary set: 3,436 symbols led by country flags and professions, with **no
+  picture for yes, no, stop, please, thank you, sorry or friend.** Aetos now
+  ships a verified Mulberry mapping and an importer, so a player can install
+  either. But "install ARASAAC yourself" is a poor answer for the person who
+  most needs this to just work.
+- **Whether the concept list should change to fit an available set**, rather
+  than the set being fitted to my concept list. That is the opposite of how I
+  built it and may well be the right way round.
+- **Gendered symbol variants.** Mulberry offers `happy_man` / `happy_lady`,
+  `sad_man` / `sad_lady`, `confused_man` / `confused_lady`. I mapped none of
+  them, because picking one encodes a default I have no business setting and
+  offering both doubles the board. A reviewer should decide.
+- **Whether a text-only board is usable at all**, since that is what you get
+  before installing anything. If the answer is no, the honest fix is to say so
+  prominently rather than let it look complete.
 
 **Meanwhile:** A0–A7 are built; none of them depends on this. A8 is the only
 stage that does, and nothing in the client, README or help claims AAC support —

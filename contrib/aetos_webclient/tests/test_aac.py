@@ -674,3 +674,161 @@ class TestReachability(TestCase):
     def test_the_category_state_is_not_shown_by_colour_alone(self):
         body = _function_body(BOARD, "mount: function (context)", "destroy: function ()")
         self.assertIn('"aria-pressed"', body)
+
+
+class TestSymbolPackMappings(TestCase):
+    """
+    A.63 draws the line precisely: "Concept identifiers and mappings may be
+    bundled where legally permitted. Symbol imagery requires explicit licensing
+    review."
+
+    So Aetos ships mappings and a builder, and never artwork.
+
+    """
+
+    def _mappings_dir(self):
+        """
+        Locate the bundled mapping files.
+
+        Returns:
+            Path: The `aac_mappings` directory.
+
+        """
+        return Path(AETOS_STATIC_DIR).parent / "aac_mappings"
+
+    def test_mappings_are_bundled(self):
+        files = sorted(self._mappings_dir().glob("*.json"))
+        self.assertTrue(files, "no concept mappings are bundled")
+
+    def test_no_artwork_is_bundled_anywhere_in_the_contrib(self):
+        """
+        The check that matters. Not "we did not add images this time" but "the
+        contrib contains none".
+
+        """
+        root = Path(AETOS_STATIC_DIR).parent
+        images = [
+            str(path.relative_to(root))
+            for path in root.rglob("*")
+            if path.suffix.lower() in (".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp")
+        ]
+        self.assertEqual(images, [], "the contrib bundles image files: %s" % images)
+
+    def test_every_mapping_states_its_licence_and_attribution(self):
+        """
+        A mapping without them is one nobody can safely act on: the whole point
+        is to tell an installer what terms they are accepting.
+
+        """
+        import json
+
+        for path in self._mappings_dir().glob("*.json"):
+            mapping = json.loads(path.read_text(encoding="utf-8"))
+            for field in ("set", "name", "license", "attribution", "source",
+                          "path_template", "concepts"):
+                self.assertIn(field, mapping, "%s lacks %r" % (path.name, field))
+            self.assertTrue(mapping["attribution"].strip())
+
+    def test_mapped_concepts_all_exist(self):
+        """
+        A mapping naming a concept Aetos does not have is dead weight that
+        looks like coverage.
+
+        """
+        import json
+
+        known = set(re.findall(r'concept\("([\w-]+)"', CONCEPTS))
+        for path in self._mappings_dir().glob("*.json"):
+            mapping = json.loads(path.read_text(encoding="utf-8"))
+            unknown = set(mapping["concepts"]) - known
+            self.assertEqual(unknown, set(), "%s maps unknown concepts %s"
+                             % (path.name, sorted(unknown)))
+
+    def test_the_mulberry_coverage_gap_is_documented_not_hidden(self):
+        """
+        Mulberry is a vocabulary set, not a core board: it has no `yes`, `no`,
+        `stop`, `please`, `thank you`, `sorry` or `friend`.
+
+        That gap is the reason it is not bundled, and it is recorded in the
+        mapping itself so nobody later concludes the mapping is simply
+        unfinished and "completes" it by guessing.
+
+        """
+        import json
+
+        path = self._mappings_dir() / "mulberry.json"
+        if not path.is_file():
+            self.skipTest("no mulberry mapping")
+        mapping = json.loads(path.read_text(encoding="utf-8"))
+        comment = " ".join(mapping.get("_comment", []))
+        self.assertIn("COVERAGE IS PARTIAL", comment)
+        for absent in ("yes", "no", "stop", "please"):
+            self.assertNotIn(absent, mapping["concepts"],
+                             "mulberry.json claims a %r symbol that does not exist" % absent)
+
+
+class TestPackImport(TestCase):
+    """Installing a pack, and being told what it does and does not cover."""
+
+    def test_a_pack_is_imported_from_a_local_file(self):
+        """
+        Aetos does not download symbol sets on a player's behalf: which set is
+        appropriate depends on the game's licensing and on which symbols that
+        person already knows, and neither is Aetos's decision.
+
+        """
+        self.assertIn("function importPack(text)", SYMBOLS)
+        body = _function_body(SYMBOLS, "function importPack(text)", "function missingConcepts")
+        self.assertIn("JSON.parse(text)", body)
+        for forbidden in ("fetch(", "XMLHttpRequest", "import(", "src ="):
+            self.assertNotIn(forbidden, body, "importPack uses %r" % forbidden)
+
+    def test_an_import_reports_what_it_refused(self):
+        """
+        An import that silently drops half a pack is worse than one that fails,
+        because the board then has holes the player discovers one word at a
+        time.
+
+        """
+        body = _function_body(SYMBOLS, "function importPack(text)", "function missingConcepts")
+        self.assertIn("refused:", body)
+        self.assertIn("accepted:", body)
+
+    def test_missing_concepts_are_surfaced_up_front(self):
+        """
+        A pack covering everything except `yes`, `no` and `stop` is a specific
+        and predictable failure, and a player deserves to see it before they
+        rely on the board mid-conversation.
+
+        """
+        self.assertIn("function missingConcepts()", SYMBOLS)
+        body = _function_body(SYMBOLS, "function missingConcepts()", "function activePack")
+        self.assertIn("!pack.symbols[concept.id]", body)
+
+    def test_whether_a_pack_phones_home_is_reported(self):
+        """
+        A pack of remote URLs tells whoever hosts them, every time the board
+        renders, that this browser is showing a communication board -- a
+        disclosure about disability, made silently, to a third party the player
+        never chose to tell.
+
+        """
+        self.assertIn("selfContained:", SYMBOLS)
+        self.assertIn("packSelfContained:", SYMBOLS)
+        body = _function_body(SYMBOLS, "selfContained: Object.keys(symbols)", "symbols: symbols")
+        self.assertIn('indexOf("data:") === 0', body)
+
+    def test_the_correction_is_kept_rather_than_quietly_replaced(self):
+        """
+        An earlier version of this module asserted that the major AAC symbol
+        sets are all restrictively licensed. That was wrong -- Mulberry is
+        CC BY-SA 4.0 and permits commercial use.
+
+        The correction stays in the source because the wrong reason produced
+        the right decision, and that is exactly how a bad assumption survives
+        long enough to be repeated somewhere it matters.
+
+        """
+        self.assertIn("That was wrong", SYMBOLS)
+        self.assertIn("CC BY-NC-SA", SYMBOLS)
+        self.assertIn("CC BY-SA 4.0", SYMBOLS)

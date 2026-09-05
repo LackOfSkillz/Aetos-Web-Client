@@ -5,20 +5,50 @@
  *
  * WHY AETOS SHIPS NO SYMBOLS
  *
- * A.63: the contrib must not bundle third-party AAC symbol artwork without
- * verified redistribution rights. The major symbol sets -- the ones AAC users
- * actually know -- are licensed, and "it is for accessibility" is not a
- * licence. Shipping them unverified would expose every game that installs this
- * contrib to somebody else's copyright claim, which is not a risk to hand a
- * hobbyist running a MUD.
+ * An earlier version of this comment said the major AAC symbol sets are all
+ * restrictively licensed. **That was wrong**, and the correction is worth
+ * keeping rather than quietly replacing, because the wrong reason led to the
+ * right decision and that is exactly how a bad assumption survives.
  *
- * So the default provider returns nothing, and every control falls back to its
- * text label. A player who has a pack they are licensed to use registers it.
+ * What is actually true, checked rather than assumed:
  *
- * That is a genuine limitation and it is stated plainly rather than papered
- * over. The alternative -- drawing a set of generic icons and calling them AAC
- * symbols -- would be worse: an AAC user knows a specific symbol set, and an
- * unfamiliar picture is not a hint, it is noise on top of the word.
+ *   ARASAAC     CC BY-NC-SA. The NonCommercial clause is a real blocker for
+ *               bundling: Aetos is BSD-3-Clause and games that install it may
+ *               charge money. A *player* may install it; the contrib may not
+ *               ship it.
+ *   Mulberry    CC BY-SA 4.0, and its own documentation explicitly permits use
+ *               "in any project or product, commercial or otherwise" with
+ *               attribution and share-alike on derived symbols. Bundling is
+ *               legally fine.
+ *
+ * So licensing is not the reason for Mulberry. **Coverage is.** Mulberry has
+ * 3,436 symbols whose largest categories are country flags, country maps and
+ * professions -- it is a vocabulary set built to supplement a core board for
+ * adults, not to be one. It has no symbol for `yes`, `no`, `stop`, `please`,
+ * `thank you`, `sorry` or `friend`.
+ *
+ * Bundling it would produce a board where the six most urgent words are the
+ * only ones without a picture, which is worse than a board with no pictures at
+ * all: the inconsistency is itself a thing to decode, and it is worst exactly
+ * where hesitation costs most.
+ *
+ * ARASAAC does cover that core vocabulary. It is also the one Aetos may not
+ * ship. That is not a coincidence -- a complete pictographic system is the kind
+ * of work whose authors reasonably attach conditions.
+ *
+ * THE ANSWER IS THEREFORE AN IMPORTER, NOT A BUNDLE.
+ *
+ * A.63 draws exactly this line: "Concept identifiers and mappings may be
+ * bundled where legally permitted. Symbol imagery requires explicit licensing
+ * review." So Aetos ships *mappings* and the machinery to install artwork, and
+ * a player installs the set that suits their game's licensing and their own
+ * familiarity.
+ *
+ * Until they do, every control falls back to its text label. That remains a
+ * genuine limitation, stated plainly rather than papered over. The alternative
+ * -- drawing generic icons and calling them AAC symbols -- would be worse: an
+ * AAC user knows a *specific* set, and an unfamiliar picture is not a hint, it
+ * is noise on top of the word.
  *
  * NEVER GUESS A REPLACEMENT (A.62)
  *
@@ -58,6 +88,14 @@
      * to install, and inlining them is how such a pack travels as one file. A
      * pack that could only reference a server would be a pack that stops
      * working offline.
+     *
+     * It is also the more private option, and for this widget that matters
+     * more than usual. A pack of remote URLs tells whoever hosts them, every
+     * time the board renders, that this browser is loading a communication
+     * board -- which is a disclosure about disability, made silently, to a
+     * third party the player never chose to tell. Self-contained packs make no
+     * requests at all, so `packSelfContained()` exists to say which kind a
+     * player has installed.
      */
     function isSafeSource(value) {
         if (typeof value !== "string" || !value) {
@@ -135,6 +173,16 @@
                 name: String(pack.name || pack.id),
                 license: String(pack.license),
                 attribution: pack.attribution ? String(pack.attribution) : null,
+                /*
+                 * Whether this pack can render without asking anybody for
+                 * anything. See `isSafeSource` -- a pack of remote URLs
+                 * discloses to its host that this browser is showing a
+                 * communication board, which is a statement about disability
+                 * made silently to a third party.
+                 */
+                selfContained: Object.keys(symbols).every(function (id) {
+                    return symbols[id].src.indexOf("data:") === 0;
+                }),
                 symbols: symbols
             };
             return pack.id;
@@ -175,6 +223,71 @@
             };
         }
 
+        /*
+         * Install a pack from a file the player chose.
+         *
+         * The same shape as the M5 profile importer: a local file, parsed
+         * here, never fetched from anywhere. Aetos does not download symbol
+         * sets on a player's behalf -- which set is appropriate depends on the
+         * game's licensing and on which symbols that person already knows, and
+         * neither is Aetos's decision to make.
+         *
+         * Reports what it refused as well as what it took. An import that
+         * silently drops half a pack is worse than one that fails, because the
+         * board then has holes the player will discover one word at a time.
+         */
+        function importPack(text) {
+            var parsed;
+            try {
+                parsed = JSON.parse(text);
+            } catch (err) {
+                return { ok: false, error: "That file is not valid JSON." };
+            }
+            if (!parsed || typeof parsed !== "object" || !parsed.symbols) {
+                return { ok: false, error: "That file is not a symbol pack." };
+            }
+
+            var offered = Object.keys(parsed.symbols || {}).length;
+            var id;
+            try {
+                id = registerPack(parsed);
+            } catch (err) {
+                return { ok: false, error: err.message };
+            }
+            var accepted = Object.keys(packs[id].symbols).length;
+
+            return {
+                ok: true,
+                id: id,
+                name: packs[id].name,
+                license: packs[id].license,
+                accepted: accepted,
+                // Refused for an unusable source: not a hex-safe URL, or past
+                // the entry cap.
+                refused: offered - accepted,
+                selfContained: packs[id].selfContained
+            };
+        }
+
+        /*
+         * Which concepts a pack cannot illustrate.
+         *
+         * Surfaced rather than discovered a word at a time. A pack covering
+         * everything except `yes`, `no` and `stop` is a specific and
+         * predictable failure -- it is what happens with a vocabulary set
+         * rather than a core board -- and a player deserves to see that before
+         * they rely on it mid-conversation.
+         */
+        function missingConcepts() {
+            var pack = activePack();
+            if (!pack || !window.AetosConcepts) {
+                return [];
+            }
+            return window.AetosConcepts.CONCEPTS.filter(function (concept) {
+                return !pack.symbols[concept.id];
+            }).map(function (concept) { return concept.label; });
+        }
+
         function activePack() {
             return activePackId ? packs[activePackId] : null;
         }
@@ -193,6 +306,12 @@
 
         return {
             registerPack: registerPack,
+            importPack: importPack,
+            missingConcepts: missingConcepts,
+            packSelfContained: function () {
+                var pack = activePack();
+                return pack ? pack.selfContained : null;
+            },
             usePack: usePack,
             getSymbol: getSymbol,
             activePack: activePack,
