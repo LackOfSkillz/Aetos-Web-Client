@@ -298,5 +298,14 @@ class TestTextTriggersSeePlainText(TestCase):
     """
 
     def test_the_shell_strips_markup_before_matching(self):
+        """
+        The stripping moved into `normalize` when a defect showed that the
+        display rules were matching the markup the triggers had already learned
+        to strip. Derived once, for everything that matches text, so the two
+        agree by construction rather than by two implementations happening to.
+
+        """
         shell = _strip_comments((JS_DIR / "aetos.js").read_text(encoding="utf-8"))
-        self.assertIn("plain.textContent", shell)
+        self.assertIn("holder.textContent", shell)
+        self.assertIn("plainText: plain", shell)
+        self.assertIn("triggers.onText(event.plainText", shell)

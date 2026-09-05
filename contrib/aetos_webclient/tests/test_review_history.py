@@ -236,8 +236,14 @@ class TestReviewMode(TestCase):
         display rule has since hidden it -- which is exactly when searching
         matters.
 
+        It reads the plain rendering of the canonical event rather than the
+        markup. Searching the markup meant a query for "span" matched every
+        coloured line while a word split by a colour change matched nothing --
+        and the announcement read the tags aloud.
+
         """
-        self.assertIn("event.originalText.toLowerCase()", REVIEW)
+        self.assertIn("readable(event).toLowerCase()", REVIEW)
+        self.assertIn("event.plainText === undefined ? event.originalText", REVIEW)
 
     def test_it_has_a_shortcut_and_palette_entries(self):
         self.assertIn('id: "review.toggle"', SHELL)

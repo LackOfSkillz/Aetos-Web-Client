@@ -116,7 +116,7 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M26  Security hardening
 [x] M27  Configuration validation
 [x] M28  Documentation
-[ ] M29  Compatibility matrix
+[x] M29  Compatibility matrix
 [~] M30  Accessibility review  -- WITHDRAWN, see Addendum A below
 [ ] M31  Release candidate
 [ ] M32  Upstream PR
@@ -616,7 +616,9 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (startup checks; the silent one is template precedence)
 [x] M28  Documentation                                  -- 1168 py
          (the README called nine shipped features "still to come")
-[ ] M29  Compatibility matrix                          <-- NEXT
+[x] M29  Compatibility matrix                           -- 1199 py
+         (a :focus fallback that removed the thing it fell back to)
+[ ] A9   -- next in sequence; A8 needs people (questions.md 3)
 [~] M30  WITHDRAWN -- superseded by the A-track (A.106)
 [ ] A9   Accessibility toggle + feature picker  (new)
 [ ] A8   Assistive-technology validation

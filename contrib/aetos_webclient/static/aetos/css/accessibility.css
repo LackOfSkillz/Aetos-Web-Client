@@ -44,8 +44,9 @@
     white-space: nowrap;
 }
 
-.aetos-skiplink:focus,
-.aetos-skiplink:focus-visible {
+/* Separate rules, not a selector list -- see the focus section below for why
+   pairing them in one list is not a fallback but a way to lose both. */
+.aetos-skiplink:focus {
     transform: translateY(0);
     outline: 3px solid var(--aetos-accent);
     outline-offset: 2px;
@@ -60,15 +61,56 @@
  * background clears that with room to spare.
  * ---------------------------------------------------------------------- */
 
+/*
+ * `:focus` first, `:focus-visible` second, and they must be SEPARATE RULES.
+ *
+ * M29. A comma-separated selector list is all-or-nothing: one selector a
+ * browser does not understand invalidates the entire rule, including the parts
+ * it does understand. So `x:focus, x:focus-visible { ... }` is not a fallback --
+ * it is a rule that vanishes completely on any browser without
+ * `:focus-visible`, taking the plain `:focus` styling with it. The client had
+ * one selector list written that way and one rule with no `:focus` form at all.
+ *
+ * Written as three rules, in this order:
+ *
+ *   1. `:focus` gives every browser a full indicator.
+ *   2. `:focus-visible` repeats it, for browsers that have it.
+ *   3. `:focus:not(:focus-visible)` removes it again for pointer focus -- and
+ *      is itself dropped by browsers that lack the selector, which is exactly
+ *      right: they keep the always-on indicator rather than losing it.
+ *
+ * The result is that an older browser shows the ring slightly more often than
+ * necessary. That is the correct direction to fail in: a keyboard user who
+ * cannot see focus cannot navigate at all, and a mouse user who sees one ring
+ * too many is mildly annoyed.
+ */
+
+.aetos-root :focus,
+.aetos-dialog :focus,
+.aetos-help :focus,
+.aetos-palette-box :focus {
+    outline: 3px solid var(--aetos-focus, var(--aetos-accent));
+    outline-offset: 2px;
+    /* A second ring in the background colour, so the indicator stays visible
+       against both light and dark content beneath it. */
+    box-shadow: 0 0 0 5px var(--aetos-bg);
+}
+
 .aetos-root :focus-visible,
 .aetos-dialog :focus-visible,
 .aetos-help :focus-visible,
 .aetos-palette-box :focus-visible {
     outline: 3px solid var(--aetos-focus, var(--aetos-accent));
     outline-offset: 2px;
-    /* A second ring in the background colour, so the indicator stays visible
-       against both light and dark content beneath it. */
     box-shadow: 0 0 0 5px var(--aetos-bg);
+}
+
+.aetos-root :focus:not(:focus-visible),
+.aetos-dialog :focus:not(:focus-visible),
+.aetos-help :focus:not(:focus-visible),
+.aetos-palette-box :focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: none;
 }
 
 /* Never remove the outline without replacing it. Kept as a named rule so that

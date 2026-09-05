@@ -180,7 +180,23 @@
          * thing onward as though it were the record.
          */
         function present(event, activeGroups) {
-            var text = String(event.originalText || "").slice(0, MAX_INPUT_LENGTH);
+            /*
+             * The PLAIN text, not the markup.
+             *
+             * A player writes a rule for the words they can see. Matching
+             * against the markup means a pattern anchored with `^` fails on any
+             * coloured line, an offset computed here lands inside a tag, and --
+             * the symptom that found this -- the console renders `displayText`
+             * as text, so a highlight on a coloured line showed the player
+             * `<span class="color-002">` and the MXP anchors verbatim.
+             *
+             * `plainText` falls back to `originalText` for an event that
+             * predates it or has no markup, which is the same string.
+             */
+            var source = event.plainText === undefined
+                ? event.originalText
+                : event.plainText;
+            var text = String(source || "").slice(0, MAX_INPUT_LENGTH);
             var result = {
                 displayText: text,
                 spans: [],

@@ -72,6 +72,23 @@
                 priority: entry.priority || "normal",
                 // The permanent record. Never rewritten, by anything.
                 originalText: entry.originalText || "",
+                /*
+                 * The same text with the markup removed.
+                 *
+                 * Not a second record -- a rendering of the one record, kept
+                 * beside it because everything that *matches* text needs it and
+                 * deriving it separately in each place is how they came to
+                 * disagree. Display rules were matching and substituting
+                 * against the markup, so a highlight on a coloured line put the
+                 * raw `<span class="color-002">` on screen for the player to
+                 * read.
+                 *
+                 * Falls back to `originalText`, which is correct for the common
+                 * case of a line with no markup in it at all.
+                 */
+                plainText: entry.plainText === undefined
+                    ? (entry.originalText || "")
+                    : entry.plainText,
                 source: entry.source || null,
                 structuredData: entry.structuredData || null
             };

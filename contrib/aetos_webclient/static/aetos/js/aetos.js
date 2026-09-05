@@ -687,6 +687,34 @@
             ? window.AetosPipeline.create({
                 store: store,
                 canonicalLog: canonicalLog,
+                /*
+                 * Derive the plain-text rendering once, here.
+                 *
+                 * Everything that *matches* text needs it -- display rules,
+                 * triggers, history search -- and deriving it separately in each
+                 * of them is how they came to disagree, with the rules matching
+                 * markup that the triggers had already learned to strip.
+                 *
+                 * Guarded on there being any markup at all, because the great
+                 * majority of lines have none and parsing every one of them
+                 * would put a DOM round trip back on the hot path M25 just took
+                 * off it.
+                 */
+                normalize: function (validated) {
+                    var text = validated.text || "";
+                    var plain = text;
+                    if (text.indexOf("<") !== -1) {
+                        var holder = document.createElement("div");
+                        holder.appendChild(sanitizeHtml(text));
+                        plain = holder.textContent;
+                    }
+                    return {
+                        category: validated.category || "other",
+                        originalText: text,
+                        plainText: plain,
+                        structuredData: validated.payload || null
+                    };
+                },
                 applyState: function (payload) {
                     if (store) {
                         store.applySync(payload);
@@ -985,9 +1013,10 @@
                     return;
                 }
                 if (event.category === "text" || event.originalText) {
-                    var plain = document.createElement("div");
-                    plain.appendChild(sanitizeHtml(event.originalText));
-                    triggers.onText(plain.textContent, triggerCache);
+                    // Derived at normalize now, so the triggers and the display
+                    // rules are looking at the same string by construction
+                    // rather than by two implementations agreeing.
+                    triggers.onText(event.plainText || "", triggerCache);
                 }
                 if (event.structuredData) {
                     // Structured triggers are edge-triggered against state that

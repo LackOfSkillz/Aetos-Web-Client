@@ -122,8 +122,21 @@ class TestVisualComfortPreferences(TestCase):
         self.css = (STATIC_DIR / "css" / "aetos.css").read_text(encoding="utf-8")
 
     def test_reduced_motion_is_respected(self):
-        """Motion can cause nausea and migraine; the OS preference is honoured."""
-        self.assertIn("prefers-reduced-motion", self.css)
+        """
+        Motion can cause nausea and migraine; the OS preference is honoured.
+
+        Asserted against `accessibility.css`, not this file's stylesheet. M4 put
+        a blanket rule here that matched every element unconditionally; A0 later
+        added one that honours an explicit player choice in both directions, and
+        the two disagreed -- a player who deliberately chose full motion still
+        had it removed by the older rule. The blanket rule was deleted at M29,
+        and this test follows the rule that actually reads the preference.
+
+        """
+        a11y = (STATIC_DIR / "css" / "accessibility.css").read_text(encoding="utf-8")
+        self.assertIn("@media (prefers-reduced-motion: reduce)", a11y)
+        # And an explicit choice still wins, which is the part that was broken.
+        self.assertIn(':root:not([data-aetos-motion="full"])', a11y)
 
     def test_focus_is_always_visible(self):
         """A keyboard user who cannot see focus cannot navigate."""

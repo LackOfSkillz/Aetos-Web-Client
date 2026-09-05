@@ -11,6 +11,65 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Fixed — raw markup shown to the player (reported by Gary)
+
+Running a macro put lines like `<span class="color-002"><a id="mxplink" ...` on
+screen. The canonical event carried one text field, `originalText`, which is what
+the server sent — markup included, since Evennia renders ANSI colour to HTML
+server-side. The console's sanitiser handles that. Four other places did not:
+
+- **Display rules** matched, substituted and computed highlight offsets against
+  the markup, and the console renders `displayText` as text — so any rule
+  touching a coloured line showed the player the tags.
+- **The history panel** rendered `originalText` as text unconditionally, so every
+  coloured line showed as markup there.
+- **History search** matched markup: "span" matched every coloured line, a word
+  split by a colour change matched none.
+- **Review Mode's announcement** read the tag names aloud to a screen reader.
+
+Triggers were the one place that got it right, separately, with a comment
+explaining exactly why. Fixed by deriving the plain rendering once, in
+`normalize`, and carrying it as `plainText`. `originalText` is untouched, so
+colour is preserved.
+
+### M29 — Compatibility matrix
+
+1199 tests. axe clean at every severity.
+[`notes/m29-compatibility-matrix.md`](notes/m29-compatibility-matrix.md)
+
+**Fixed — a `:focus` fallback that removed the thing it was falling back to**
+
+- `x:focus, x:focus-visible { ... }` is not graceful degradation. A
+  comma-separated selector list is all-or-nothing in CSS: one unrecognised
+  selector invalidates the **entire** rule. On a browser without
+  `:focus-visible` — Safari before 15.4 — that rule vanished with the plain
+  `:focus` styling inside it, and the client's main focus indicator had no
+  `:focus` form at all. Focus fell back to the browser default, which is not the
+  3px 3:1 indicator A11Y-FOCUS-004 requires: a WCAG 2.4.7 failure, silent because
+  the author's browser supports the selector.
+- Now three separate rules, the last of which (`:focus:not(:focus-visible)`) is
+  itself discarded by browsers lacking the selector — so they keep the always-on
+  ring rather than losing it.
+
+**Fixed — an accessibility preference that could not be honoured**
+
+- A0's reduced-motion rule respects an explicit player choice in both
+  directions, because somebody may want motion their OS is suppressing. An M4
+  blanket rule in the other stylesheet ignored the preference entirely and
+  silently won. Deleted.
+
+**Added — [`docs/compatibility.md`](docs/compatibility.md)**
+
+- Chrome/Edge 87, Firefox 75, Safari 14.1. **The floor is set by CSS, not
+  JavaScript** — `gap` on flex, `inset`, `clamp()`. The client is ES5 plus
+  promises on purpose: an unparseable syntax takes the whole file, a missing
+  layout feature only makes the spacing wrong.
+- The numbers are computed by the tests from the stylesheets, so the page cannot
+  quietly stop being true.
+- It distinguishes **tested** from **expected**, including "the service worker
+  lifecycle has not been verified anywhere". A matrix that does not make that
+  distinction reads as evidence when it is assumption.
+
 ### M28 — Documentation
 
 1168 tests. [`notes/m28-documentation.md`](notes/m28-documentation.md)

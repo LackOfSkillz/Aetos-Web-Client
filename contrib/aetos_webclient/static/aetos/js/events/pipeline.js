@@ -188,6 +188,9 @@
                     originalText: validated.text || "",
                     structuredData: validated.payload || null
                 };
+            if (normalized.plainText === undefined) {
+                normalized.plainText = normalized.originalText;
+            }
 
             /* 3. Authoritative state -------------------------------------- */
             //
@@ -207,6 +210,7 @@
                     id: "evt-transient",
                     category: normalized.category,
                     originalText: normalized.originalText,
+                    plainText: normalized.plainText,
                     structuredData: normalized.structuredData
                 };
 

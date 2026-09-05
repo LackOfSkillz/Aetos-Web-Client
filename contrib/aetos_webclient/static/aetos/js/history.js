@@ -60,7 +60,7 @@
                 if (filter && event.category !== filter) {
                     return false;
                 }
-                if (needle && event.originalText.toLowerCase().indexOf(needle) === -1) {
+                if (needle && displayable(event).toLowerCase().indexOf(needle) === -1) {
                     return false;
                 }
                 // Structured events with no text have nothing to show here.
@@ -68,6 +68,24 @@
                 // where their effect is visible.
                 return !!event.originalText;
             });
+        }
+
+        /*
+         * The text of an event as a person reads it.
+         *
+         * `originalText` is what the server sent, markup and all. Assigning it
+         * to `textContent` showed the player `<span class="color-002">` and the
+         * MXP anchors verbatim -- every coloured line, unconditionally -- and
+         * searching it meant a query for "span" matched everything while a
+         * query for a word split by a colour change matched nothing.
+         *
+         * The fallback covers an event from before `plainText` existed, where
+         * the two strings are the same anyway.
+         */
+        function displayable(event) {
+            return event.plainText === undefined
+                ? (event.originalText || "")
+                : (event.plainText || "");
         }
 
         function renderRows(host) {
@@ -115,7 +133,7 @@
 
                 var body = document.createElement("span");
                 body.className = "aetos-history__text";
-                body.textContent = event.originalText;
+                body.textContent = displayable(event);
 
                 item.appendChild(channel);
                 item.appendChild(body);

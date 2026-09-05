@@ -518,6 +518,16 @@ Core Evennia only. Aetos adds no Python dependencies, requires no Node or
 JavaScript build tooling, and declares no Python version constraint of its own --
 it supports whatever your Evennia supports.
 
+**Browsers:** Chrome/Edge 87+, Firefox 75+, Safari 14.1+ (2020-2021). The limit
+comes from CSS layout features, not from JavaScript: Aetos is written in ES5 plus
+promises, because a syntax the browser cannot parse takes the whole file with it
+while a missing layout feature only makes the spacing wrong.
+
+Below that floor the client still loads and plays; spacing degrades. The full
+matrix, including what each optional feature falls back to and **which platforms
+have actually been tested rather than merely expected to work**, is in the project
+repository's `docs/compatibility.md`.
+
 ## Help for your players
 
 Aetos documents itself. `F1` -- or "Help" in the command palette -- opens a

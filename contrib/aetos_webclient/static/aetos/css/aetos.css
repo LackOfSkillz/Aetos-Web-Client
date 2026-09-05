@@ -251,12 +251,20 @@ body {
     border: 0;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-    }
-}
+/*
+ * Reduced motion lives in accessibility.css, not here.
+ *
+ * M4 put a blanket reduced-motion media query in this file, matching every
+ * element. A0 later added a version that honours an explicit player choice in
+ * both directions -- because somebody may want motion their operating system is
+ * suppressing, and overriding them "for their own good" is the same paternalism
+ * pointed the other way.
+ *
+ * The two disagreed, and this one won wherever the other did not match: a
+ * player who deliberately chose full motion still had it removed. Deleted at
+ * M29 rather than duplicated. The rule that reads the preference is the only
+ * one that should exist.
+ */
 
 /* Sidebar and surroundings widgets ------------------------------------ */
 

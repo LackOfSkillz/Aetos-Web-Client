@@ -44,6 +44,21 @@
      */
     var CHANNELS = ["tell", "chat", "combat", "system"];
 
+    /*
+     * The text of an event as a person reads or hears it.
+     *
+     * `originalText` carries the server's markup. Announcing it meant a screen
+     * reader in Review Mode read out "span class equals color hyphen zero zero
+     * two" before every coloured line, and searching it matched tag names
+     * rather than words.
+     */
+    function readable(event) {
+        if (!event) {
+            return "";
+        }
+        return (event.plainText === undefined ? event.originalText : event.plainText) || "";
+    }
+
     function createReview(services) {
         var settings = services || {};
         var log = settings.canonicalLog || null;
@@ -156,7 +171,7 @@
             var event = all[position];
             announce(
                 (position + 1) + " of " + all.length + ". " +
-                event.category + ". " + event.originalText,
+                event.category + ". " + readable(event),
                 { category: "system", priority: "important" }
             );
             return event;
@@ -213,7 +228,7 @@
                 return [];
             }
             return events().filter(function (event) {
-                return event.originalText.toLowerCase().indexOf(needle) !== -1;
+                return readable(event).toLowerCase().indexOf(needle) !== -1;
             });
         }
 
