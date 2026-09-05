@@ -1045,6 +1045,28 @@
             })
             : null;
 
+        /*
+         * The unified validator.  E4.
+         *
+         * Created after every engine it consults: it takes them by value,
+         * so an earlier position would have captured six hoisted
+         * `undefined`s and reported "0 items checked" forever, silently.
+         *
+         * One place that answers "is this going to work" for every kind of
+         * automation, so a player is not told two different things about the
+         * same regular expression in two different dialogs.
+         */
+        var validator = window.AetosValidator
+            ? window.AetosValidator.create({
+                triggers: triggers,
+                aliases: aliases,
+                timers: timers,
+                scripting: scripting,
+                displayRules: displayRules,
+                macros: macros
+            })
+            : null;
+
         // Loaded once and refreshed on change, so evaluating a trigger against
         // a line of output is not an async storage read per line.
         var triggerCache = [];
@@ -1540,6 +1562,7 @@
                 scripting: scripting,
                 groups: automationGroups,
                 displayRules: displayRules,
+                validator: validator,
                 reloadTriggers: reloadTriggers,
                 gameName: gameName,
                 announce: function (message) { announcer.announce(message); }
@@ -1623,6 +1646,12 @@
                     "Write an Aetos Script.",
                     function () { settings.editScript(null); },
                     function () { return automationAllowed("scripting"); });
+            }
+
+            if (settings && validator) {
+                addCommand("automation.validate", "Validate automation", "Automation",
+                    "Check every trigger, alias, timer, script and rule you have.",
+                    function () { settings.validateAll(); });
             }
 
             /* Automation groups and display rules */
@@ -1811,6 +1840,7 @@
             review: review,
             displayRules: displayRules,
             automationGroups: automationGroups,
+            validator: validator,
             reloadTriggers: reloadTriggers,
             macros: macros,
             editMacro: editMacro,

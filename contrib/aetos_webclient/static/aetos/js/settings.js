@@ -210,6 +210,111 @@
         }
 
 
+
+        /* --- Validate all local automation (E4) -------------------------- */
+
+        /*
+         * Check everything at once.
+         *
+         * Runs entirely in this browser against the player's own configuration.
+         * Nothing is uploaded -- the whole reason this data lives locally is
+         * that it stays there, and a validator that phoned home to check a
+         * regular expression would be an odd exception to that.
+         */
+        function validateAll() {
+            var validator = services.validator;
+            if (!validator) {
+                return null;
+            }
+            // Async: half the engines read from IndexedDB.
+            return validator.validateAll().then(function (results) {
+            var body = document.createElement("div");
+
+            var summary = document.createElement("p");
+            summary.className = "aetos-dialog__description";
+            summary.textContent = results.checked === 0
+                ? "You have no automation to check yet."
+                : results.checked + " item" + (results.checked === 1 ? "" : "s") +
+                  " checked. " + results.errors + " error" +
+                  (results.errors === 1 ? "" : "s") + ", " + results.warnings +
+                  " warning" + (results.warnings === 1 ? "" : "s") + ".";
+            body.appendChild(summary);
+
+            var list = document.createElement("ul");
+            list.className = "aetos-privacy__list";
+            list.setAttribute("tabindex", "0");
+            list.setAttribute("aria-label", "Validation results by kind");
+
+            validator.summarize(results).forEach(function (entry) {
+                var row = document.createElement("li");
+                row.className = "aetos-privacy__row";
+                var name = document.createElement("span");
+                name.textContent = FRIENDLY_KINDS[entry.kind] || entry.kind;
+                var value = document.createElement("span");
+                value.className = "aetos-privacy__count";
+                value.textContent = entry.text;
+                row.appendChild(name);
+                row.appendChild(value);
+                list.appendChild(row);
+
+                // The detail, so a player is not told "2 warnings" and left to
+                // find them. A count without a location is a chore, not a
+                // report.
+                entry.bucket.items.forEach(function (item) {
+                    item.findings.forEach(function (found) {
+                        if (found.severity === "info") {
+                            return;
+                        }
+                        var detail = document.createElement("li");
+                        detail.className = "aetos-privacy__row aetos-validate__detail";
+                        var label = document.createElement("span");
+                        // Severity in words, never colour alone.
+                        label.textContent = found.severity.toUpperCase() + ": " +
+                            (item.name || "unnamed");
+                        var message = document.createElement("span");
+                        message.className = "aetos-privacy__count";
+                        message.textContent = found.message;
+                        detail.appendChild(label);
+                        detail.appendChild(message);
+                        list.appendChild(detail);
+                    });
+                });
+            });
+
+            body.appendChild(list);
+
+            var privacy = document.createElement("p");
+            privacy.className = "aetos-dialog__description";
+            privacy.textContent =
+                "Checked in this browser. Nothing was sent anywhere.";
+            body.appendChild(privacy);
+
+            dialog.open({
+                title: "Validate automation",
+                content: body,
+                submitLabel: "Close",
+                fields: [],
+                onSubmit: function () {}
+            });
+            announce(
+                results.errors
+                    ? results.errors + " problems found."
+                    : "Everything checks out.",
+                { category: "system", priority: "important" }
+            );
+            return results;
+            });
+        }
+
+        var FRIENDLY_KINDS = {
+            trigger: "Triggers",
+            alias: "Aliases",
+            timer: "Timers",
+            script: "Scripts",
+            displayRule: "Display rules",
+            macro: "Macros"
+        };
+
         /* --- Automation groups (E3) ------------------------------------- */
 
         /*
@@ -603,6 +708,7 @@
             editTrigger: editTrigger,
             editTimer: editTimer,
             editScript: editScript,
+            validateAll: validateAll,
             openGroups: openGroups,
             editGroup: editGroup,
             editDisplayRule: editDisplayRule,

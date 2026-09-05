@@ -507,7 +507,8 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] M17  Rich chat + event history + Review Mode       -- 593 py
 [x] E2   Non-destructive presentation rules            -- 615 py
 [x] E3   Automation groups                             -- 637 py
-[ ] E4   Unified validator                             <-- NEXT
+[x] E4   Unified validator                             -- 667 py
+[ ] E5   Diagnostic reporting                          <-- NEXT
 [ ] A5   Cognitive and orientation layer
 [ ] M18  Audio + multimedia + captions                 (absorbs A6)
 [ ] M19  Themes  (+ contrast validation, A11Y-VIS-003)
@@ -1001,7 +1002,11 @@ enable automation — a player switching to a Combat layout has not consented to
 their combat triggers turning on, and finding out otherwise mid-fight is the
 kind of surprise that gets people killed in-game and banned out of it.
 
-### E4 — Unified validator
+### E4 — Unified validator  ✅ COMPLETE
+
+Record: [`e4-unified-validator.md`](e4-unified-validator.md). 667 Python tests
+OK. Script checking runs the real compiler and walks the real AST, so a
+function name inside a string is not mistaken for a call.
 
 ```text
 validator API      severity model (ERROR / WARNING / INFO)
@@ -1088,7 +1093,6 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [ ] E0   Event pipeline contract                  <-- BEFORE M17
 [ ] E1   Capture + replay                         <-- BEFORE M17
 [ ] M17  Rich chat + event history + Review Mode
-[ ] E5   Diagnostic reporting
 
 [ ] D0   Discovery architecture spike             <-- next on the D-track
 [ ] D1..D6
