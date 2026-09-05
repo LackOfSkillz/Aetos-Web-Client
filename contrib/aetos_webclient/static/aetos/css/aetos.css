@@ -1378,3 +1378,29 @@ body {
 }
 
 .aetos-history__page, .aetos-history__empty { color: var(--aetos-text-muted); }
+
+/* Display rules (E2) -------------------------------------------------------
+
+   A highlight carries an accessible name in the markup; these tokens only
+   decide what it looks like. Colour is never the meaning. */
+
+.aetos-console__mark {
+    background: transparent;
+    color: inherit;
+    /* An underline as well as a colour, so the mark survives a high-contrast
+       theme and is visible without colour perception. */
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+}
+
+.aetos-console__mark--mark { text-decoration-color: var(--aetos-accent); }
+.aetos-console__mark--warning { text-decoration-color: var(--aetos-warning); }
+.aetos-console__mark--danger { text-decoration-color: var(--aetos-danger); }
+.aetos-console__mark--success { text-decoration-color: var(--aetos-success); }
+
+/* Collapsed, not hidden: still readable, just visually de-emphasised. A player
+   who collapsed something chose to see less of it, not none of it. */
+.aetos-console__line--collapsed {
+    opacity: 0.65;
+    font-size: 0.92em;
+}

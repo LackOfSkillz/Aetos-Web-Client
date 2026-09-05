@@ -209,3 +209,63 @@ class TestNoServerSideProfileStorage(TestCase):
         contrib_dir = Path(AETOS_STATIC_DIR).parent
         self.assertFalse((contrib_dir / "models.py").exists())
         self.assertFalse((contrib_dir / "migrations").exists())
+
+
+class TestTheDatabaseSchemaTracksItsNamespaces(TestCase):
+    """
+    Regression guard for a failure that only appears on an existing install.
+
+    IndexedDB creates object stores during an upgrade and at no other time. Add
+    a namespace without bumping `DB_VERSION` and a fresh browser works
+    perfectly, while every existing player gets a database with no store for it
+    -- and finds out via a thrown transaction the first time anything writes
+    there.
+
+    E2 hit exactly that when `display_rules` was added. So the version is
+    asserted to have moved whenever the namespace list grows.
+
+    """
+
+    def _storage_source(self):
+        """
+        Read storage.js.
+
+        Returns:
+            str: Contents.
+
+        """
+        return (
+            Path(AETOS_STATIC_DIR) / "aetos" / "js" / "storage.js"
+        ).read_text(encoding="utf-8")
+
+    def test_the_version_matches_the_namespace_count(self):
+        """
+        Not a general rule -- just a tripwire pinned to the current pair. When
+        somebody adds a namespace this fails, and the fix is to bump the
+        version and update this number, which is the moment to remember why.
+
+        """
+        source = self._storage_source()
+        block = source[source.index("var NAMESPACES = [") : source.index("];")]
+        namespaces = re.findall(r'"(\w+)"', block)
+        version = int(re.search(r"var DB_VERSION = (\d+);", source).group(1))
+
+        self.assertEqual(
+            (len(namespaces), version),
+            (16, 2),
+            "the namespace list changed without a DB_VERSION bump -- existing "
+            "players would get a database with no store for the new namespace",
+        )
+
+    def test_the_upgrade_creates_only_missing_stores(self):
+        """
+        Which is what makes bumping safe: an upgrade must not drop what is
+        already there.
+
+        """
+        source = self._storage_source()
+        self.assertIn("if (!db.objectStoreNames.contains(ns)) {", source)
+        self.assertNotIn("deleteObjectStore", source)
+
+    def test_display_rules_has_a_namespace(self):
+        self.assertIn('"display_rules"', self._storage_source())

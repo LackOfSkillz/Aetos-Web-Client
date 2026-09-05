@@ -234,8 +234,12 @@ class TestTheShellUsesThePipeline(TestCase):
         needle = 'pipeline.observe("presentation", function (event) {'
         self.assertIn(needle, SHELL)
         start = SHELL.index(needle)
-        window = SHELL[start : start + 300]
-        self.assertIn("consoleWidget.append", window)
+        # Bounded by the next observer registration rather than by a character
+        # count. A fixed window has now been wrong twice in this file as the
+        # body grew -- once when M17 added a second observer, once when E2 added
+        # a comment. A landmark cannot drift.
+        end = SHELL.index("if (capture) {", start)
+        self.assertIn("consoleWidget.append", SHELL[start:end])
 
     def test_triggers_see_canonical_text(self):
         """

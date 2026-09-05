@@ -26,7 +26,22 @@
 (function (window) {
     "use strict";
 
-    var DB_VERSION = 1;
+    /*
+     * Schema version.
+     *
+     * **Bump this whenever a namespace is added.** IndexedDB only creates
+     * object stores during an upgrade, so a new namespace on an unchanged
+     * version means every existing player gets a database with no store for it
+     * -- and the failure is a thrown transaction the first time anything writes
+     * there, on their machine and not on a fresh one. E2 hit exactly that when
+     * `display_rules` was added.
+     *
+     * The upgrade handler creates only missing stores, so bumping is safe and
+     * loses nothing.
+     *
+     * 1 -> 2: added `display_rules` (E2).
+     */
+    var DB_VERSION = 2;
 
     // Namespaces from blueprint section 13. Fixed here so that export, import,
     // the privacy panel and the clear operations can never drift apart.
@@ -42,6 +57,7 @@
         "notes",
         "map_notes",
         "map_pois",
+        "display_rules",
         "themes",
         "keybindings",
         "preferences",

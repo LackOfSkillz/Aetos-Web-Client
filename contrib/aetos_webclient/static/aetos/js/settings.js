@@ -227,6 +227,7 @@
             notes: "Notes",
             map_notes: "Map notes",
             map_pois: "Map points of interest",
+            display_rules: "Display rules",
             themes: "Themes",
             keybindings: "Keybindings",
             preferences: "Preferences",

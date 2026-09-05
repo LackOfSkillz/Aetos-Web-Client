@@ -253,18 +253,106 @@
             }
         }
 
-        function append(content, className) {
+        /*
+         * Append a line, optionally with presentation metadata.
+         *
+         * `presentation` carries what the display rules decided (E2). It never
+         * carries what happened -- that is the canonical event, which the
+         * console never sees and could not alter if it did.
+         */
+        function append(content, className, presentation) {
+            var display = presentation || {};
+
+            // Filtered out of this view. NOT deleted: the event is in the
+            // canonical log, the history widget, Review Mode search and any
+            // developer capture. The console simply does not draw it.
+            if (display.hiddenInView) {
+                return null;
+            }
+
             var atBottom = isScrolledToBottom();
             var line = document.createElement("div");
             line.className = "aetos-console__line" + (className ? " " + className : "");
-            // Server content is rebuilt from an allowlist. innerHTML is never
-            // used anywhere in Aetos.
-            line.appendChild(sanitizeHtml(content));
+
+            if (display.collapsed) {
+                line.classList.add("aetos-console__line--collapsed");
+            }
+
+            if (display.spans && display.spans.length) {
+                // Highlights are rendered over the PLAIN text, because span
+                // offsets were computed against plain text and applying them
+                // to markup would slice through tags. The colour comes from a
+                // theme token and the meaning from the label -- a highlight
+                // that only changed colour would say nothing to a screen
+                // reader or a colour-blind player.
+                line.appendChild(renderHighlighted(
+                    display.displayText, display.spans));
+            } else if (display.displayText !== undefined &&
+                    display.displayText !== content) {
+                // Substituted. Plain text, for the same reason.
+                line.textContent = display.displayText;
+            } else {
+                // Server content is rebuilt from an allowlist. innerHTML is
+                // never used anywhere in Aetos.
+                line.appendChild(sanitizeHtml(content));
+            }
+
             rootElement.appendChild(line);
             trim();
             if (atBottom) {
                 rootElement.scrollTop = rootElement.scrollHeight;
             }
+            return line;
+        }
+
+        /*
+         * Build a line with highlighted ranges.
+         *
+         * Each highlighted range is a <mark> carrying an accessible name, so
+         * assistive technology announces *why* it is marked rather than the
+         * player being told nothing at all -- which is what a bare colour
+         * change amounts to.
+         */
+        function renderHighlighted(plain, spans) {
+            var fragment = document.createDocumentFragment();
+            var cursor = 0;
+
+            spans.forEach(function (span) {
+                if (span.start > cursor) {
+                    fragment.appendChild(
+                        document.createTextNode(plain.slice(cursor, span.start)));
+                }
+                var mark = document.createElement("mark");
+                mark.className = "aetos-console__mark aetos-console__mark--" + span.style;
+
+                /*
+                 * The label is visually hidden TEXT, not an aria-label.
+                 *
+                 * `<mark>` carries no implicit role, and `aria-label` on a
+                 * roleless element is not reliably supported -- axe flags it as
+                 * indeterminate, which is a fair description of what a screen
+                 * reader will do with it. Real text in the DOM is announced by
+                 * everything, everywhere, with no ARIA involved.
+                 *
+                 * So a highlight reads as "Enemy: goblin" rather than as a
+                 * colour the player may not be able to see.
+                 */
+                if (span.label) {
+                    var name = document.createElement("span");
+                    name.className = "aetos-visually-hidden";
+                    name.textContent = span.label + ": ";
+                    mark.appendChild(name);
+                }
+                mark.appendChild(
+                    document.createTextNode(plain.slice(span.start, span.end)));
+                fragment.appendChild(mark);
+                cursor = span.end;
+            });
+
+            if (cursor < plain.length) {
+                fragment.appendChild(document.createTextNode(plain.slice(cursor)));
+            }
+            return fragment;
         }
 
         return { append: append };
@@ -496,6 +584,19 @@
          * websocket uses. There is deliberately no second path: a harness that
          * exercises different code from production tests the harness.
          */
+        /*
+         * Display rules.  E2.
+         *
+         * Presentation only. They produce metadata describing how a line should
+         * look; they cannot touch the record, the store, or what a trigger saw.
+         */
+        var displayRules = (storage && window.AetosPresentationRules)
+            ? window.AetosPresentationRules.create({ storage: storage })
+            : null;
+        if (displayRules) {
+            displayRules.load();
+        }
+
         var replay = (pipeline && window.AetosReplay)
             ? window.AetosReplay.create({ pipeline: pipeline })
             : null;
@@ -536,9 +637,22 @@
             // Presentation second, and handed a copy -- so nothing it does can
             // reach the record or the automation that already ran (PIPE-002).
             pipeline.observe("presentation", function (event) {
-                if (event.originalText) {
-                    consoleWidget.append(event.originalText);
+                if (!event.originalText) {
+                    return;
                 }
+                /*
+                 * Display rules run here and nowhere else.
+                 *
+                 * By this point the canonical log has already recorded the
+                 * event and the automation stage has already seen it, so a
+                 * filter cannot prevent a trigger firing and cannot erase
+                 * anything. That ordering is E0's guarantee; this is the code
+                 * that depends on it.
+                 */
+                var presentation = displayRules
+                    ? displayRules.present(event, null)
+                    : null;
+                consoleWidget.append(event.originalText, null, presentation);
             });
 
             /*
@@ -1654,6 +1768,7 @@
             capture: capture,
             replay: replay,
             review: review,
+            displayRules: displayRules,
             reloadTriggers: reloadTriggers,
             macros: macros,
             editMacro: editMacro,
