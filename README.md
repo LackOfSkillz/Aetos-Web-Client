@@ -126,7 +126,7 @@ is served from your own host.
 ## What is built
 
 Roughly 6,900 lines of Python, 9,200 of JavaScript and 1,800 of CSS, with
-**407 Python tests and 326 browser checks** passing.
+**409 Python tests and 326 browser checks** passing.
 
 ### Works on a pristine game, with no configuration
 

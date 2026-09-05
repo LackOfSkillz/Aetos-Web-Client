@@ -89,7 +89,7 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
   as the player's own, so the two can never disagree about thresholds or
   rounding.
 
-**Tests** — 407 Python tests passing (up from 334).
+**Tests** — 409 Python tests passing (up from 334).
 
 ---
 
