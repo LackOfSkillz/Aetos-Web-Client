@@ -266,10 +266,75 @@
     function ConsoleWidget(rootElement, options) {
         var maxLines = (options && options.maxLines) || 5000;
 
+        /*
+         * Lines wait here until the next frame.
+         *
+         * M25. Until then every append read `scrollHeight`, added a node, and
+         * wrote `scrollTop` -- three operations that, interleaved, force the
+         * browser to lay out the whole scrollback once per line. Measured
+         * against a full 5000-line console that cost **68ms per line**: a
+         * 200-line burst -- one `help`, one long room, one busy combat round --
+         * froze the client for thirteen seconds.
+         *
+         * The bound was doing the damage. `maxLines` exists so a long session
+         * stays responsive, and `scrollTop = scrollHeight` over a list held at
+         * its maximum is the most expensive possible version of that write.
+         * The cap kept memory flat and made latency quadratic.
+         *
+         * Batching turns it into one layout per frame regardless of how many
+         * lines arrive in it, which is the rate the player can actually read at
+         * anyway.
+         */
+        var MAX_PENDING = 500;
+        var pending = [];
+        var flushQueued = false;
+
         function isScrolledToBottom() {
             var slack = 4;
             return rootElement.scrollHeight - rootElement.scrollTop -
                 rootElement.clientHeight <= slack;
+        }
+
+        function schedule() {
+            if (flushQueued) {
+                return;
+            }
+            flushQueued = true;
+            if (typeof window.requestAnimationFrame === "function") {
+                window.requestAnimationFrame(flush);
+            }
+            /*
+             * And a timer as well, not instead.
+             *
+             * A backgrounded tab does not run animation frames. Without this
+             * the lines would sit in `pending` -- not lost, since the canonical
+             * log has them, but absent from a console somebody may be reading
+             * in another window with a screen reader. `flush` is idempotent, so
+             * whichever arrives first does the work and the other returns.
+             */
+            window.setTimeout(flush, 100);
+        }
+
+        function flush() {
+            flushQueued = false;
+            if (!pending.length) {
+                return;
+            }
+            // The one geometry read of the batch, taken before anything is
+            // added -- so it answers "was the player at the bottom", which is
+            // the question, rather than "is the console taller now", which is
+            // not.
+            var atBottom = isScrolledToBottom();
+            var fragment = document.createDocumentFragment();
+            for (var i = 0; i < pending.length; i++) {
+                fragment.appendChild(pending[i]);
+            }
+            pending.length = 0;
+            rootElement.appendChild(fragment);
+            trim();
+            if (atBottom) {
+                rootElement.scrollTop = rootElement.scrollHeight;
+            }
         }
 
         // Bounded scrollback (blueprint section 54): unbounded output is a
@@ -298,7 +363,6 @@
                 return null;
             }
 
-            var atBottom = isScrolledToBottom();
             var line = document.createElement("div");
             line.className = "aetos-console__line" + (className ? " " + className : "");
 
@@ -325,10 +389,16 @@
                 line.appendChild(sanitizeHtml(content));
             }
 
-            rootElement.appendChild(line);
-            trim();
-            if (atBottom) {
-                rootElement.scrollTop = rootElement.scrollHeight;
+            pending.push(line);
+            /*
+             * A burst larger than a frame's worth flushes on its own rather
+             * than growing without limit. It is also the only path that runs
+             * when animation frames are unavailable altogether.
+             */
+            if (pending.length >= MAX_PENDING) {
+                flush();
+            } else {
+                schedule();
             }
             return line;
         }
@@ -383,7 +453,12 @@
             return fragment;
         }
 
-        return { append: append };
+        /*
+         * `flush` is exported because a caller that needs the console to be
+         * current *now* -- a test, a capture, anything that reads the DOM --
+         * must be able to ask, rather than guessing at a frame boundary.
+         */
+        return { append: append, flush: flush };
     }
 
     /* ------------------------------------------------------------------
@@ -900,12 +975,43 @@
                 }
             });
 
-            // The history widget redraws from the canonical log. Driven from
-            // the pipeline rather than from a store subscription, because it
-            // shows *events* and the store holds *state* -- correlated, but
-            // not the same thing.
-            pipeline.observe("presentation", function () {
+            /*
+             * The history widget redraws from the canonical log. Driven from
+             * the pipeline rather than from a store subscription, because it
+             * shows *events* and the store holds *state* -- correlated, but
+             * not the same thing.
+             *
+             * Coalesced to once per frame (M25). A redraw filters the entire
+             * canonical log -- up to 5000 events, each with a substring test
+             * when a search is active -- and rebuilds a page of DOM. Doing that
+             * per event made the cost of one line proportional to the length of
+             * the session, so a burst late in an evening cost far more than the
+             * same burst at the start. Once per frame is the rate the screen
+             * updates at regardless.
+             *
+             * Not skipped when the widget is hidden, though that would save
+             * more. The layout has no "became visible" signal to redraw on, and
+             * a widget that quietly stops updating and has no way to be told to
+             * start again is a worse bug than the one being fixed.
+             */
+            var historyRefreshQueued = false;
+
+            function refreshHistory() {
+                historyRefreshQueued = false;
                 historyRefreshers.forEach(function (refresh) { refresh(); });
+            }
+
+            pipeline.observe("presentation", function () {
+                if (historyRefreshQueued || !historyRefreshers.length) {
+                    return;
+                }
+                historyRefreshQueued = true;
+                if (typeof window.requestAnimationFrame === "function") {
+                    window.requestAnimationFrame(refreshHistory);
+                }
+                // A backgrounded tab runs no animation frames; same reasoning
+                // as the console. `refreshHistory` is safe to run twice.
+                window.setTimeout(refreshHistory, 100);
             });
 
             // Presentation second, and handed a copy -- so nothing it does can

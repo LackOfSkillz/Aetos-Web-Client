@@ -104,7 +104,7 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M14  Timers + Aetos scripting
 [x] M15  Command palette + automation editors + privacy panel
 [x] M16  Inventory + equipment + target + effects
-[ ] M17  Rich chat + event history
+[x] M17  Rich chat + event history    (shipped as A4)
 [x] M18  Audio + multimedia + captions  (absorbs A6)
 [x] M19  Themes + contrast validation (+ High Contrast ships in core)
 [x] M20  Mobile + responsive UI + PWA + gestures
@@ -112,7 +112,7 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M22  Widget SDK + failure isolation
 [x] M23  Server-described UI manifest
 [x] M24  Reconnect hardening
-[ ] M25  Performance hardening
+[x] M25  Performance hardening
 [ ] M26  Security hardening
 [ ] M27  Configuration validation
 [ ] M28  Documentation
@@ -608,8 +608,9 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] M23  Server-described UI manifest                  -- 1036 py
 [x] E6   Mapper metadata + weighted routing            -- 1066 py
 [x] M24  Reconnect hardening                           -- 1085 py
-[ ] M25  Performance hardening                         <-- NEXT
-[ ] M26  Security hardening
+[x] M25  Performance hardening                          -- 1102 py
+         (the 5000-line cap was itself the bottleneck)
+[ ] M26  Security hardening                            <-- NEXT
 [ ] M27  Configuration validation
 [ ] M28  Documentation
 [ ] M29  Compatibility matrix

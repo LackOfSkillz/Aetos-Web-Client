@@ -11,6 +11,51 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### M25 — Performance hardening
+
+1102 tests. axe clean at every severity.
+[`notes/m25-performance-hardening.md`](notes/m25-performance-hardening.md)
+
+**Fixed — the console forced a full layout for every line of game output**
+
+- `append` read `scrollHeight`, added a node, then wrote `scrollTop`.
+  Interleaved, a geometry read after a DOM mutation makes the browser lay out
+  the entire scrollback — once per line.
+- **The 5000-line cap was what made it expensive.** That cap exists so a long
+  session stays responsive, and `scrollTop = scrollHeight` over a list held at
+  its maximum is the most costly possible version of that write. It kept memory
+  flat and made latency quadratic. Measured at **68ms per line** with the
+  scrollback full: a 200-line burst — one `help`, one long room, one busy combat
+  round — froze the client for thirteen seconds.
+- Lines are now batched into the next animation frame: one geometry read, one
+  fragment insert, one trim, one scroll write, however many lines arrived.
+  **0.28–0.73ms per line** at the same cap.
+- A `setTimeout` backstop runs *alongside* the animation frame, because a
+  backgrounded tab runs no frames; a burst over 500 lines flushes itself, so the
+  batch cannot grow without bound where frames never run at all.
+- Behaviour is unchanged: output still follows to the bottom, and still does not
+  yank the view when the player has scrolled up to read.
+
+**Fixed — the history widget redrew from the whole canonical log on every event**
+
+- A redraw filters up to 5000 events and rebuilds a page of DOM. Doing it per
+  event made the cost of one line proportional to the length of the session.
+  Coalesced to once per frame.
+
+**Changed — every script now loads with `defer`**
+
+- All 55 scripts sat in `<head>` as parser-blocking: nothing was parsed or
+  painted until the last of them had downloaded and run.
+- `defer` rather than `async`, because execution order is load-bearing — the
+  accessibility subsystem must exist before anything that can announce — and
+  `async` does not preserve it.
+
+**Added**
+
+- [`browser-qa/qa-performance.js`](browser-qa/qa-performance.js) — measures the
+  per-line cost at three session lengths, so the numbers above can be taken
+  again rather than believed.
+
 ### M24 — Reconnect hardening
 
 1085 tests. **axe clean at every severity, including moderate** — a first for

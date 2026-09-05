@@ -66,3 +66,32 @@ The three-way version of the rule now reads:
 - changed a **static file**? `collectstatic`
 - changed **JavaScript** and about to judge the result? bust the cache too
 
+
+## Addendum (M25): `navigate` does not reload a page the pane already has
+
+The browser pane's `navigate` tool, given the URL it is already showing, does
+nothing. It reports success either way.
+
+At M25 that produced two consecutive measurements against stale code, both of
+which read as **"the fix does nothing"** rather than as a tooling problem. That
+is the dangerous shape: a false negative that looks like an honest result, and
+that a reasonable person acts on by reverting a correct change.
+
+It compounds with the M21 addendum above rather than replacing it, because the
+symptom is identical — the page runs old code — while the cause is different.
+Checking `?v=` is not enough, because the URL can be perfectly correct on a page
+that was never re-fetched.
+
+Reliable:
+
+```javascript
+location.href = "http://localhost:4471/webclient/?cb=" + Date.now();
+```
+
+The unique query defeats both the pane's no-op and the document cache. Then
+assert on something the change introduced — a new exported function, a new
+attribute — before believing any measurement taken from that page.
+
+The rule generalises past this tool: **before measuring a fix, prove the fix is
+what is running.** Every step between the editor and the browser is a place the
+old version can survive.

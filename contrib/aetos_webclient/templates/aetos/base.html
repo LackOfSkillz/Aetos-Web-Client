@@ -86,10 +86,10 @@ come from Evennia's documented webclient view and context processor
 
     <!-- Minimal shim for the single jQuery call at the end of evennia.js.
          Must load before it. See compat.js for the reasoning. -->
-    <script src={% aetos_static "aetos/js/compat.js" %} type="text/javascript" charset="utf-8"></script>
+    <script defer src={% aetos_static "aetos/js/compat.js" %} type="text/javascript" charset="utf-8"></script>
 
     <!-- Evennia's own transport library, unmodified, from Evennia's static files. -->
-    <script src={% static "webclient/js/evennia.js" %} type="text/javascript" charset="utf-8"></script>
+    <script defer src={% static "webclient/js/evennia.js" %} type="text/javascript" charset="utf-8"></script>
 
     {% block scripts %}{% endblock %}
   </head>
