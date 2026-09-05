@@ -211,6 +211,15 @@
 
         return {
             id: "resources",
+            // Display only. The numbers are always rendered as text beside the
+            // bar, and threshold crossings are announced through the
+            // announcement manager rather than a live region here.
+            accessibility: {
+                landmarkLabel: "Resources",
+                heading: "Resources",
+                keyboardOperable: false,
+                liveUpdates: true
+            },
             displayName: "Resources",
             description: "Numeric values your game exposes about your character.",
             builtin: true,

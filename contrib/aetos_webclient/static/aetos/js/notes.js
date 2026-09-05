@@ -238,6 +238,14 @@
 
         return {
             id: "notes",
+            // Not live: notes change only when the player edits them, so nothing
+            // here updates behind their back.
+            accessibility: {
+                landmarkLabel: "Your private notes",
+                heading: "Notes",
+                keyboardOperable: true,
+                liveUpdates: false
+            },
             displayName: "Notes",
             description: "Your own private notebook, stored in this browser.",
             builtin: true,

@@ -15,10 +15,36 @@
  *     defaultSize:          {width: 260, height: 160},
  *     singleton:            true,                // at most one instance
  *     subscriptions:        ["room"],            // store sections
+ *     accessibility:        {...}             // REQUIRED -- see below
  *     mount(context)        -> element
  *     update(context, data) // called on subscribed section change
  *     destroy(context)      // release listeners/timers
  *   }
+ *
+ * THE ACCESSIBILITY CONTRACT (Addendum A.28) IS NOT OPTIONAL.
+ *
+ *   accessibility: {
+ *     landmarkLabel:  "Inventory",          // names the panel's region
+ *     heading:        "Inventory",          // the visible <h2>
+ *     description:    "Items you carry",    // for the widget palette
+ *     keyboardOperable: true,               // false = display only
+ *     liveUpdates:    false,                // does it change on its own?
+ *     graphicalOnly:  false,                // canvas/SVG with no text form?
+ *     textAlternative: null                 // required if graphicalOnly
+ *   }
+ *
+ * Registration THROWS without it. That is deliberate and it is the whole point
+ * of A1: a widget author who has not thought about how their widget is read
+ * cannot ship it by accident, and "we'll do accessibility later" is not
+ * expressible in the API.
+ *
+ * The metadata is not decoration. The layout adapter uses `landmarkLabel` and
+ * `heading` to build the panel, so a widget that declares them badly is visibly
+ * wrong to its author rather than silently wrong for somebody else.
+ *
+ * `graphicalOnly` without a `textAlternative` is refused outright. A canvas with
+ * no text form is not a widget with an accessibility gap -- it is a widget half
+ * the audience cannot use at all (A.29 applied generally).
  *
  * The registry never touches the DOM and never knows about layout. It is a
  * catalogue plus a capability filter, which is what lets the layout engine be
@@ -49,6 +75,56 @@
         if (definition.subscriptions !== undefined && !Array.isArray(definition.subscriptions)) {
             problems.push("subscriptions must be an array when given");
         }
+        problems.push.apply(problems, validateAccessibility(definition));
+        return problems;
+    }
+
+    /*
+     * The accessibility contract.  Addendum A.28.
+     *
+     * Required, and required to be *answered* rather than merely present: every
+     * question here is one whose wrong answer produces a widget that works
+     * perfectly for its author and not at all for somebody else.
+     */
+    function validateAccessibility(definition) {
+        var problems = [];
+        var meta = definition.accessibility;
+
+        if (!meta || typeof meta !== "object") {
+            return [
+                "accessibility metadata is required (Addendum A.28). Declare " +
+                "landmarkLabel, heading, keyboardOperable and liveUpdates."
+            ];
+        }
+
+        if (typeof meta.landmarkLabel !== "string" || !meta.landmarkLabel) {
+            // An unlabelled region is an anonymous entry in a screen reader's
+            // landmark list, which is worse than no landmark: it is one more
+            // thing to step through that says nothing.
+            problems.push("accessibility.landmarkLabel must be a non-empty string");
+        }
+        if (typeof meta.heading !== "string" || !meta.heading) {
+            problems.push("accessibility.heading must be a non-empty string");
+        }
+        if (typeof meta.keyboardOperable !== "boolean") {
+            // Deliberately not defaulted. "Can this be used without a mouse?"
+            // has no safe default answer -- assuming true hides the widgets
+            // that cannot, and assuming false slanders the ones that can.
+            problems.push(
+                "accessibility.keyboardOperable must be true or false, stated " +
+                "explicitly -- there is no safe default for it"
+            );
+        }
+        if (typeof meta.liveUpdates !== "boolean") {
+            problems.push("accessibility.liveUpdates must be true or false");
+        }
+        if (meta.graphicalOnly === true && !meta.textAlternative) {
+            problems.push(
+                "accessibility.graphicalOnly requires a textAlternative: a " +
+                "graphical widget with no text form is unusable, not merely " +
+                "imperfect"
+            );
+        }
         return problems;
     }
 
@@ -71,7 +147,16 @@
             destroy: definition.destroy || null,
             // Marks widgets shipped with Aetos, so a third-party widget can
             // never quietly replace a built-in one (blueprint section 57).
-            builtin: definition.builtin === true
+            builtin: definition.builtin === true,
+            accessibility: {
+                landmarkLabel: definition.accessibility.landmarkLabel,
+                heading: definition.accessibility.heading,
+                description: definition.accessibility.description || "",
+                keyboardOperable: definition.accessibility.keyboardOperable,
+                liveUpdates: definition.accessibility.liveUpdates,
+                graphicalOnly: definition.accessibility.graphicalOnly === true,
+                textAlternative: definition.accessibility.textAlternative || null
+            }
         };
     }
 

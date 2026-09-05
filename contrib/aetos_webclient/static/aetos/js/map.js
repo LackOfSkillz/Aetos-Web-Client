@@ -266,6 +266,16 @@
 
         return {
             id: "map",
+            // graphicalOnly is FALSE despite the SVG: the written surroundings
+            // description is generated from the same graph as the picture, so
+            // the map is not a graphic with a caption -- it is one dataset with
+            // two equal renderings (A.29).
+            accessibility: {
+                landmarkLabel: "Local map",
+                heading: "Map",
+                keyboardOperable: true,
+                liveUpdates: true
+            },
             displayName: "Map",
             description: "Local room graph, visual and textual.",
             builtin: true,

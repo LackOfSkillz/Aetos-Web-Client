@@ -80,6 +80,12 @@
 
         return {
             id: "inventory",
+            accessibility: {
+                landmarkLabel: "Your inventory",
+                heading: "Inventory",
+                keyboardOperable: true,
+                liveUpdates: true
+            },
             displayName: "Inventory",
             description: "What you are carrying.",
             builtin: true,
@@ -159,6 +165,14 @@
 
         return {
             id: "equipment",
+            // Empty slots are stated in words, so the panel reads correctly when
+            // nothing is equipped rather than reading as blank.
+            accessibility: {
+                landmarkLabel: "Equipped items",
+                heading: "Equipment",
+                keyboardOperable: true,
+                liveUpdates: true
+            },
             displayName: "Equipment",
             description: "What you have equipped, by slot.",
             builtin: true,
@@ -368,6 +382,15 @@
 
         return {
             id: "effects",
+            // Display only, and deliberately so: an effect is something happening
+            // TO the character, not a control. Countdowns update every second
+            // and are explicitly not announced.
+            accessibility: {
+                landmarkLabel: "Active effects",
+                heading: "Effects",
+                keyboardOperable: false,
+                liveUpdates: true
+            },
             displayName: "Effects",
             description: "Temporary conditions currently on your character.",
             builtin: true,
@@ -430,6 +453,12 @@
 
         return {
             id: "target",
+            accessibility: {
+                landmarkLabel: "Current target",
+                heading: "Target",
+                keyboardOperable: true,
+                liveUpdates: true
+            },
             displayName: "Target",
             description: "The thing your game currently has you focused on.",
             builtin: true,

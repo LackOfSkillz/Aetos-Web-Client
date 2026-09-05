@@ -62,12 +62,42 @@
             panel.className = "aetos-widget aetos-widget--panel";
             panel.setAttribute("data-aetos-widget", instance.id);
 
+            /*
+             * Heading and landmark name come from the widget's declared
+             * accessibility contract (A.28), not from `displayName`.
+             *
+             * They are usually the same string, and they are allowed to differ
+             * for a good reason: a panel titled "Effects" may want to be
+             * announced as "Active effects on your character", because a
+             * landmark name is read out of context while a visible heading is
+             * read next to the thing it labels.
+             *
+             * Falling back to displayName keeps the adapter working if a widget
+             * somehow arrives without metadata -- though the registry refuses
+             * to produce one.
+             */
+            var meta = instance.accessibility || {};
+
             var heading = document.createElement("h2");
             heading.className = "aetos-widget__title";
             heading.id = "aetos-widget-title-" + instance.id;
-            heading.textContent = instance.displayName;
+            heading.textContent = meta.heading || instance.displayName;
 
             panel.setAttribute("aria-labelledby", heading.id);
+            if (meta.landmarkLabel && meta.landmarkLabel !== heading.textContent) {
+                // aria-label wins over aria-labelledby, so it is only set when
+                // the two genuinely differ -- otherwise it would silently
+                // detach the heading from the region for no benefit.
+                panel.setAttribute("aria-label", meta.landmarkLabel);
+            }
+
+            // Declared, so QA can assert that a widget claiming live updates
+            // routes them through the announcement manager rather than
+            // inventing a live region (A11Y-ANN-001).
+            panel.setAttribute("data-aetos-live", meta.liveUpdates ? "true" : "false");
+            if (meta.keyboardOperable === false) {
+                panel.setAttribute("data-aetos-display-only", "true");
+            }
 
             var body = document.createElement("div");
             body.className = "aetos-widget__body";
@@ -208,6 +238,11 @@
             var instance = {
                 id: widgetId,
                 displayName: definition.displayName,
+                // Carried explicitly rather than left for the adapter to dig out
+                // of `definition`, because the adapter's contract is the
+                // instance -- an adapter that reached through it would break the
+                // moment a second adapter was written.
+                accessibility: definition.accessibility,
                 region: (config && config.region) || defaultRegionFor(definition),
                 size: (config && config.size) || definition.defaultSize,
                 visible: config ? config.visible !== false : true,

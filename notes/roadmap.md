@@ -333,7 +333,13 @@ announcement routed through the manager.
 **Explicitly out of scope:** flood control and Review Mode. Those need the log
 store, which is A4.
 
-### A1 — Widget framework accessibility contract  (retrofits M6, M7)
+### A1 — Widget framework accessibility contract  ✅ COMPLETE
+
+Record: [`a1-widget-contract.md`](a1-widget-contract.md). 484 Python tests OK.
+A.26 (splitter) and A.27 (tabs) recorded as not applicable, with tests that fail
+if that changes.
+
+_(retrofits M6, M7)_
 
 Addendum A.26, A.27, A.28, A.97.
 
@@ -474,8 +480,8 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 ```text
 [x] M16  Inventory + equipment + target + effects
 [x] A0   Accessibility Foundation                      -- 467 py, axe clean
-[ ] A1   Widget accessibility contract                 <-- NEXT (retrofits M6, M7)
-[ ] A2   Current State View + semantic values          (retrofits M8, M16)
+[x] A1   Widget accessibility contract                 -- 484 py
+[ ] A2   Current State View + semantic values          <-- NEXT
 [ ] A3   Accessible map completion                     (retrofits M9)
 [ ] M17  Rich chat + event history + Review Mode       (absorbs A4)
 [ ] A5   Cognitive and orientation layer
@@ -773,7 +779,8 @@ D-track   developer integration            D0 next, independent
 
 ```text
 [x] A0   Accessibility Foundation
-[ ] A1   Widget accessibility contract          <-- next on the A-track
+[x] A1   Widget accessibility contract
+[ ] A2   Current State View + semantic values    <-- next on the A-track
 [ ] D0   Discovery architecture spike           <-- next on the D-track
 [ ] D1   Safe AETOS_BINDINGS foundation
 [ ] D2   Declarative provider suite

@@ -139,6 +139,12 @@
 
         return {
             id: "hotbar",
+            accessibility: {
+                landmarkLabel: "Macro hotbar",
+                heading: "Hotbar",
+                keyboardOperable: true,
+                liveUpdates: false
+            },
             displayName: "Hotbar",
             description: "Your macro buttons.",
             builtin: true,

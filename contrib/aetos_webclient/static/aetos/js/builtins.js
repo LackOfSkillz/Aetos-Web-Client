@@ -96,6 +96,15 @@
         return [
             {
                 id: "room",
+                // Display only. The room description is prose, not controls -- there is
+                    // nothing here to operate, so claiming keyboard operability
+                    // would be a false positive in the audit.
+                accessibility: {
+                    landmarkLabel: "Current location",
+                    heading: "Current Location",
+                    keyboardOperable: false,
+                    liveUpdates: true
+                },
                 displayName: "Current Location",
                 description: "Name and description of where you are.",
                 builtin: true,
@@ -128,6 +137,14 @@
 
             {
                 id: "exits",
+                // Every exit is a real <button>, so Tab and Enter work with no custom
+                    // key handling.
+                accessibility: {
+                    landmarkLabel: "Exits from this room",
+                    heading: "Exits",
+                    keyboardOperable: true,
+                    liveUpdates: true
+                },
                 displayName: "Exits",
                 description: "Ways out of the current room.",
                 builtin: true,
@@ -150,6 +167,12 @@
 
             {
                 id: "people",
+                accessibility: {
+                    landmarkLabel: "People here",
+                    heading: "People Here",
+                    keyboardOperable: true,
+                    liveUpdates: true
+                },
                 displayName: "People Here",
                 description: "Characters in the room.",
                 builtin: true,
@@ -172,6 +195,12 @@
 
             {
                 id: "items",
+                accessibility: {
+                    landmarkLabel: "Items here",
+                    heading: "Items Here",
+                    keyboardOperable: true,
+                    liveUpdates: true
+                },
                 displayName: "Items Here",
                 description: "Objects in the room.",
                 builtin: true,
