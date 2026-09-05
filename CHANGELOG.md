@@ -11,6 +11,55 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### M19 — Themes and contrast validation
+
+830 tests. Addendum A.55, `A11Y-VIS-003`.
+[`notes/m19-themes-contrast.md`](notes/m19-themes-contrast.md)
+
+**Added**
+
+- Named themes, stored in this browser, plus a light theme (Paper) alongside
+  the shipped dark one. A theme sets **colours only** — an allowlist of ten
+  tokens, no spacing, no type size, no stylesheet. A theme that could ship CSS
+  could hide content, override a focus ring, or reintroduce every accessibility
+  defect the client spent a year removing; restricted to colours, a bad theme is
+  illegible, which is visible and reversible, rather than broken, which is
+  neither.
+- A WCAG contrast validator over eleven named pairs, run at save time —
+  `A11Y-VIS-003` requires validation to be part of *acceptance*, not to be a
+  checker somebody could run.
+- A theme editor and a contrast report that names each failing pair, its ratio
+  and **what that pair is for**. A ratio alone tells an author they are wrong
+  without telling them what to change.
+
+**It warns; it does not refuse**
+
+- A failing theme still saves. A player who wants a theme Aetos considers unwise
+  is entitled to have it — blocking would be a tool overruling somebody about
+  their own eyes, and would push people out of the theme system entirely, where
+  nothing is checked at all. What they are not entitled to is not being told,
+  and the warning notes that an exported theme reaches people who did not choose
+  those colours.
+
+**Fixed — found by turning the validator on Aetos itself**
+
+- **The default theme failed contrast, and had since M4.** `--aetos-border` was
+  1.37:1 against the background — and since a panel differs from the page by
+  only 1.09:1, that border is the *only* thing separating one region from
+  another. There were effectively no panel edges at all for anyone with reduced
+  contrast sensitivity. Nobody caught it in a year of looking at this client,
+  which is the point: a palette chosen by eye passes for the person who chose it.
+- `--aetos-focus` was undeclared in the default theme, relying on a CSS
+  fallback. A token the validator cannot find is a token nobody checks.
+- **A theme could silently strip an accommodation.** Themes set tokens inline on
+  the root, which beats a `:root` rule — so a player with high contrast on who
+  chose a theme lost it, with nothing to say so. The high-contrast preset now
+  uses `!important`: high contrast is a need, a theme is a preference, and a
+  preference does not overrule a need.
+- Renamed `data-aetos-focus` (Focus Mode, added in A5) to
+  `data-aetos-focus-mode`, since `--aetos-focus` is now a real token two lines
+  away.
+
 ### M18 — Audio, multimedia and captions
 
 791 tests. Absorbs A6. Addendum A.58, A.79, A.84.

@@ -9,10 +9,21 @@
 :root {
     --aetos-bg: #14171c;
     --aetos-panel: #1b1f26;
-    --aetos-border: #2b313b;
+    /* 3.38:1 against the background, 3.11:1 against a panel.
+       Raised from #2b313b, which was 1.37:1 -- and since a panel differs from
+       the page by only 1.09:1, the border is the *only* thing separating one
+       region from another. At that ratio there were effectively no panel edges
+       for anyone with reduced contrast sensitivity. WCAG 1.4.11 requires 3:1
+       for a boundary carrying that much; found by the A11Y-VIS-003 validator
+       turned on its own shipped themes at M19, having been wrong since M4. */
+    --aetos-border: #616c7d;
     --aetos-text: #d7dce3;
     --aetos-text-muted: #8d97a5;
     --aetos-accent: #5aa9e6;
+    /* Declared rather than left to the `var(--aetos-focus, --aetos-accent)`
+       fallback, so the contrast validator can see it. A token the validator
+       cannot find is a token nobody checks. 7.06:1 against the background. */
+    --aetos-focus: #5aa9e6;
     --aetos-success: #4caf72;
     --aetos-warning: #d8a13a;
     --aetos-danger: #d2564b;
@@ -1440,14 +1451,14 @@ body {
  * `data-aetos-contrast` and `data-aetos-motion` land. Writing this against
  * `.aetos-root` looked right and matched nothing at all.
  */
-[data-aetos-focus="true"] .aetos-region--sidebar,
-[data-aetos-focus="true"] .aetos-region--aside,
-[data-aetos-focus="true"] .aetos-region--bottom {
+[data-aetos-focus-mode="true"] .aetos-region--sidebar,
+[data-aetos-focus-mode="true"] .aetos-region--aside,
+[data-aetos-focus-mode="true"] .aetos-region--bottom {
     display: none;
 }
 
 /* The grid lives on the workspace, not the root. */
-[data-aetos-focus="true"] .aetos-workspace {
+[data-aetos-focus-mode="true"] .aetos-workspace {
     grid-template-areas: "main";
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);

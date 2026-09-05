@@ -208,18 +208,31 @@
  * ---------------------------------------------------------------------- */
 
 :root[data-aetos-contrast="high"] {
-    --aetos-bg: #000000;
-    --aetos-panel: #000000;
-    --aetos-border: #ffffff;
-    --aetos-text: #ffffff;
+    /*
+     * `!important` on every token, and this is not stylistic.
+     *
+     * A theme sets its colours *inline* on the document element, and an inline
+     * declaration beats any `:root` rule in the cascade. Without `!important`,
+     * a player who had turned on high contrast and then chose a theme would
+     * silently lose the accommodation -- the theme would simply win, and
+     * nothing would say so.
+     *
+     * That is the exact failure M19's design set out to make impossible, and
+     * it was possible until a test asserted otherwise. High contrast is a
+     * need; a theme is a preference; a preference does not overrule a need.
+     */
+    --aetos-bg: #000000 !important;
+    --aetos-panel: #000000 !important;
+    --aetos-border: #ffffff !important;
+    --aetos-text: #ffffff !important;
     /* 7.4:1 on black. The muted colour is where contrast themes usually fail,
        because it is chosen to recede and then recedes past legibility. */
-    --aetos-text-muted: #c8c8c8;
-    --aetos-accent: #63b3ff;
-    --aetos-success: #5ce68a;
-    --aetos-warning: #ffc400;
-    --aetos-danger: #ff6b5e;
-    --aetos-focus: #ffff00;
+    --aetos-text-muted: #c8c8c8 !important;
+    --aetos-accent: #63b3ff !important;
+    --aetos-success: #5ce68a !important;
+    --aetos-warning: #ffc400 !important;
+    --aetos-danger: #ff6b5e !important;
+    --aetos-focus: #ffff00 !important;
 }
 
 :root[data-aetos-contrast="high"] .aetos-widget {

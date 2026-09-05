@@ -540,7 +540,7 @@ class TestComfortModes(TestCase):
     def test_the_attribute_is_written_by_the_accessibility_layer(self):
         accessibility = _read("accessibility/accessibility.js")
         self.assertIn(
-            'root.setAttribute("data-aetos-focus", cognitive.focusMode ? "true" : "false")',
+            'root.setAttribute("data-aetos-focus-mode", cognitive.focusMode ? "true" : "false")',
             accessibility,
         )
 
@@ -553,7 +553,7 @@ class TestComfortModes(TestCase):
 
         """
         css = (Path(AETOS_STATIC_DIR) / "aetos" / "css" / "aetos.css").read_text(encoding="utf-8")
-        start = css.index('[data-aetos-focus="true"] .aetos-region--sidebar')
+        start = css.index('[data-aetos-focus-mode="true"] .aetos-region--sidebar')
         window = css[start : css.index("}", start)]
         self.assertIn("display: none", window)
 

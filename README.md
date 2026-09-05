@@ -440,7 +440,7 @@ is served from your own host.
 ## What is built
 
 Roughly 10,900 lines of Python, 17,300 of JavaScript and 2,200 of CSS, with
-**791 Python tests** passing, plus hand-written browser checks and an axe-core
+**830 Python tests** passing, plus hand-written browser checks and an axe-core
 audit clean across every view — including the high-contrast and
 minimal-stimulation presets.
 
@@ -506,6 +506,7 @@ minimal-stimulation presets.
 | **Reminders and tasks** | Yours, browser-local, and never invented by Aetos |
 | **Universal search** | The palette searches notes, reminders and history alongside its commands |
 | **Focus and Quiet modes** | A calmer screen and fewer interruptions, kept separate |
+| **Themes** | Colours only, contrast-checked against WCAG AA — and your accessibility settings still win |
 | **Event history and Review Mode** | Read back through what happened, with flood control for screen readers |
 
 ### Throughout
@@ -526,8 +527,8 @@ Colour never carries meaning alone. `innerHTML` is never used.
 | ~~M17~~ | ~~Rich chat, event history and Review Mode~~ — **done** |
 | ~~A5~~ | ~~Cognitive and orientation layer~~ — **done** |
 | ~~M18~~ | ~~Audio, multimedia and captions~~ — **done** |
-| **M19** | **Themes, with contrast validation — next** |
-| A7 | AAC and simplified workspace |
+| ~~M19~~ | ~~Themes, with contrast validation~~ — **done** |
+| **A7** | **AAC and simplified workspace — next** |
 | M20 | PWA shell and touch gestures *(responsive layout done)* |
 | M21–M29 | Inspector, widget SDK, server-described manifest, and hardening |
 | **D0–D6** | **`AETOS_BINDINGS` and `evennia aetos discover` — the easy button above** |

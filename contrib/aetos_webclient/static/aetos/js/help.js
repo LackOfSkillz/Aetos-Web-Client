@@ -498,6 +498,71 @@
         },
 
         {
+            id: "themes",
+            title: "Themes and contrast",
+            group: "Your data",
+            summary: "Change the colours, and find out whether you can still read them.",
+            sections: [
+                {
+                    body: [
+                        "Aetos ships a dark theme and a light one, and you can build " +
+                            "your own. A theme changes colours and nothing else -- it " +
+                            "cannot change spacing, type size, or anything about how " +
+                            "the client behaves.",
+                        "That limit is deliberate. A theme that could ship its own " +
+                            "stylesheet could hide content, override the focus " +
+                            "outline, or animate something you asked not to be " +
+                            "animated. Colours only means a bad theme is hard to " +
+                            "read, which you can see and undo, rather than broken in " +
+                            "a way you cannot."
+                    ]
+                },
+                {
+                    heading: "Your accessibility settings always win",
+                    body: [
+                        "High contrast, reduced motion and minimal stimulation are " +
+                            "applied on top of whatever theme is active, and they " +
+                            "override it.",
+                        "So picking a theme can never quietly undo an accommodation. " +
+                            "If you have high contrast on and choose a soft pastel " +
+                            "theme, you still have high contrast."
+                    ]
+                },
+                {
+                    heading: "Every theme is contrast-checked",
+                    body: [
+                        "When you save a theme, Aetos measures eleven colour pairs " +
+                            "against the WCAG AA thresholds -- text on the " +
+                            "background, secondary text on a panel, borders, the " +
+                            "focus ring, and the success, warning and danger colours.",
+                        "If any fail it tells you which, the ratio each one got, and " +
+                            "what that pair is for. \"--aetos-text-muted is 2.10:1 " +
+                            "against --aetos-panel\" on its own tells you that you " +
+                            "are wrong without telling you what to change."
+                    ]
+                },
+                {
+                    heading: "It warns; it does not refuse",
+                    body: [
+                        "A theme that fails is still saved. If you want it, you can " +
+                            "have it -- Aetos is not going to overrule you about your " +
+                            "own eyes.",
+                        "What it will not do is stay quiet. The warning also mentions " +
+                            "that an exported theme reaches other people, who did not " +
+                            "choose those colours and may not be able to read them.",
+                        "The same check runs against Aetos's own themes as part of " +
+                            "its tests. That found a real problem: the default panel " +
+                            "borders had been at 1.37:1 since the client's fourth " +
+                            "milestone, which meant that for anyone with reduced " +
+                            "contrast sensitivity the panels had no visible edges at " +
+                            "all. A palette chosen by eye passes for the person who " +
+                            "chose it."
+                    ]
+                }
+            ]
+        },
+
+        {
             id: "sound",
             title: "Sound and captions",
             group: "Your data",

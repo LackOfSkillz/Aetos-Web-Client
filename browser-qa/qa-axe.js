@@ -197,6 +197,34 @@
             });
     }
 
+    /*
+     * M19. The themes list, and the contrast report with real failures in it.
+     *
+     * Scanned with a deliberately illegible theme, because the report is the
+     * one panel whose content only exists when something is wrong -- and a
+     * panel nobody ever renders in its failing state is a panel nobody has
+     * ever actually checked.
+     */
+    if (A.themes && A.settings && window.AetosDialog) {
+        await scan("themes",
+            function () { A.settings.openThemes(); },
+            function () { window.AetosDialog.close(null); });
+
+        await scan("contrast report",
+            async function () {
+                var saved = await A.themes.save({
+                    id: "qa-contrast", name: "QA low contrast",
+                    tokens: { "--aetos-bg": "#3a3a3a", "--aetos-panel": "#454545",
+                              "--aetos-text": "#8a8a8a" }
+                });
+                A.settings.showContrastReport(saved.theme, saved.contrast);
+            },
+            async function () {
+                window.AetosDialog.close(null);
+                await A.themes.remove("qa-contrast");
+            });
+    }
+
     if (A.workspaces) {
         await scan("edit layout",
             function () { A.workspaces.toggleEditing(); },

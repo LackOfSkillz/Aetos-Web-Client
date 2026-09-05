@@ -994,6 +994,220 @@
             return summary;
         }
 
+        /* --- Themes (M19) ------------------------------------------------ */
+
+        /*
+         * Pick a theme.
+         *
+         * The list says, for each theme, whether it currently meets contrast.
+         * Not as a badge but as words, because "3 contrast problems" is
+         * actionable and a red dot is not -- and because a colour-coded warning
+         * about colour would be its own joke.
+         */
+        function openThemes() {
+            var themes = services.themes;
+            if (!themes || !dialog) {
+                return null;
+            }
+
+            var body = document.createElement("div");
+
+            var explanation = document.createElement("p");
+            explanation.className = "aetos-dialog__description";
+            explanation.textContent =
+                "Themes change colours only, and are stored in this browser. Your " +
+                "accessibility settings are applied afterwards, so a theme can never " +
+                "undo high contrast or reduced motion.";
+            body.appendChild(explanation);
+
+            var list = document.createElement("ul");
+            list.className = "aetos-privacy__list";
+            list.setAttribute("tabindex", "0");
+            list.setAttribute("aria-label", "Themes");
+
+            var active = themes.active();
+            themes.all().forEach(function (theme) {
+                var row = document.createElement("li");
+                row.className = "aetos-privacy__row";
+
+                var choose = document.createElement("button");
+                choose.type = "button";
+                choose.className = "aetos-list__button";
+                choose.textContent = theme.name;
+                // Current state as pressed, not as a highlight: a themes dialog
+                // is the one place a colour cue is least trustworthy.
+                choose.setAttribute("aria-pressed", theme.id === active ? "true" : "false");
+                choose.addEventListener("click", function () {
+                    themes.apply(theme.id);
+                    openThemes();
+                });
+                row.appendChild(choose);
+
+                var note = document.createElement("span");
+                note.className = "aetos-privacy__count";
+                note.textContent = theme.builtin ? "built in" : "yours";
+                row.appendChild(note);
+
+                if (!theme.builtin) {
+                    var drop = document.createElement("button");
+                    drop.type = "button";
+                    drop.className = "aetos-list__button";
+                    drop.textContent = "Delete";
+                    drop.setAttribute("aria-label", "Delete theme: " + theme.name);
+                    drop.addEventListener("click", function () {
+                        themes.remove(theme.id).then(function () {
+                            announce("Theme deleted.");
+                            openThemes();
+                        });
+                    });
+                    row.appendChild(drop);
+                }
+
+                list.appendChild(row);
+            });
+            body.appendChild(list);
+
+            dialog.open({
+                title: "Themes",
+                content: body,
+                submitLabel: "Close",
+                fields: [],
+                extraActions: [
+                    {
+                        label: "New theme",
+                        run: function () { editTheme(null); }
+                    }
+                ],
+                onSubmit: function () {}
+            });
+            return themes.all();
+        }
+
+        /*
+         * Build a theme, with its contrast report.
+         *
+         * A11Y-VIS-003 requires validation to be part of acceptance. It is
+         * enforced as a **warning**, not a refusal: a player who wants a theme
+         * Aetos considers unwise is entitled to have it, and overruling
+         * somebody about their own eyes would be the worse failure. What they
+         * are not entitled to is not being told -- and neither is whoever they
+         * later send the exported file to.
+         */
+        function editTheme(existing) {
+            var themes = services.themes;
+            if (!themes || !dialog) {
+                return null;
+            }
+            var theme = existing || { name: "", tokens: {} };
+            var tokens = window.AetosThemes.TOKENS;
+            var labels = window.AetosThemes.LABELS;
+            var current = themes.effectiveTokens(theme);
+
+            var fields = [{ name: "name", label: "Theme name", value: theme.name || "" }];
+            tokens.forEach(function (token) {
+                fields.push({
+                    name: token,
+                    // The label, not the variable name. An editor that reads
+                    // "--aetos-text-muted" is an editor for whoever wrote it.
+                    label: labels[token] + " (hex, e.g. #1b1f26)",
+                    value: (theme.tokens && theme.tokens[token]) || current[token] || ""
+                });
+            });
+
+            dialog.open({
+                title: existing ? "Edit theme" : "New theme",
+                description:
+                    "Colours only, as hex values. Aetos checks eleven pairs against " +
+                    "WCAG AA and tells you which fail -- it will still save a theme " +
+                    "that does not pass, because that is your decision to make.",
+                fields: fields,
+                onSubmit: function (values) {
+                    var built = { id: theme.id, name: values.name, tokens: {} };
+                    tokens.forEach(function (token) {
+                        if (values[token]) {
+                            built.tokens[token] = values[token];
+                        }
+                    });
+                    themes.save(built).then(function (result) {
+                        var failures = result.contrast.failures;
+                        if (!failures.length) {
+                            announce(
+                                "Theme saved. All " + result.contrast.checked +
+                                " contrast checks passed.",
+                                { category: "system", priority: "important" }
+                            );
+                            return;
+                        }
+                        announce(
+                            "Theme saved with " + failures.length +
+                            (failures.length === 1 ? " contrast problem." : " contrast problems."),
+                            { category: "system", priority: "important" }
+                        );
+                        showContrastReport(result.theme, result.contrast);
+                    }).catch(function (err) {
+                        announce(err.message);
+                    });
+                }
+            });
+            return true;
+        }
+
+        /*
+         * Say exactly which pairs fail and why.
+         *
+         * A ratio on its own tells somebody they are wrong without telling them
+         * what to change. Naming the pair and what it is *for* is the
+         * difference between a warning that gets fixed and one that gets
+         * dismissed.
+         */
+        function showContrastReport(theme, report) {
+            if (!dialog || !window.AetosContrast) {
+                return null;
+            }
+            var body = document.createElement("div");
+
+            var summary = document.createElement("p");
+            summary.className = "aetos-dialog__description";
+            summary.textContent = theme.name + ": " + report.failures.length + " of " +
+                report.checked + " contrast checks failed. The theme has been saved.";
+            body.appendChild(summary);
+
+            var list = document.createElement("ul");
+            list.className = "aetos-privacy__list";
+            list.setAttribute("tabindex", "0");
+            list.setAttribute("aria-label", "Contrast problems");
+            window.AetosContrast.describe(report.failures).forEach(function (line) {
+                var row = document.createElement("li");
+                row.className = "aetos-privacy__row";
+                row.textContent = line;
+                list.appendChild(row);
+            });
+            body.appendChild(list);
+
+            var advice = document.createElement("p");
+            advice.className = "aetos-dialog__description";
+            advice.textContent =
+                "A pair below its threshold is hard or impossible to read for some " +
+                "people. If you export this theme and share it, they will get these " +
+                "colours too.";
+            body.appendChild(advice);
+
+            dialog.open({
+                title: "Contrast check",
+                content: body,
+                submitLabel: "Keep it anyway",
+                fields: [],
+                extraActions: [
+                    {
+                        label: "Edit the theme",
+                        run: function () { editTheme(theme); }
+                    }
+                ],
+                onSubmit: function () {}
+            });
+            return report;
+        }
+
         return {
             editAlias: editAlias,
             editTrigger: editTrigger,
@@ -1006,6 +1220,9 @@
             editDisplayRule: editDisplayRule,
             openPrivacy: openPrivacy,
             openReminders: openReminders,
+            openThemes: openThemes,
+            editTheme: editTheme,
+            showContrastReport: showContrastReport,
             editReminder: editReminder,
             openOrientation: openOrientation,
             exportProfile: exportProfile,

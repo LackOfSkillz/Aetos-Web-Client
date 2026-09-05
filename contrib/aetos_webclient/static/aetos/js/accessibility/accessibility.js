@@ -100,7 +100,7 @@
              * restore it -- and so there is exactly one thing to read when
              * asking whether focus mode is on.
              */
-            root.setAttribute("data-aetos-focus", cognitive.focusMode ? "true" : "false");
+            root.setAttribute("data-aetos-focus-mode", cognitive.focusMode ? "true" : "false");
         }
 
         /*

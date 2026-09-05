@@ -629,6 +629,30 @@
         }
 
         /*
+         * Themes.  M19.
+         *
+         * Created and applied before the widgets exist, because a theme that
+         * arrives after the first paint is a flash of the wrong colours on
+         * every load -- and for somebody using a dark theme because light
+         * hurts, that is not a cosmetic problem.
+         *
+         * The accessibility layer applies its presets afterwards and wins, so
+         * choosing a theme can never quietly undo an accommodation.
+         */
+        var themes = window.AetosThemes
+            ? window.AetosThemes.create({
+                storage: storage,
+                announce: function (message, options) {
+                    announcer.announce(message, options);
+                }
+            })
+            : null;
+
+        if (themes) {
+            themes.load();
+        }
+
+        /*
          * Sound, and the text that must accompany it.  M18.
          *
          * The captions widget is created before the audio engine because the
@@ -1805,6 +1829,7 @@
                 diagnostics: diagnostics,
                 cognitive: cognitive,
                 orientation: orientation,
+                themes: themes,
                 reloadTriggers: reloadTriggers,
                 gameName: gameName,
                 announce: function (message) { announcer.announce(message); }
@@ -2084,6 +2109,15 @@
                     });
             }
 
+            if (themes && settings) {
+                addCommand("theme.choose", "Themes", "Comfort",
+                    "Change colours. Your accessibility settings still win.",
+                    function () { settings.openThemes(); });
+                addCommand("theme.new", "New theme", "Comfort",
+                    "Build your own palette, checked against WCAG contrast.",
+                    function () { settings.editTheme(null); });
+            }
+
             /* Session */
             if (commandQueue) {
                 addCommand("queue.cancel", "Stop queued commands", "Session",
@@ -2297,6 +2331,7 @@
             cognitive: cognitive,
             audio: audio,
             captions: captionsWidget,
+            themes: themes,
             reloadTriggers: reloadTriggers,
             macros: macros,
             editMacro: editMacro,

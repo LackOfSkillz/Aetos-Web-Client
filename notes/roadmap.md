@@ -106,7 +106,7 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M16  Inventory + equipment + target + effects
 [ ] M17  Rich chat + event history
 [x] M18  Audio + multimedia + captions  (absorbs A6)
-[ ] M19  Themes                       (+ High Contrast ships in core)
+[x] M19  Themes + contrast validation (+ High Contrast ships in core)
 [~] M20  Mobile + responsive UI  (layout done; PWA + gestures remain)
 [ ] M21  Developer inspector + visual designer
 [ ] M22  Widget SDK
@@ -511,9 +511,8 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] E5   Diagnostic reporting                          -- 688 py
 [x] A5   Cognitive and orientation layer               -- 727 py
 [x] M18  Audio + multimedia + captions  (absorbs A6)   -- 791 py
-[ ] M19  Themes  (+ contrast validation)               <-- NEXT
-[ ] M18  (absorbs A6)
-[ ] A7   AAC + simplified workspace
+[x] M19  Themes + contrast validation                  -- 830 py
+[ ] A7   AAC + simplified workspace                    <-- NEXT
 [ ] M20  PWA + touch gestures  (+ A.57 pointer targets)
 [ ] M21  Developer inspector
 [ ] M22  Widget SDK  (documents the A.28 contract)
@@ -1106,7 +1105,7 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 
 [ ] A5   Cognitive and orientation layer
 [x] M18  Audio + multimedia + captions
-[ ] M19  Themes
+[x] M19  Themes + contrast validation
 [ ] A7   AAC + simplified workspace
 [ ] M20  PWA + touch gestures
 [ ] E6   Mapper metadata + widget SDK hardening   (with M22, M23)
