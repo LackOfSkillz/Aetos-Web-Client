@@ -506,7 +506,8 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] E1   Capture + replay                              -- 560 py
 [x] M17  Rich chat + event history + Review Mode       -- 593 py
 [x] E2   Non-destructive presentation rules            -- 615 py
-[ ] E3   Automation groups                             <-- NEXT
+[x] E3   Automation groups                             -- 637 py
+[ ] E4   Unified validator                             <-- NEXT
 [ ] A5   Cognitive and orientation layer
 [ ] M18  Audio + multimedia + captions                 (absorbs A6)
 [ ] M19  Themes  (+ contrast validation, A11Y-VIS-003)
@@ -980,7 +981,11 @@ Every event keeps `originalText`. A substitution that would invalidate
 structured spans either rebuilds them or drops the metadata — **never stale
 offsets on altered text**.
 
-### E3 — Automation groups
+### E3 — Automation groups  ✅ COMPLETE
+
+Record: [`e3-automation-groups.md`](e3-automation-groups.md). 637 Python tests
+OK. Also closes E2's deferred display-rule editor, which was the point of
+deferring it -- both editors needed the same group field.
 
 ```text
 group model            effective enabled-state logic
@@ -1083,7 +1088,6 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [ ] E0   Event pipeline contract                  <-- BEFORE M17
 [ ] E1   Capture + replay                         <-- BEFORE M17
 [ ] M17  Rich chat + event history + Review Mode
-[ ] E4   Unified validator
 [ ] E5   Diagnostic reporting
 
 [ ] D0   Discovery architecture spike             <-- next on the D-track

@@ -209,6 +209,211 @@
             });
         }
 
+
+        /* --- Automation groups (E3) ------------------------------------- */
+
+        /*
+         * One switch for a set of related automation.
+         *
+         * The list states, for every group, how many rules it currently
+         * suppresses. A player looking at a trigger that is not firing needs to
+         * know whether they turned it off or their group did -- those have
+         * completely different fixes, and a rule that silently does nothing is
+         * indistinguishable from a rule that is broken.
+         */
+        function openGroups() {
+            var groups = services.groups;
+            if (!groups) {
+                return null;
+            }
+
+            var body = document.createElement("div");
+
+            var explanation = document.createElement("p");
+            explanation.className = "aetos-dialog__description";
+            explanation.textContent =
+                "A group switches related automation on and off together. A rule " +
+                "runs only when both it and its group are enabled -- turning a " +
+                "group on never re-enables a rule you switched off yourself.";
+            body.appendChild(explanation);
+
+            var notice = document.createElement("p");
+            notice.className = "aetos-dialog__description";
+            notice.textContent =
+                "Nothing changes a group except you. Switching workspace does not, " +
+                "and neither does anything the game sends.";
+            body.appendChild(notice);
+
+            var list = document.createElement("ul");
+            list.className = "aetos-privacy__list";
+            list.setAttribute("tabindex", "0");
+            list.setAttribute("aria-label", "Automation groups");
+
+            var all = groups.all();
+            if (!all.length) {
+                var empty = document.createElement("p");
+                empty.className = "aetos-dialog__description";
+                empty.textContent = "No groups yet.";
+                body.appendChild(empty);
+            }
+
+            all.forEach(function (group) {
+                var row = document.createElement("li");
+                row.className = "aetos-privacy__row";
+
+                var button = document.createElement("button");
+                button.type = "button";
+                button.className = "aetos-list__button";
+                button.textContent = group.name;
+                // Pressed state, not a colour: the switch has to be readable
+                // to somebody who cannot see the styling.
+                button.setAttribute("aria-pressed", group.enabled ? "true" : "false");
+                button.addEventListener("click", function () {
+                    groups.toggle(group.id, countMembers(group.id)).then(function () {
+                        openGroups();
+                    });
+                });
+
+                var state = document.createElement("span");
+                state.className = "aetos-privacy__count";
+                var members = countMembers(group.id);
+                state.textContent = group.enabled
+                    ? "on, " + members + (members === 1 ? " rule" : " rules")
+                    : "off, " + members + (members === 1 ? " rule" : " rules") +
+                        " suppressed";
+
+                row.appendChild(button);
+                row.appendChild(state);
+                list.appendChild(row);
+            });
+
+            body.appendChild(list);
+
+            dialog.open({
+                title: "Automation groups",
+                content: body,
+                submitLabel: "New group",
+                fields: [],
+                onSubmit: function () { editGroup(null); }
+            });
+            return true;
+        }
+
+        /*
+         * How many rules belong to a group.
+         *
+         * Counted across every automation surface rather than tracked, because
+         * a count that is stored can disagree with reality and a count that is
+         * derived cannot.
+         */
+        function countMembers(groupId) {
+            var total = 0;
+            [services.aliases, services.triggers, services.timers,
+             services.scripting, services.displayRules].forEach(function (engine) {
+                if (!engine || typeof engine.all !== "function") {
+                    return;
+                }
+                try {
+                    total += engine.all().filter(function (rule) {
+                        return rule.group === groupId;
+                    }).length;
+                } catch (err) {
+                    // An engine that fails to enumerate costs its own count,
+                    // not the dialog.
+                }
+            });
+            return total;
+        }
+
+        function editGroup(existing) {
+            var group = existing || {};
+            dialog.open({
+                title: existing ? "Edit group" : "New group",
+                description:
+                    "Give the group a name you would recognise in a hurry -- " +
+                    "Combat, Crafting, Roleplay. You assign rules to it when " +
+                    "you edit them.",
+                fields: [
+                    { name: "name", label: "Name", value: group.name || "" },
+                    {
+                        name: "description",
+                        label: "What it is for (optional)",
+                        value: group.description || ""
+                    },
+                    {
+                        name: "enabled",
+                        label: "Enabled",
+                        type: "checkbox",
+                        value: group.enabled !== false
+                    }
+                ],
+                onSubmit: function (values) {
+                    report(services.groups.save({
+                        id: group.id,
+                        name: values.name,
+                        description: values.description,
+                        enabled: values.enabled
+                    }), "Group");
+                }
+            });
+        }
+
+        /* --- Display rules (deferred from E2) ---------------------------- */
+
+        /*
+         * Highlight, substitute, filter and collapse.
+         *
+         * The description says plainly what these do and do not do, because
+         * "filter" reads like "delete" to anyone who has used another client,
+         * and the difference is the entire point.
+         */
+        function editDisplayRule(existing) {
+            var rule = existing || { kind: "highlight" };
+            dialog.open({
+                title: existing ? "Edit display rule" : "New display rule",
+                description:
+                    "Changes how game output looks. It never changes what " +
+                    "happened: a hidden line is still in your history, still " +
+                    "searchable, and still triggers whatever was watching for it.",
+                fields: [
+                    { name: "label", label: "Name", value: rule.label || "" },
+                    {
+                        name: "kind",
+                        label: "highlight, substitute, filter or collapse",
+                        value: rule.kind || "highlight"
+                    },
+                    { name: "pattern", label: "When output contains", value: rule.pattern || "" },
+                    {
+                        name: "regex",
+                        label: "Treat as a regular expression",
+                        type: "checkbox",
+                        value: rule.regex === true
+                    },
+                    {
+                        name: "replacement",
+                        label: "Replace with (substitute only)",
+                        value: rule.replacement || ""
+                    },
+                    {
+                        name: "group",
+                        label: "Automation group (optional)",
+                        value: rule.group || ""
+                    }
+                ],
+                onSubmit: function (values) {
+                    report(services.displayRules.save({
+                        id: rule.id,
+                        kind: values.kind,
+                        label: values.label,
+                        pattern: values.pattern,
+                        regex: values.regex,
+                        replacement: values.replacement,
+                        group: values.group
+                    }), "Display rule");
+                }
+            });
+        }
+
         /* --- Privacy and local data --------------------------------------------
          *
          * Section 63. The player should be able to see exactly what is kept
@@ -231,7 +436,7 @@
             themes: "Themes",
             keybindings: "Keybindings",
             preferences: "Preferences",
-            automation_profiles: "Automation profiles"
+            automation_profiles: "Automation groups"
         };
 
         function openPrivacy() {
@@ -398,6 +603,9 @@
             editTrigger: editTrigger,
             editTimer: editTimer,
             editScript: editScript,
+            openGroups: openGroups,
+            editGroup: editGroup,
+            editDisplayRule: editDisplayRule,
             openPrivacy: openPrivacy,
             exportProfile: exportProfile,
             importProfile: importProfile

@@ -650,7 +650,9 @@
                  * that depends on it.
                  */
                 var presentation = displayRules
-                    ? displayRules.present(event, null)
+                    ? displayRules.present(
+                        event,
+                        automationGroups ? automationGroups.activeMap() : null)
                     : null;
                 consoleWidget.append(event.originalText, null, presentation);
             });
@@ -928,9 +930,30 @@
             return automation[name] !== false;
         }
 
+        /*
+         * Automation groups.  E3, C.15.
+         *
+         * Created before the engines that consult it, because each of them
+         * takes it as a service -- `effective = rule.enabled AND
+         * group.enabled` lives in one place rather than being reimplemented
+         * five times.
+         */
+        var automationGroups = (storage && window.AetosAutomationGroups)
+            ? window.AetosAutomationGroups.create({
+                storage: storage,
+                announce: function (message, options) {
+                    announcer.announce(message, options);
+                }
+            })
+            : null;
+        if (automationGroups) {
+            automationGroups.load();
+        }
+
         var aliases = (storage && window.AetosAliases)
             ? window.AetosAliases.create({
                 storage: storage,
+                groups: automationGroups,
                 isAllowed: function () { return automationAllowed("aliases"); },
                 announce: function (message) { announcer.announce(message); }
             })
@@ -939,6 +962,7 @@
         var triggers = (storage && window.AetosTriggers && commandQueue)
             ? window.AetosTriggers.create({
                 storage: storage,
+                groups: automationGroups,
                 queue: commandQueue,
                 store: store,
                 isAllowed: function () { return automationAllowed("triggers"); },
@@ -1514,6 +1538,8 @@
                 triggers: triggers,
                 timers: timers,
                 scripting: scripting,
+                groups: automationGroups,
+                displayRules: displayRules,
                 reloadTriggers: reloadTriggers,
                 gameName: gameName,
                 announce: function (message) { announcer.announce(message); }
@@ -1597,6 +1623,21 @@
                     "Write an Aetos Script.",
                     function () { settings.editScript(null); },
                     function () { return automationAllowed("scripting"); });
+            }
+
+            /* Automation groups and display rules */
+            if (settings && automationGroups) {
+                addCommand("groups.open", "Automation groups", "Automation",
+                    "Switch related automation on and off together.",
+                    function () { settings.openGroups(); });
+                addCommand("group.new", "New automation group", "Automation",
+                    "Create a group -- Combat, Crafting, whatever you need.",
+                    function () { settings.editGroup(null); });
+            }
+            if (settings && displayRules) {
+                addCommand("displayrule.new", "New display rule", "Automation",
+                    "Highlight, replace, hide or collapse output. Never deletes it.",
+                    function () { settings.editDisplayRule(null); });
             }
 
             /* Notes and local data */
@@ -1769,6 +1810,7 @@
             replay: replay,
             review: review,
             displayRules: displayRules,
+            automationGroups: automationGroups,
             reloadTriggers: reloadTriggers,
             macros: macros,
             editMacro: editMacro,

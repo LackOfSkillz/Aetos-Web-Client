@@ -47,6 +47,22 @@
     }
 
     function createAliases(services) {
+        var groups = services.groups || null;
+
+        /*
+         * Effective enabled-state.  C.15.
+         *
+         * Delegates to the automation groups module when one is present, and
+         * falls back to the rule's own flag when it is not -- so a client
+         * without the groups module behaves exactly as it did before them.
+         */
+        function allowed(rule) {
+            if (groups && typeof groups.allows === "function") {
+                return groups.allows(rule);
+            }
+            return !rule || rule.enabled !== false;
+        }
+
         var storage = services.storage;
         var isAllowed = services.isAllowed || function () { return true; };
         var announce = services.announce || function () {};
@@ -58,6 +74,7 @@
                 pattern: pattern,
                 expansion: String(alias.expansion || "").trim().slice(0, MAX_EXPANSION_LENGTH),
                 enabled: alias.enabled !== false,
+                group: String(alias.group || ""),
                 // Aliases are case-insensitive by default: a player typing "HH"
                 // in anger means the same thing as "hh".
                 caseSensitive: alias.caseSensitive === true
@@ -153,7 +170,10 @@
 
             var byPattern = {};
             aliasList.forEach(function (alias) {
-                if (alias.enabled === false) {
+                // effective = rule.enabled AND group.enabled (C.15).
+                // Consulted rather than reimplemented: five copies of a
+                // two-term expression is five chances for one to drift.
+                if (!allowed(alias)) {
                     return;
                 }
                 var key = alias.caseSensitive ? alias.pattern : alias.pattern.toLowerCase();

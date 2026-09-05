@@ -70,7 +70,10 @@ class TestRulesArePresentationOnly(TestCase):
         start = SHELL.index('pipeline.observe("presentation", function (event) {')
         end = SHELL.index("if (capture) {", start)
         body = SHELL[start:end]
-        self.assertIn("displayRules.present(event", body)
+        # Matched on the call, not on its arguments: E3 wrapped this across
+        # lines when it started passing the active group map, and an assertion
+        # that included the first argument broke on formatting alone.
+        self.assertIn("displayRules.present(", body)
 
     def test_a_filtered_line_is_not_drawn_but_is_not_deleted(self):
         """

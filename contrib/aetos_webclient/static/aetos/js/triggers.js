@@ -52,6 +52,22 @@
     };
 
     function createTriggers(services) {
+        var groups = services.groups || null;
+
+        /*
+         * Effective enabled-state.  C.15.
+         *
+         * Delegates to the automation groups module when one is present, and
+         * falls back to the rule's own flag when it is not -- so a client
+         * without the groups module behaves exactly as it did before them.
+         */
+        function allowed(rule) {
+            if (groups && typeof groups.allows === "function") {
+                return groups.allows(rule);
+            }
+            return !rule || rule.enabled !== false;
+        }
+
         var storage = services.storage;
         var queue = services.queue;
         var store = services.store;
@@ -81,7 +97,9 @@
                 commands: commands,
                 cooldown: typeof trigger.cooldown === "number"
                     ? trigger.cooldown : DEFAULT_COOLDOWN,
-                enabled: trigger.enabled !== false
+                enabled: trigger.enabled !== false,
+                // Which automation group this belongs to, if any (C.15).
+                group: String(trigger.group || "")
             };
         }
 
@@ -255,7 +273,10 @@
             }
             var fired = [];
             (triggerList || []).forEach(function (trigger) {
-                if (trigger.enabled === false || trigger.kind !== "text") {
+                // effective = rule.enabled AND group.enabled (C.15).
+                // Consulted rather than reimplemented: five copies of a
+                // two-term expression is five chances for one to drift.
+                if (!allowed(trigger) || trigger.kind !== "text") {
                     return;
                 }
                 if (matchesText(trigger, line) && fire(trigger)) {
@@ -280,7 +301,7 @@
             }
             var fired = [];
             (triggerList || []).forEach(function (trigger) {
-                if (trigger.enabled === false || trigger.kind !== "structured") {
+                if (!allowed(trigger) || trigger.kind !== "structured") {
                     return;
                 }
                 var isTrue = matchesStructured(trigger);

@@ -48,7 +48,8 @@
                 interval: Math.min(MAX_INTERVAL, Math.max(MIN_INTERVAL, interval)),
                 repeat: timer.repeat === true,
                 commands: commands,
-                enabled: timer.enabled !== false
+                enabled: timer.enabled !== false,
+                group: String(timer.group || "")
             };
         }
 
