@@ -355,7 +355,14 @@ A.97 definition-of-done checklist wired into the milestone template
 **Gate:** every one of the twelve existing widgets declares its contract, and
 the registry test fails if one does not.
 
-### A2 — Current State View and semantic values  (retrofits M8, M16)
+### A2 — Current State View and semantic values  ✅ COMPLETE
+
+Record: [`a2-current-state-view.md`](a2-current-state-view.md). 486 Python tests
+OK. Found and fixed a silent M16 data loss: `inventory` and `equipment` were
+never in the client store's section allowlist, so both panels had been empty
+since they shipped.
+
+_(retrofits M8, M16)_
 
 Addendum A.9, A.77, A.78, A.80.
 
@@ -481,8 +488,8 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] M16  Inventory + equipment + target + effects
 [x] A0   Accessibility Foundation                      -- 467 py, axe clean
 [x] A1   Widget accessibility contract                 -- 484 py
-[ ] A2   Current State View + semantic values          <-- NEXT
-[ ] A3   Accessible map completion                     (retrofits M9)
+[x] A2   Current State View + semantic values          -- 486 py
+[ ] A3   Accessible map completion                     <-- NEXT
 [ ] M17  Rich chat + event history + Review Mode       (absorbs A4)
 [ ] A5   Cognitive and orientation layer
 [ ] M18  Audio + multimedia + captions                 (absorbs A6)
@@ -780,7 +787,8 @@ D-track   developer integration            D0 next, independent
 ```text
 [x] A0   Accessibility Foundation
 [x] A1   Widget accessibility contract
-[ ] A2   Current State View + semantic values    <-- next on the A-track
+[x] A2   Current State View + semantic values
+[ ] A3   Accessible map completion               <-- next on the A-track
 [ ] D0   Discovery architecture spike           <-- next on the D-track
 [ ] D1   Safe AETOS_BINDINGS foundation
 [ ] D2   Declarative provider suite
@@ -1035,7 +1043,8 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 ```text
 [x] A0   Accessibility Foundation
 [x] A1   Widget accessibility contract
-[ ] A2   Current State View + semantic values     <-- next on the A-track
+[x] A2   Current State View + semantic values
+[ ] A3   Accessible map completion               <-- next on the A-track
 [ ] A3   Accessible map completion
 
 [ ] E0   Event pipeline contract                  <-- BEFORE M17

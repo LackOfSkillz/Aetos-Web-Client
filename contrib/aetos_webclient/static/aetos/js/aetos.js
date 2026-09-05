@@ -902,6 +902,24 @@
                 }));
             }
 
+            /*
+             * The Current State View.  A.9.
+             *
+             * Registered after the widgets it summarises, so that if one of
+             * them failed to load the snapshot simply has less to say rather
+             * than erroring -- every section degrades to absent.
+             */
+            if (window.AetosStateView) {
+                registry.register(window.AetosStateView.createWidget({
+                    preferences: accessibility ? accessibility.preferences : null,
+                    // The queue already reports this; there is no need for a
+                    // second accessor that could disagree with it.
+                    queueState: function () {
+                        return commandQueue ? commandQueue.state() : null;
+                    }
+                }));
+            }
+
             if (window.AetosMap) {
                 registry.register(window.AetosMap.createWidget({
                     sendCommand: function (text) { return sendCommand(text); },

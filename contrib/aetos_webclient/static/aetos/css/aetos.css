@@ -1262,3 +1262,39 @@ body {
     font-size: var(--aetos-font-size);
     color: var(--aetos-text);
 }
+
+/* Current State View (A2) --------------------------------------------------
+
+   Arranged for reading rather than glancing: heading, then list, in a fixed
+   order every time. A screen-reader user navigating by heading gets the same
+   shape on every game, so the structure is learned once. */
+
+.aetos-state__heading {
+    margin: var(--aetos-space) 0 2px;
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--aetos-text-muted);
+}
+
+.aetos-state__heading:first-child { margin-top: 0; }
+
+.aetos-state__location {
+    margin: 0;
+    font-weight: 600;
+}
+
+.aetos-state__line { margin: 0; }
+
+.aetos-state__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Tabular figures so a column of resources lines up. On a braille display the
+   alignment is irrelevant; on screen it is the difference between scanning and
+   reading. */
+.aetos-state__list li {
+    font-variant-numeric: tabular-nums;
+}

@@ -8,9 +8,18 @@ be broken by a well-meaning later change.
 
 """
 
+import re
+from pathlib import Path
+
 from django.test import TestCase
 
-from evennia.contrib.base_systems.aetos_webclient import constants, protocol
+from evennia.contrib.base_systems.aetos_webclient import (
+    AETOS_STATIC_DIR,
+    constants,
+    protocol,
+    state,
+)
+from evennia.contrib.base_systems.aetos_webclient.providers import base
 
 
 class TestMessageNames(TestCase):
@@ -238,3 +247,87 @@ class TestClientConstantsMatchServer(TestCase):
             "client advertises unknown capabilities: %s"
             % sorted(advertised - protocol.KNOWN_CAPABILITIES),
         )
+
+
+class TestTheStoreKnowsEverySyncSection(TestCase):
+    """
+    Regression guard for a silent data loss.
+
+    `store.js` keeps an allowlist of sections and `applySync` discards anything
+    absent from it. M16 added `inventory` and `equipment` to `build_sync`, added
+    widgets that subscribed to them, and never added them to that array.
+
+    The result was perfectly quiet: the server sent the payload, the widgets
+    subscribed, the store dropped it, and the panels rendered empty forever. No
+    error, no warning, and nothing in a screenshot to notice -- an empty
+    inventory looks exactly like an empty inventory.
+
+    So the two lists are compared directly.
+
+    """
+
+    def _store_sections(self):
+        """
+        Extract the section allowlist from store.js.
+
+        Returns:
+            set: Section names the client store accepts.
+
+        """
+        source = (
+            Path(AETOS_STATIC_DIR) / "aetos" / "js" / "store.js"
+        ).read_text(encoding="utf-8")
+        block = source[source.index("var SECTIONS = [") : source.index("];")]
+        return set(re.findall(r'"(\w+)"', block))
+
+    def _sync_sections(self):
+        """
+        Build a sync and read its top-level keys.
+
+        Returns:
+            set: Section names the server sends.
+
+        """
+        payload = state.build_sync(None, self._providers())
+        return set(payload)
+
+    def _providers(self):
+        """
+        Inert providers, so the shape is exercised without a database.
+
+        Returns:
+            dict: Provider instances by slot.
+
+        """
+        return {
+            "resources": base.AetosResourceProvider(),
+            "entities": base.AetosEntityProvider(),
+            "actions": base.AetosActionProvider(),
+            "map": base.AetosMapProvider(),
+            "inventory": base.AetosInventoryProvider(),
+            "equipment": base.AetosEquipmentProvider(),
+            "target": base.AetosTargetProvider(),
+            "effects": base.AetosEffectProvider(),
+        }
+
+    def test_the_store_accepts_every_section_the_server_sends(self):
+        missing = self._sync_sections() - self._store_sections()
+        self.assertEqual(
+            missing,
+            set(),
+            "build_sync sends %s but store.js discards them -- silently"
+            % sorted(missing),
+        )
+
+    def test_the_store_declares_no_section_the_server_never_sends(self):
+        """
+        The other direction is a weaker problem -- a dead key rather than lost
+        data -- but it is still a list that has drifted from what it describes.
+
+        `connection` and `manifest` are client-side concerns that never appear
+        in a sync, so they are expected.
+
+        """
+        client_only = {"connection", "manifest"}
+        extra = self._store_sections() - self._sync_sections() - client_only
+        self.assertEqual(extra, set(), "store.js declares unused sections %s" % sorted(extra))

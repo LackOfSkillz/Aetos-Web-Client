@@ -35,6 +35,8 @@ client.
 
 """
 
+from evennia.utils.ansi import parse_ansi
+
 #: Presentation hints. A client may honour or ignore these; they are a
 #: suggestion from the game, never a requirement.
 DISPLAY_MODES = (
@@ -61,6 +63,10 @@ MAX_RESOURCES = 64
 MAX_THRESHOLDS_PER_RESOURCE = 8
 MAX_LABEL_LENGTH = 120
 MAX_ID_LENGTH = 64
+
+#: A unit is a word or two -- "litres", "rounds", "gp". Anything longer is a
+#: label that has been put in the wrong field.
+MAX_UNITS_LENGTH = 24
 
 
 def _coerce_number(value):
@@ -179,6 +185,25 @@ def normalize_resource(raw):
     }
     if maximum is not None:
         resource["maximum"] = maximum
+
+    # A word for the value, supplied by the game.  Addendum A.77.
+    #
+    # "healthy", "bloodied", "critical" -- a game knows what its own numbers
+    # mean and Aetos never will. A player reading "82 of 100" has to know the
+    # scale to interpret it; a player reading "82 of 100, healthy" does not.
+    #
+    # It is also the field that makes a resource legible where a bar cannot go
+    # at all: braille, a compact status line, or a spoken summary.
+    state_text = raw.get("state_text")
+    if isinstance(state_text, str) and state_text:
+        resource["state_text"] = parse_ansi(state_text, strip_ansi=True)[:MAX_LABEL_LENGTH]
+
+    # Units, so a client can say "40 litres" rather than "40" and a screen
+    # reader does not have to leave the player guessing what was counted.
+    units = raw.get("units")
+    if isinstance(units, str) and units:
+        resource["units"] = parse_ansi(units, strip_ansi=True)[:MAX_UNITS_LENGTH]
+
     return resource
 
 

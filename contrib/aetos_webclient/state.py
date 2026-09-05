@@ -40,6 +40,7 @@ MAX_DESCRIPTION_LENGTH = 8000
 MAX_ACTIONS_PER_ENTITY = 24
 MAX_ACTION_LABEL_LENGTH = 80
 MAX_ACTION_COMMAND_LENGTH = 400
+MAX_ACTION_DESCRIPTION_LENGTH = 200
 
 
 def _plain(text):
@@ -200,15 +201,31 @@ def _normalize_actions(raw_actions):
             continue
         if not isinstance(command, str) or not command:
             continue
-        actions.append(
-            {
-                # The label is display text and may carry colour markup; the
-                # command is sent verbatim and must not.
-                "label": _plain(label)[:MAX_ACTION_LABEL_LENGTH],
-                "display": _html(label),
-                "command": command[:MAX_ACTION_COMMAND_LENGTH],
-            }
-        )
+        action = {
+            # The label is display text and may carry colour markup; the
+            # command is sent verbatim and must not.
+            "label": _plain(label)[:MAX_ACTION_LABEL_LENGTH],
+            "display": _html(label),
+            "command": command[:MAX_ACTION_COMMAND_LENGTH],
+        }
+
+        # An explanation, for where the label alone is ambiguous.  Addendum
+        # A.78. "Trade" is clear enough in a menu titled "Captain Renn"; read
+        # aloud out of context it is not, and a description gives a screen
+        # reader something to say beyond the verb.
+        description = entry.get("description")
+        if isinstance(description, str) and description:
+            action["description"] = _plain(description)[:MAX_ACTION_DESCRIPTION_LENGTH]
+
+        # Whether the game currently considers the action possible. Advisory
+        # only: this shapes presentation, and the server still rules on the
+        # command exactly as it would if it had been typed.
+        if entry.get("disabled") is True:
+            action["disabled"] = True
+        if isinstance(entry.get("reason"), str) and entry["reason"]:
+            action["reason"] = _plain(entry["reason"])[:MAX_ACTION_DESCRIPTION_LENGTH]
+
+        actions.append(action)
     return actions
 
 

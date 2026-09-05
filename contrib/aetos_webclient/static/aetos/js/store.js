@@ -22,6 +22,18 @@
 
     // The canonical sections. Fixed at protocol v1 so a widget can subscribe to
     // a section that is merely empty rather than absent.
+    /*
+     * The sections the store knows about.
+     *
+     * This list is the store's whole contract with the protocol, and anything
+     * absent from it is silently discarded by applySync -- which is exactly what
+     * happened to `inventory` and `equipment` when M16 added them server-side
+     * and here but not to this array. The payload arrived, the widgets
+     * subscribed, and nothing ever appeared, with no error anywhere.
+     *
+     * A section added to `build_sync` MUST be added here in the same change.
+     * Guarded by a test that compares the two lists.
+     */
     var SECTIONS = [
         "connection",
         "manifest",
@@ -29,6 +41,8 @@
         "room",
         "entities",
         "resources",
+        "inventory",
+        "equipment",
         "target",
         "effects",
         "map",
