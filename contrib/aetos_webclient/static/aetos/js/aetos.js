@@ -419,17 +419,85 @@
 
         var dispatcher = CommandDispatcher(evennia);
 
+        /*
+         * The inbound pipeline.  Addendum C.7, PIPE-001.
+         *
+         * Everything arriving from the server goes through here, in one order:
+         *
+         *     validate -> normalize -> state -> log -> automation
+         *              -> presentation -> announce
+         *
+         * The ordering that matters is that **automation observes canonical
+         * state and canonical text before presentation runs**. Before E0 the
+         * console rendered first and triggers second, which worked only because
+         * nothing yet transformed the text on its way to the console. The
+         * moment E2 adds display filters, that order would mean a filtered line
+         * never reaching the trigger that was watching for it -- an automation
+         * silently breaking because of an unrelated display setting.
+         */
+        var canonicalLog = window.AetosCanonicalLog
+            ? window.AetosCanonicalLog.create()
+            : null;
+
+        var pipeline = window.AetosPipeline
+            ? window.AetosPipeline.create({
+                store: store,
+                canonicalLog: canonicalLog,
+                applyState: function (payload) {
+                    if (store) {
+                        store.applySync(payload);
+                    }
+                },
+                onError: function (failure) {
+                    window.console.error(
+                        "Aetos: " + failure.stage + " stage failed on " +
+                        failure.eventId, failure.error);
+                }
+            })
+            : null;
+
+        if (pipeline) {
+            /*
+             * Automation first.
+             *
+             * Text triggers see the PLAIN text, never the markup: matching
+             * against HTML would make a player's pattern depend on colour codes
+             * they never see. They also see the *canonical* text rather than
+             * whatever the console ended up displaying.
+             */
+            pipeline.observe("automation", function (event) {
+                if (!triggers || !triggerCache.length) {
+                    return;
+                }
+                if (event.category === "text" || event.originalText) {
+                    var plain = document.createElement("div");
+                    plain.appendChild(sanitizeHtml(event.originalText));
+                    triggers.onText(plain.textContent, triggerCache);
+                }
+                if (event.structuredData) {
+                    // Structured triggers are edge-triggered against state that
+                    // has already been applied, two stages earlier.
+                    triggers.onState(triggerCache);
+                }
+            });
+
+            // Presentation second, and handed a copy -- so nothing it does can
+            // reach the record or the automation that already ran (PIPE-002).
+            pipeline.observe("presentation", function (event) {
+                if (event.originalText) {
+                    consoleWidget.append(event.originalText);
+                }
+            });
+        }
+
         emitter.on("text", function (args) {
             var payload = (args && args.length) ? args[0] : "";
-            consoleWidget.append(payload);
-
-            // Text triggers see the PLAIN text, never the markup. Matching
-            // against HTML would make a player's pattern depend on colour codes
-            // they never see.
-            if (triggers && triggerCache.length) {
-                var plain = document.createElement("div");
-                plain.appendChild(sanitizeHtml(payload));
-                triggers.onText(plain.textContent, triggerCache);
+            if (pipeline) {
+                pipeline.ingest({ kind: "text", text: payload, category: "other" });
+            } else {
+                // No pipeline module: the console still works. Losing the
+                // ordering guarantee is bad; losing the game output is worse.
+                consoleWidget.append(payload);
             }
         });
 
@@ -510,11 +578,21 @@
         });
 
         emitter.on(AETOS_MSG.SYNC, function (args, kwargs) {
-            // Replaces authoritative state wholesale; see store.applySync.
+            if (pipeline) {
+                // The pipeline applies state at stage 3 and notifies automation
+                // at stage 5, so the ordering guarantee holds for structured
+                // events exactly as it does for text.
+                pipeline.ingest({
+                    kind: "sync",
+                    category: "room",
+                    payload: kwargs || {}
+                });
+                return;
+            }
+            // Fallback, same order: state before automation.
             if (store) {
                 store.applySync(kwargs || {});
             }
-            // Structured triggers are edge-triggered against the new state.
             if (triggers && triggerCache.length) {
                 triggers.onState(triggerCache);
             }
@@ -1428,6 +1506,8 @@
             palette: palette,
             help: help,
             accessibility: accessibility,
+            pipeline: pipeline,
+            canonicalLog: canonicalLog,
             reloadTriggers: reloadTriggers,
             macros: macros,
             editMacro: editMacro,

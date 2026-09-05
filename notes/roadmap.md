@@ -497,7 +497,8 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] A1   Widget accessibility contract                 -- 484 py
 [x] A2   Current State View + semantic values          -- 486 py
 [x] A3   Accessible map completion                     -- 508 py
-[ ] E0   Event pipeline contract                       <-- NEXT (before M17)
+[x] E0   Event pipeline contract                       -- 534 py
+[ ] E1   Capture + replay                              <-- NEXT (before M17)
 [ ] M17  Rich chat + event history + Review Mode       (absorbs A4)
 [ ] A5   Cognitive and orientation layer
 [ ] M18  Audio + multimedia + captions                 (absorbs A6)
@@ -898,7 +899,13 @@ what killed them must still be able to find out.
 
 ## E-track stages
 
-### E0 — Formal event pipeline contract  ← before M17
+### E0 — Formal event pipeline contract  ✅ COMPLETE
+
+Record: [`e0-event-pipeline.md`](e0-event-pipeline.md). 534 Python tests OK.
+The gate is proven live: a presenter that rewrites text, changes category and
+injects data alters nothing. Before E0 the console rendered *before* triggers
+ran -- which would have meant a filtered line never reaching the trigger
+watching for it, once E2 lands.
 
 ```text
 incoming pipeline specification      canonical state boundary
