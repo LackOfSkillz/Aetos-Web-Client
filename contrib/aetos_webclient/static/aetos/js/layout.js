@@ -212,6 +212,145 @@
         var instances = {};
         var unsubscribers = {};
 
+        /*
+         * How many times a widget may fail before it is switched off.
+         *
+         * More than one, because a single bad sync should not permanently cost
+         * a player a panel -- the next one may be fine. Not many more, because
+         * a widget failing every update is not going to recover and its errors
+         * drown everything else.
+         */
+        var MAX_WIDGET_FAILURES = 3;
+
+        var failures = {};
+        var disabled = {};
+
+        /*
+         * Run a widget's own code, and contain what it does.
+         *
+         * Returns true if it completed. The caller decides what a failure
+         * means for it; this only guarantees the failure stops here.
+         */
+        function guard(widgetId, phase, work) {
+            if (disabled[widgetId]) {
+                return false;
+            }
+            try {
+                work();
+                return true;
+            } catch (err) {
+                failures[widgetId] = (failures[widgetId] || 0) + 1;
+                window.console.error(
+                    "Aetos widget \"" + widgetId + "\" failed during " + phase,
+                    err
+                );
+                if (opts.onWidgetFailure) {
+                    // Into the diagnostic report, so a bug report carries it.
+                    opts.onWidgetFailure(widgetId, phase, err);
+                }
+                if (failures[widgetId] >= MAX_WIDGET_FAILURES || phase === "mount") {
+                    // A mount failure disables immediately: a widget that could
+                    // not build itself has nothing to retry with.
+                    disableWidget(widgetId, phase, err);
+                }
+                return false;
+            }
+        }
+
+        /*
+         * Switch a widget off and say so in its place.
+         *
+         * A recoverable placeholder rather than an empty panel, because an
+         * empty panel is indistinguishable from a widget with nothing to show
+         * -- and a player looking at a blank inventory needs to know whether
+         * they are carrying nothing or looking at a broken client.
+         */
+        function disableWidget(widgetId, phase, err) {
+            disabled[widgetId] = { phase: phase, message: String(err && err.message || err) };
+
+            var instance = instances[widgetId];
+            if (!instance || !instance.element) {
+                return false;
+            }
+
+            // Subscriptions go first: a disabled widget must stop consuming
+            // events, or it keeps failing invisibly.
+            if (unsubscribers[widgetId]) {
+                unsubscribers[widgetId].forEach(function (off) {
+                    try {
+                        off();
+                    } catch (ignored) {
+                        // Unsubscribing is best-effort; the widget is already
+                        // being switched off.
+                    }
+                });
+                delete unsubscribers[widgetId];
+            }
+
+            var element = instance.element;
+            element.textContent = "";
+
+            var notice = document.createElement("p");
+            notice.className = "aetos-widget__failed";
+            notice.textContent =
+                (instance.definition.displayName || widgetId) +
+                " stopped working and has been switched off. The rest of the " +
+                "client is unaffected.";
+            element.appendChild(notice);
+
+            var detail = document.createElement("p");
+            detail.className = "aetos-widget__failed-detail";
+            // The message, not the stack: a player is not debugging, and a
+            // developer has the console and the diagnostic report.
+            detail.textContent = "Reason: " + disabled[widgetId].message;
+            element.appendChild(detail);
+
+            /*
+             * Retry, because "recoverable" is the requirement.
+             *
+             * A widget broken by one bad payload often works on the next, and
+             * making somebody reload the whole client to find out is a poor
+             * trade for a button.
+             */
+            var retry = document.createElement("button");
+            retry.type = "button";
+            retry.className = "aetos-list__button";
+            retry.textContent = "Try again";
+            retry.addEventListener("click", function () { revive(widgetId); });
+            element.appendChild(retry);
+
+            if (opts.announce) {
+                opts.announce(
+                    (instance.definition.displayName || widgetId) +
+                    " stopped working and was switched off.",
+                    { category: "system", priority: "important" }
+                );
+            }
+            return true;
+        }
+
+        /*
+         * Put a disabled widget back.
+         *
+         * Remount from scratch rather than resume: whatever state it had when
+         * it broke is exactly the state that broke it.
+         */
+        function revive(widgetId) {
+            if (!disabled[widgetId]) {
+                return false;
+            }
+            var instance = instances[widgetId];
+            var config = instance
+                ? { region: instance.region, size: instance.size, visible: instance.visible }
+                : null;
+
+            delete disabled[widgetId];
+            failures[widgetId] = 0;
+            remove(widgetId);
+            return !!add(widgetId, config);
+        }
+
+
         function defaultRegionFor(definition) {
             return definition.defaultRegion || "sidebar";
         }
@@ -255,18 +394,45 @@
 
             var context = { id: widgetId, element: body, store: store, storage: storage };
             instance.context = context;
-            definition.mount(context);
+
+            /*
+             * A widget that throws on mount must not take the others with it.
+             *
+             * C.20: "A widget failure must not destroy the client: catch,
+             * disable the widget, log, show a recoverable placeholder, preserve
+             * the others."
+             *
+             * Until M22 this call was unguarded, and widgets are mounted in a
+             * `forEach` at boot -- so one game-authored widget throwing here
+             * aborted the loop and every widget after it silently never
+             * appeared. Demonstrated in the lab before it was fixed: two
+             * healthy widgets queued behind a throwing one, neither mounted,
+             * no error visible to the player.
+             */
+            if (!guard(widgetId, "mount", function () {
+                definition.mount(context);
+            })) {
+                return instance;
+            }
 
             // Wire store subscriptions on the widget's behalf so a widget never
             // reaches for the transport or the store wiring itself.
             if (store && definition.update && definition.subscriptions.length) {
                 var deliver = function (section, data) {
-                    try {
+                    /*
+                     * Through the same guard as mount, so a widget that fails
+                     * repeatedly is eventually disabled rather than logging
+                     * forever.
+                     *
+                     * The previous version caught and logged, which kept the
+                     * client alive but meant a widget broken by one bad sync
+                     * emitted a console error on every subsequent one -- and a
+                     * developer scrolling that log could not tell one broken
+                     * widget from a broken client.
+                     */
+                    guard(widgetId, "update", function () {
                         definition.update(context, data, section);
-                    } catch (err) {
-                        window.console.error(
-                            "Aetos widget \"" + widgetId + "\" update failed", err);
-                    }
+                    });
                 };
 
                 unsubscribers[widgetId] = definition.subscriptions.map(function (section) {
@@ -295,6 +461,16 @@
             adapter.setSize(widgetId, instance.size);
             adapter.setVisible(widgetId, instance.visible);
             return instance;
+        }
+
+        function disabledWidgets() {
+            return Object.keys(disabled).map(function (widgetId) {
+                return {
+                    id: widgetId,
+                    phase: disabled[widgetId].phase,
+                    message: disabled[widgetId].message
+                };
+            });
         }
 
         function remove(widgetId) {
@@ -448,7 +624,10 @@
             restore: restore,
             save: save,
             load: load,
-            instances: listInstances
+            instances: listInstances,
+            disabledWidgets: disabledWidgets,
+            reviveWidget: revive,
+            MAX_WIDGET_FAILURES: MAX_WIDGET_FAILURES
         };
     }
 

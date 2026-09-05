@@ -67,6 +67,26 @@
         var frameHandle = null;
 
         /*
+         * Whether a flush is already queued.
+         *
+         * Separate from `frameHandle`, and that separation is the bug fix.
+         *
+         * The guard used to be `if (frameHandle !== null) return;`, which
+         * conflates "a flush is pending" with "the scheduler returned a
+         * cancellable handle". `requestAnimationFrame` returns a number so it
+         * worked in a browser -- but an injected scheduler that runs
+         * synchronously returns `undefined`, and `undefined !== null` is true,
+         * so every flush after the first was silently skipped.
+         *
+         * That made the documented test seam deliver exactly one update and
+         * then go quiet, which is a bad failure for a seam whose whole purpose
+         * is making update behaviour testable. Found at M22 while testing
+         * widget failure isolation, where it looked at first like the widget
+         * had stopped receiving events.
+         */
+        var flushQueued = false;
+
+        /*
          * Scheduler for batched notifications.
          *
          * requestAnimationFrame alone is WRONG here. Browsers do not run rAF in
@@ -134,14 +154,16 @@
 
         function markChanged(section) {
             pending[section] = true;
-            if (frameHandle !== null) {
+            if (flushQueued) {
                 return;
             }
+            flushQueued = true;
             frameHandle = schedule(flush);
         }
 
         function flush() {
             frameHandle = null;
+            flushQueued = false;
             var changed = Object.keys(pending);
             pending = {};
             changed.forEach(function (section) {
@@ -229,7 +251,9 @@
 
         // Exposed so tests can assert synchronously without waiting a frame.
         function flushNow() {
-            if (frameHandle !== null && typeof window.cancelAnimationFrame === "function") {
+            flushQueued = false;
+            if (frameHandle !== null && frameHandle !== undefined &&
+                    typeof window.cancelAnimationFrame === "function") {
                 window.cancelAnimationFrame(frameHandle);
             }
             frameHandle = null;

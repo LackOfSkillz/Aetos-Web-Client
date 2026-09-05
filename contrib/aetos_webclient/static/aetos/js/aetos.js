@@ -1609,7 +1609,21 @@
                 registry: registry,
                 store: store,
                 storage: storage,
-                adapter: window.AetosLayout.VanillaDockAdapter(workspaceEl)
+                adapter: window.AetosLayout.VanillaDockAdapter(workspaceEl),
+                announce: function (message, options) {
+                    announcer.announce(message, options);
+                },
+                /*
+                 * A widget failure reaches the diagnostic report, so a bug
+                 * report says which widget broke and where. Without this the
+                 * only record is a console line the reporter has usually
+                 * already scrolled past.
+                 */
+                onWidgetFailure: diagnostics
+                    ? function (widgetId, phase, err) {
+                        diagnostics.record("widget:" + widgetId + ":" + phase, err);
+                    }
+                    : null
             });
 
             var mainRegion = workspaceEl.querySelector('[data-aetos-region="main"]');
@@ -1985,6 +1999,7 @@
                  * be impossible hides the bug that makes it possible.
                  */
                 registry: registry,
+                layout: layout,
                 canonicalLog: canonicalLog,
                 diagnostics: diagnostics,
                 capture: capture,

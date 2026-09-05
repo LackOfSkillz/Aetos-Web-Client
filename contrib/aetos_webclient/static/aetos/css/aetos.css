@@ -1630,3 +1630,25 @@ body {
     background: var(--aetos-panel);
     word-break: break-word;
 }
+
+/*
+ * A widget that failed and was switched off.  M22, C.20.
+ *
+ * Text, not an icon. A player needs to know the difference between "you are
+ * carrying nothing" and "this panel is broken", and an empty panel says the
+ * first while meaning the second.
+ *
+ * The danger colour is used, but the sentence carries the meaning on its own --
+ * colour is never the only signal.
+ */
+.aetos-widget__failed {
+    margin: 0 0 4px;
+    color: var(--aetos-danger);
+}
+
+.aetos-widget__failed-detail {
+    margin: 0 0 6px;
+    color: var(--aetos-text-muted);
+    font-size: 0.9em;
+    word-break: break-word;
+}

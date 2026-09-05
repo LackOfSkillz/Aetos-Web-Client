@@ -54,6 +54,22 @@
 (function (window) {
     "use strict";
 
+    /*
+     * The widget contract's version.  C.20.
+     *
+     * Bumped only when a change would break a widget written against the
+     * previous one -- a new required field, a changed lifecycle call, a
+     * different context shape. Adding an *optional* field does not bump it.
+     *
+     * A widget may declare which version it was written against. That is not
+     * bureaucracy: a game-bundled widget outlives the Aetos release it was
+     * written for, and the failure it would otherwise produce is a mount error
+     * in somebody else's game months later, with nothing pointing at the
+     * cause. Declaring the version turns that into a sentence naming both
+     * numbers.
+     */
+    var SDK_VERSION = 1;
+
     function validateDefinition(definition) {
         var problems = [];
         if (!definition || typeof definition !== "object") {
@@ -61,6 +77,21 @@
         }
         if (typeof definition.id !== "string" || !definition.id) {
             problems.push("id must be a non-empty string");
+        }
+        if (definition.sdkVersion !== undefined) {
+            if (typeof definition.sdkVersion !== "number") {
+                problems.push("sdkVersion must be a number");
+            } else if (definition.sdkVersion > SDK_VERSION) {
+                problems.push(
+                    "sdkVersion " + definition.sdkVersion + " is newer than this " +
+                    "client supports (" + SDK_VERSION + ") -- update Aetos"
+                );
+            } else if (definition.sdkVersion < SDK_VERSION) {
+                problems.push(
+                    "sdkVersion " + definition.sdkVersion + " is older than this " +
+                    "client's contract (" + SDK_VERSION + ") -- see docs/widget-sdk.md"
+                );
+            }
         }
         if (typeof definition.displayName !== "string" || !definition.displayName) {
             problems.push("displayName must be a non-empty string");
@@ -244,6 +275,7 @@
         };
     }
 
-    window.AetosWidgets = { createRegistry: createRegistry };
+    window.AetosWidgets = {
+        SDK_VERSION: SDK_VERSION, createRegistry: createRegistry };
 
 })(window);

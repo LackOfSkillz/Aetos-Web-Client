@@ -11,6 +11,52 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### M22 — Widget SDK and failure isolation
+
+1000 tests. Addendum C.20. [`notes/m22-widget-sdk.md`](notes/m22-widget-sdk.md)
+and [`docs/widget-sdk.md`](docs/widget-sdk.md).
+
+**Fixed — one bad widget took every widget after it**
+
+- `mount` was unguarded, and widgets are mounted in a `forEach`. A
+  game-authored widget throwing during mount **aborted the loop, so every widget
+  registered after it silently never appeared** — and the half-mounted one was
+  left as a blank panel, which is indistinguishable from a widget with nothing
+  to show. Demonstrated in the lab before fixing rather than argued from code.
+- All five of C.20's requirements now hold: catch, disable, log, show a
+  recoverable placeholder, preserve the others. A mount failure disables
+  immediately (a widget that could not build itself has nothing to retry with);
+  update failures are allowed three, then the widget is switched off and its
+  subscriptions released so it stops failing invisibly.
+- Failures reach the diagnostic report and the inspector, because a failed
+  widget's own panel says so only if you happen to be looking at that panel.
+
+**Fixed — the store's test seam delivered exactly one update**
+
+- The batching guard compared `frameHandle !== null`, conflating "a flush is
+  pending" with "the scheduler returned a cancellable handle". `rAF` returns a
+  number so it worked in a browser; an **injected** synchronous scheduler
+  returns `undefined`, so every flush after the first was skipped. That seam
+  exists precisely so update behaviour can be tested without animation frames —
+  which a backgrounded browser does not run at all — so a test relying on it was
+  exercising nothing.
+
+**Added**
+
+- `SDK_VERSION`, optionally declared by a widget and checked at registration,
+  with a message saying which way the mismatch runs.
+- [`docs/widget-sdk.md`](docs/widget-sdk.md) — the contract written down,
+  including the four accessibility mistakes this client has actually made, since
+  those are the ones that look correct while being wrong.
+
+**Still refused**
+
+- No plugin marketplace. Downloading and executing third-party JavaScript brings
+  code trust, supply chain, signing and sandboxing problems whose failure mode is
+  remote code execution, in a client whose whole posture is asking for nothing
+  the game did not offer. A test asserts the widget layer contains no `import()`,
+  injected `<script>`, `eval`, `new Function` or `fetch`.
+
 ### M21 — Developer inspector
 
 973 tests. Addendum C.18.

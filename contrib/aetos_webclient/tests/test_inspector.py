@@ -124,6 +124,7 @@ class TestItIsNotAnObjectBrowser(TestCase):
         allowed = {
             "store",
             "registry",
+            "layout",
             "canonicalLog",
             "diagnostics",
             "capture",
@@ -194,6 +195,17 @@ class TestItSaysWhatIsMissingAndWhy(TestCase):
         body = _function_body(INSPECTOR, "function widgetsSection()", "function stateSection")
         self.assertIn("Withheld", body)
         self.assertIn("requiredCapabilities", body)
+
+    def test_switched_off_widgets_are_listed(self):
+        """
+        A failed widget's own panel says so, but only if you happen to be
+        looking at that panel. M22 made widgets fail in isolation; this is
+        where you find out that one did.
+
+        """
+        body = _function_body(INSPECTOR, "function widgetsSection()", "function stateSection")
+        self.assertIn("disabledWidgets()", body)
+        self.assertIn("Switched off after failing", body)
 
     def test_a_missing_handshake_is_called_out(self):
         body = _function_body(INSPECTOR, "function connectionSection()", "function manifestSection")

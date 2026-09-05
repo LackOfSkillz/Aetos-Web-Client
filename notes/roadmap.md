@@ -109,7 +109,7 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M19  Themes + contrast validation (+ High Contrast ships in core)
 [x] M20  Mobile + responsive UI + PWA + gestures
 [x] M21  Developer inspector  (visual designer not built -- see notes)
-[ ] M22  Widget SDK
+[x] M22  Widget SDK + failure isolation
 [ ] M23  Server-described advanced UI manifest
 [ ] M24  Reconnect hardening
 [ ] M25  Performance hardening
@@ -517,8 +517,8 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] M20  PWA + touch gestures                          -- 940 py
          (service worker unverified live -- lab-hazard-003)
 [x] M21  Developer inspector                           -- 973 py
-[ ] M22  Widget SDK  (documents the A.28 contract)     <-- NEXT
-[ ] M23  Server-described manifest  (+ A.76 importance_hint)
+[x] M22  Widget SDK + widget failure isolation         -- 1000 py
+[ ] M23  Server-described manifest  (+ A.76)           <-- NEXT
 [ ] M24  Reconnect hardening
 [ ] M25  Performance hardening
 [ ] M26  Security hardening

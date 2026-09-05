@@ -179,8 +179,24 @@
                 });
             });
 
+            /*
+             * A switched-off widget is the first thing a developer wants to
+             * see and the easiest to miss -- its panel says so, but only if
+             * you happen to be looking at that panel.
+             */
+            var layout = settings.layout;
+            var broken = layout && layout.disabledWidgets ? layout.disabledWidgets() : [];
+
             return [
                 ["Loaded", String(all.length)],
+                [
+                    "Switched off after failing",
+                    broken.length
+                        ? broken.map(function (entry) {
+                            return entry.id + " (" + entry.phase + ": " + entry.message + ")";
+                        }).join("; ")
+                        : "none"
+                ],
                 ["Offered", available.map(function (d) { return d.id; }).join(", ") || "none"],
                 [
                     // The useful line: a widget that never appeared did not
