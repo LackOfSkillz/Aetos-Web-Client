@@ -11,6 +11,48 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### M21 — Developer inspector
+
+973 tests. Addendum C.18.
+[`notes/m21-developer-inspector.md`](notes/m21-developer-inspector.md)
+
+**Added**
+
+- One panel showing what the client believes: connection, manifest, providers,
+  bindings, widgets, state summary, recent event types, errors and validation.
+- **Palette entries for capture and replay, which had none.** Both were built at
+  E1 and reachable only as `Aetos.capture` from the console — which is to say,
+  reachable by their author. Writing the C.18 coverage test is what found it.
+- `Download capture`, which E1 also never had. A capture readable only from the
+  console is one nobody attaches to a bug report, which was its whole purpose.
+
+**The boundary C.18 draws**
+
+- It reads only what the client already has — its own store, registry and log.
+  No query field, no dbref lookup, no path from a developer's curiosity to a
+  request the game did not expect. A test enumerates the services the module may
+  read and fails on any other, which is stronger than "does not call `fetch`".
+
+**What it says about absences**
+
+- Withheld widgets name what they needed: `equipment (needs equipment)`. The
+  difference between "three widgets are broken" and "three widgets are waiting
+  for your game to declare something" is otherwise invisible.
+- Missing bindings say *not implemented, D-track*; ungated providers name the
+  setting; a missing handshake says the game may not have Aetos installed.
+
+**Fixed**
+
+- The registry never reached the inspector: the handover ran six hundred lines
+  before the inspector was created, `var` hoisting made it `undefined`, and
+  **my own defensive guard skipped it in silence** — the panel reported
+  "Registry: not available" forever and nothing errored. A guard against a
+  condition that should be impossible does not prevent it; it prevents you
+  finding out about it. Removed the handover entirely by passing the registry
+  directly, since it is already built by then.
+- `scrollable-region-focusable` on a section list — fourth instance in the
+  client, fourth caught by axe rather than by reading the code.
+
 ### M20 — PWA shell and touch gestures
 
 940 tests. Addendum A.57. [`notes/m20-pwa-gestures.md`](notes/m20-pwa-gestures.md)

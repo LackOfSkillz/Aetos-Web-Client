@@ -244,6 +244,17 @@
             function () { A.aac.clear(); });
     }
 
+    /*
+     * M21. The inspector, which is nine lists at once -- the densest panel in
+     * the client and the one most likely to grow a scrolling region nobody
+     * gave a tabindex. It did, on the first run.
+     */
+    if (A.inspector && window.AetosDialog) {
+        await scan("inspector",
+            function () { A.inspector.open(); },
+            function () { window.AetosDialog.close(null); });
+    }
+
     if (A.workspaces) {
         await scan("edit layout",
             function () { A.workspaces.toggleEditing(); },

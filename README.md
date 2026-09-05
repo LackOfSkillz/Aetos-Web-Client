@@ -440,7 +440,7 @@ is served from your own host.
 ## What is built
 
 Roughly 10,900 lines of Python, 17,300 of JavaScript and 2,200 of CSS, with
-**940 Python tests** passing, plus hand-written browser checks and an axe-core
+**973 Python tests** passing, plus hand-written browser checks and an axe-core
 audit clean across every view — including the high-contrast and
 minimal-stimulation presets.
 
@@ -497,6 +497,7 @@ minimal-stimulation presets.
 | **Unified validator** | One answer to "is this pattern dangerous", across all six kinds of automation |
 | **Capture and replay** | JSONL, fed through the same seam the websocket uses |
 | **Diagnostic reports** | Built locally, shown in full, and structurally incapable of carrying your data |
+| **Inspector** | What the client believes: manifest, providers, widgets, state, events — and which widgets your game withheld |
 
 ### Orientation and cognitive support
 
@@ -557,7 +558,8 @@ Colour never carries meaning alone. `innerHTML` is never used.
 | ~~M19~~ | ~~Themes, with contrast validation~~ — **done** |
 | ~~A7~~ | ~~AAC architecture and simplified workspace~~ — **done**; the AAC *claim* awaits human review (A.94) |
 | ~~M20~~ | ~~PWA shell and touch gestures~~ — **done**; the service worker is unverified in a real browser ([lab-hazard-003](notes/lab-hazard-003-no-service-workers.md)) |
-| **M21** | **Developer inspector — next** |
+| ~~M21~~ | ~~Developer inspector~~ — **done** |
+| **M22** | **Widget SDK — next** *(documents the A.28 contract)* |
 | M21–M29 | Inspector, widget SDK, server-described manifest, and hardening |
 | **D0–D6** | **`AETOS_BINDINGS` and `evennia aetos discover` — the easy button above** |
 | E6 | Weighted map routing and widget SDK hardening |

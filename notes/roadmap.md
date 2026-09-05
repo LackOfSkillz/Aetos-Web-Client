@@ -108,7 +108,7 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M18  Audio + multimedia + captions  (absorbs A6)
 [x] M19  Themes + contrast validation (+ High Contrast ships in core)
 [x] M20  Mobile + responsive UI + PWA + gestures
-[ ] M21  Developer inspector + visual designer
+[x] M21  Developer inspector  (visual designer not built -- see notes)
 [ ] M22  Widget SDK
 [ ] M23  Server-described advanced UI manifest
 [ ] M24  Reconnect hardening
@@ -516,8 +516,8 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (A.94 human AAC review outstanding -- questions.md 3)
 [x] M20  PWA + touch gestures                          -- 940 py
          (service worker unverified live -- lab-hazard-003)
-[ ] M21  Developer inspector                           <-- NEXT
-[ ] M22  Widget SDK  (documents the A.28 contract)
+[x] M21  Developer inspector                           -- 973 py
+[ ] M22  Widget SDK  (documents the A.28 contract)     <-- NEXT
 [ ] M23  Server-described manifest  (+ A.76 importance_hint)
 [ ] M24  Reconnect hardening
 [ ] M25  Performance hardening

@@ -40,3 +40,29 @@ investigating it as a real bug.
 
 Once Aetos has its own suite, the QA harness should assert that no test process is
 running before it captures a baseline, so this cannot silently recur.
+
+## Addendum (M21): the browser caches `aetos.js` under an unchanged version
+
+Asset URLs carry `?v=ASSET_VERSION`, which is exactly right between releases and
+unhelpful within a session: edit `aetos.js`, run `collectstatic`, reload the
+page, and the browser serves the copy it already has because the URL did not
+change.
+
+That cost ten minutes at M21 chasing a bug that was already fixed — and worse,
+it can do the reverse and make a real bug look fixed.
+
+Before trusting what a reloaded page is running:
+
+```javascript
+fetch("/static/aetos/js/aetos.js?v=1.0.0", {cache: "reload"})
+```
+
+then navigate. Or check directly that the running page contains the change,
+rather than assuming a reload was enough.
+
+The three-way version of the rule now reads:
+
+- changed a **template**? `evennia reload`
+- changed a **static file**? `collectstatic`
+- changed **JavaScript** and about to judge the result? bust the cache too
+

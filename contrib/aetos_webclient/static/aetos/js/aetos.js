@@ -1955,6 +1955,55 @@
             });
         }
 
+        /*
+         * Developer inspector.  M21, C.18.
+         *
+         * Created after `settings` because it reaches three actions that
+         * already lived there -- the diagnostic report, the validator and
+         * capture. It adds no capability of its own; what it adds is a place to
+         * find them, which is the difference between a feature existing and a
+         * feature existing for anybody but its author.
+         */
+        var inspector = window.AetosInspector
+            ? window.AetosInspector.create({
+                store: store,
+                /*
+                 * Passed directly, because by the time this runs the registry
+                 * is already built -- it is populated several hundred lines
+                 * above.
+                 *
+                 * The first version handed it over later through a setter, on
+                 * the assumption that the inspector was created first. It was
+                 * not, and `var` hoisting made the mistake silent: `inspector`
+                 * existed and was `undefined`, so `if (inspector && ...)`
+                 * skipped the call without a word and the panel reported
+                 * "Registry: not available" forever.
+                 *
+                 * Worth naming what went wrong there, because the guard was
+                 * mine and it was defensive: it turned a loud crash into a
+                 * quiet wrong answer. A guard against a condition that should
+                 * be impossible hides the bug that makes it possible.
+                 */
+                registry: registry,
+                canonicalLog: canonicalLog,
+                diagnostics: diagnostics,
+                capture: capture,
+                replay: replay,
+                dialog: window.AetosDialog,
+                announce: function (message, options) {
+                    announcer.announce(message, options);
+                },
+                openDiagnostics: settings
+                    ? function (includeOutput) {
+                        return settings.openDiagnostics(includeOutput);
+                    }
+                    : null,
+                validateAll: settings
+                    ? function () { return settings.validateAll(); }
+                    : null
+            })
+            : null;
+
         var palette = window.AetosPalette
             ? window.AetosPalette.create({
                 announce: function (message) { announcer.announce(message); },
@@ -2243,6 +2292,31 @@
                     function () { palette.toggle(); });
             }
 
+            if (inspector) {
+                addCommand("developer.inspect", "Inspector", "Help",
+                    "What this client believes: manifest, providers, widgets, " +
+                    "state and recent events. Reads only what Aetos already has.",
+                    function () { inspector.open(); });
+            }
+
+            if (capture) {
+                addCommand("developer.capture", "Capture this session", "Help",
+                    "Record everything for a bug report. Includes game text, " +
+                    "so read it before sharing.",
+                    function () { inspector.toggleCapture(); },
+                    function () { return !!inspector; });
+                addCommand("developer.capture.save", "Download capture", "Help",
+                    "Save the recorded session to a file.",
+                    function () { inspector.downloadCapture(); },
+                    function () { return !!inspector && capture.records().length > 0; });
+            }
+            if (replay && inspector) {
+                addCommand("developer.replay", "Replay a capture", "Help",
+                    "Load a captured session and play it back through this " +
+                    "client. Replaces your current state.",
+                    function () { inspector.loadReplay(); });
+            }
+
             if (pwa) {
                 addCommand("app.install", "Install Aetos", "Session",
                     "Add this client to your device, so it opens like an app.",
@@ -2519,6 +2593,7 @@
             aac: aacBoard,
             pwa: pwa,
             gestures: gestures,
+            inspector: inspector,
             reloadTriggers: reloadTriggers,
             macros: macros,
             editMacro: editMacro,
