@@ -17,7 +17,7 @@ you never get an empty widget implying a system you do not have.
 
 ---
 
-**Status:** 16 feature milestones complete · 409 Python tests · 326 browser checks · no framework, no build step, no CDN
+**Status:** 16 feature milestones + accessibility foundation · 467 Python tests · axe clean · no framework, no build step, no CDN
 
 ### Working today
 
@@ -274,7 +274,9 @@ is served from your own host.
 ## What is built
 
 Roughly 6,900 lines of Python, 9,200 of JavaScript and 1,800 of CSS, with
-**409 Python tests and 326 browser checks** passing.
+**467 Python tests** passing, plus 326 hand-written browser checks and an
+axe-core audit clean across six views — including the high-contrast and
+minimal-stimulation presets.
 
 ### Works on a pristine game, with no configuration
 
@@ -317,7 +319,9 @@ Roughly 6,900 lines of Python, 9,200 of JavaScript and 1,800 of CSS, with
 
 ### Throughout
 
-Versioned protocol with a capability manifest. Everything keyboard-operable.
+Versioned protocol with a capability manifest. Everything keyboard-operable,
+with every global shortcut rebindable and none bound to a bare character.
+Exactly two live regions in the whole client, so nothing competes for speech.
 Colour never carries meaning alone. `innerHTML` is never used.
 
 ---
@@ -326,8 +330,8 @@ Colour never carries meaning alone. `innerHTML` is never used.
 
 | Stage | |
 | --- | --- |
-| **A0** | **Accessibility Foundation — next, and it blocks M17** |
-| A1 | Widget accessibility contract *(retrofits M6, M7)* |
+| ~~A0~~ | ~~Accessibility Foundation~~ — **done**: subsystem, skip links, landmarks, rebindable shortcuts, axe gate |
+| **A1** | **Widget accessibility contract — next** *(retrofits M6, M7)* |
 | A2 | Current State View and semantic values *(retrofits M8, M16)* |
 | A3 | Accessible map completion *(retrofits M9)* |
 | M17 | Rich chat, event history and Review Mode |
