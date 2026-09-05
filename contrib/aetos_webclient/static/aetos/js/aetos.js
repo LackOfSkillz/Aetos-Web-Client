@@ -136,13 +136,41 @@
      * the command by hand would send, so locks, cooldowns and permissions apply
      * identically.
      * ------------------------------------------------------------------ */
-    function CommandDispatcher(evennia) {
+    function CommandDispatcher(evennia, services) {
+        var settings = services || {};
+        /*
+         * Send one command, or say honestly that it did not go.
+         *
+         * Until M24 this called `evennia.msg` unconditionally and returned
+         * `true` regardless. Evennia's transport does not buffer: a
+         * `websocket.send` on a closed socket throws or is dropped, and
+         * nothing is delivered on reconnect. So a command typed during a
+         * disconnect was **reported as sent**, recorded in the capture as
+         * sent, and recorded by the orientation trail as sent -- while
+         * having done nothing at all.
+         *
+         * **Aetos deliberately does not queue it for later.** A player who
+         * typed "attack the dragon" during a thirty-second dropout may be
+         * somewhere else entirely by the time the socket returns, and
+         * replaying it would execute a decision they made about a situation
+         * that no longer exists. Saying it did not send leaves the choice
+         * with them, which is the only place it belongs.
+         */
         function send(commandText) {
             var text = (commandText || "").trim();
             if (!text) {
                 return false;
             }
-            evennia.msg("text", [text], {});
+            if (typeof settings.isConnected === "function" && !settings.isConnected()) {
+                return false;
+            }
+            try {
+                evennia.msg("text", [text], {});
+            } catch (err) {
+                // A socket that closed between the check and the call. Rare,
+                // and still not something to report as success.
+                return false;
+            }
             return true;
         }
         return { send: send };
@@ -508,7 +536,21 @@
 
         evennia.init({ emitter: emitter });
 
-        var dispatcher = CommandDispatcher(evennia);
+        /*
+         * The dispatcher asks the store whether we are connected.
+         *
+         * Read live rather than captured, because the answer changes and a
+         * boolean taken at boot would be permanently "connecting".
+         */
+        var dispatcher = CommandDispatcher(evennia, {
+            isConnected: function () {
+                var connection = store ? store.get("connection") : null;
+                // Absent state means the client has not learned otherwise yet.
+                // Refusing on "unknown" would block the very first command of
+                // a session, before any connection event has arrived.
+                return !connection || connection.state !== "closed";
+            }
+        });
 
         /*
          * The inbound pipeline.  Addendum C.7, PIPE-001.
@@ -940,6 +982,33 @@
             }
             if (store) {
                 store.merge("connection", { state: state });
+            }
+
+            /*
+             * Mark everything on screen as no longer authoritative.  M24.
+             *
+             * The moment the connection drops, every panel is showing the world
+             * as it was -- and looks exactly as it did when it was current.
+             * A player glancing at their health bar during a dropout reads a
+             * number presented as fact.
+             *
+             * An attribute rather than a rewrite of every widget: the panels
+             * already render correctly, they are simply out of date, and
+             * restating that once in the frame is both cheaper and more honest
+             * than making sixteen widgets each invent their own way to say it.
+             */
+            var root = document.getElementById("aetos-root");
+            if (root) {
+                root.setAttribute(
+                    "data-aetos-stale", state === "closed" ? "true" : "false"
+                );
+            }
+            var notice = document.getElementById("aetos-stale-notice");
+            if (notice) {
+                // `hidden` rather than CSS, so it leaves the accessibility tree
+                // entirely when connected -- a description that is always
+                // present but sometimes false is worse than none.
+                notice.hidden = state !== "closed";
             }
         }
 
@@ -1719,22 +1788,38 @@
         // The single outbound seam. Widgets, and later voice and macros, all go
         // through here rather than talking to the transport themselves.
         function sendCommand(text) {
-            if (dispatcher.send(text)) {
-                // Recorded here rather than at each call site, because this is
-                // the single point every command source converges on (C.11) --
-                // keyboard, button, macro, route, script, voice and AAC alike.
-                // A capture that missed one of them would be a capture that
-                // could not reproduce the session.
-                if (capture) {
-                    capture.recordOutbound(text);
-                }
-                if (orientation) {
-                    orientation.observeCommand(text);
-                }
-                requestSync();
-                return true;
+            if (!dispatcher.send(text)) {
+                /*
+                 * Said once, at `important`, and not queued.
+                 *
+                 * A player who typed something and got no response would
+                 * otherwise assume the game ignored them -- and on a slow
+                 * dropout would keep typing, building up commands they believe
+                 * are in flight.
+                 */
+                announcer.announce(
+                    "Not connected. That was not sent.",
+                    { category: "connection", priority: "important" }
+                );
+                return false;
             }
-            return false;
+            // Recorded here rather than at each call site, because this is the
+            // single point every command source converges on (C.11) -- keyboard,
+            // button, macro, route, script, voice and AAC alike. A capture that
+            // missed one of them would be a capture that could not reproduce the
+            // session.
+            //
+            // Reached only when the command actually went, so a capture never
+            // records something that was refused, and the orientation trail
+            // never claims you sent something you did not.
+            if (capture) {
+                capture.recordOutbound(text);
+            }
+            if (orientation) {
+                orientation.observeCommand(text);
+            }
+            requestSync();
+            return true;
         }
 
         /* --- Local actions ---------------------------------------------

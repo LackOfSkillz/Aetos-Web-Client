@@ -6,7 +6,7 @@ Found at M20. Blocks live verification of the PWA shell; blocks nothing else.
 
 ```text
 TypeError: Failed to register a ServiceWorker for scope
-('http://127.0.0.1:4401/webclient/') with script
+('http://127.0.0.1:4471/webclient/') with script
 ('.../aetos-service-worker.js'): An unknown error occurred when fetching
 the script.
 ```
@@ -60,7 +60,7 @@ it works.
 In an ordinary browser against the lab:
 
 ```text
-1. Open http://localhost:4401/webclient/ and check Application ->
+1. Open http://localhost:4471/webclient/ and check Application ->
    Service Workers shows one activated, scope /webclient/.
 2. Application -> Cache Storage should show `aetos-shell-1.0.0` filling as
    assets load, and containing only /static/aetos/ and /static/webclient/

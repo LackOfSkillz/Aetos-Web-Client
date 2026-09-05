@@ -250,9 +250,15 @@ class TestTheShellWiresThem(TestCase):
         eventually miss one, and a capture missing one command cannot reproduce
         the session.
 
+        Bounded by the end of the function rather than by a character count.
+        The count version broke at M24, when a "not connected" guard was added
+        above the recording and pushed it past the window -- failing while the
+        property it checks was still true. The M17 rule applies: anchor on a
+        landmark, never on a length.
+
         """
         start = SHELL.index("function sendCommand(text)")
-        window = SHELL[start : start + 700]
+        window = SHELL[start : SHELL.index("/* --- Local actions", start)]
         self.assertIn("capture.recordOutbound(text)", window)
 
     def test_connection_changes_are_recorded(self):

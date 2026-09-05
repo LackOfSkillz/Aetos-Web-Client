@@ -11,6 +11,66 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### M24 — Reconnect hardening
+
+1085 tests. **axe clean at every severity, including moderate** — a first for
+this client. [`notes/m24-reconnect-hardening.md`](notes/m24-reconnect-hardening.md)
+
+**Fixed — a command typed during a disconnect was reported as sent**
+
+- `send()` called `evennia.msg` unconditionally and returned `true` regardless.
+  Evennia's transport does not buffer: `websocket.send` on a closed socket
+  throws or is dropped and nothing is delivered on reconnect. So the command
+  went nowhere while the capture recorded it as sent — making a replay that
+  could not reproduce the session — and the orientation trail listed it as
+  something the player had sent.
+- Silently losing a command is bad; *claiming* to have sent it is worse, because
+  it removes the player's chance to notice and retype.
+- **Nothing is queued for later, deliberately.** A player who typed "attack the
+  dragon" during a thirty-second dropout may be somewhere else entirely when the
+  socket returns, and replaying it would execute a decision about a situation
+  that no longer exists.
+
+**Fixed — stale state looked current**
+
+- The moment a connection drops every panel shows the world as it was, looking
+  exactly as it did when it *was* current. The workspace now dims and says *"Not
+  connected. Everything shown is the last state received."* — via
+  `aria-describedby` rather than a live region, because staleness is a property
+  of the screen rather than an event. The dimming is never the only signal.
+
+**Four accessibility findings, three introduced by this milestone**
+
+- `region`: the stale notice sat outside every landmark. Moved inside the
+  `<main>` it describes.
+- `scrollable-region-focusable` on two panels — fifth and sixth instances here,
+  both found by axe rather than review. The person who writes a panel is never
+  the person it fails.
+- `landmark-unique`, introduced by my own fix for the above: `role="region"` on a
+  widget body duplicated the panel's landmark, giving two called "Resources".
+  Changed to `role="group"`. Third time a role has been the wrong tool — an added
+  role is more often the bug than the fix.
+- `page-has-heading-one`: the client had **no `<h1>` at all** since M4, so a
+  screen reader user had nothing to jump to and no statement of what they were
+  looking at. Reported on every axe run since and filtered out every time by a
+  severity threshold that is still correct but had quietly turned "does not
+  block" into "never read".
+
+**Changed**
+
+- The lab moved from ports 4400–4406 to **4470–4476**. Dragon's Ire already owned
+  4401 on this machine — "avoid Evennia's defaults" identified the wrong risk,
+  since the collision that bites is with another game the same developer runs,
+  and +400 is exactly where somebody else's game lands for the same reason.
+
+**Roadmap**
+
+- New stage **A9 — accessibility toggle and feature picker**, from Gary: one
+  top-level standard/accessibility toggle, and when on, a granular picker.
+  Scheduled after A8 so that stage validates the client people will actually
+  use. The baseline — keyboard operation, focus management, landmarks,
+  announcements — stays unconditional and explicitly outside the toggle.
+
 ### E6 — Mapper metadata and weighted routing
 
 1066 tests. Addendum C.19. [`notes/e6-weighted-map.md`](notes/e6-weighted-map.md)

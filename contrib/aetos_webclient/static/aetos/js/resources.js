@@ -261,6 +261,27 @@
 
             mount: function (context) {
                 context.element.setAttribute("data-aetos-resources", "");
+                /*
+                 * Focusable, because it scrolls. Arrow keys scroll whatever has
+                 * focus, so a scrolling region outside the tab order cannot be
+                 * scrolled by keyboard at all -- the player can see there is
+                 * more and has no way to reach it.
+                 *
+                 * Fifth and sixth instances of this in the client, both found by
+                 * axe rather than by review. It is invisible to anyone testing
+                 * with a mouse wheel, which is why it keeps recurring: the
+                 * person who writes the panel is never the person it fails.
+                 *
+                 * `group`, not `region`. The enclosing panel is already a
+                 * landmark carrying this widget's name, so a nested `region`
+                 * with the same label produces two landmarks called
+                 * "Resources" -- which axe reports as `landmark-unique` and a
+                 * screen reader reports as the same thing twice. `group` is
+                 * not a landmark, so it carries the label without competing.
+                 */
+                context.element.setAttribute("tabindex", "0");
+                context.element.setAttribute("role", "group");
+                context.element.setAttribute("aria-label", "Resources");
             },
 
             update: function (context, data) {

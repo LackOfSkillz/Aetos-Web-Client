@@ -5,7 +5,7 @@ Observed: 2026-09-04, Phase 0
 ## What happened
 
 `evennia test evennia` was left running from inside `aetos_testgame/` while browser
-QA continued against the live server on 4401. Two symptoms appeared:
+QA continued against the live server on 4471. Two symptoms appeared:
 
 1. **A transient HTTP 500** from `/webclient/`. The same URL returned 200 seconds
    later with no code change and no traceback in `server/logs/`.

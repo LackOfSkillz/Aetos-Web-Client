@@ -133,7 +133,16 @@ it is where a player wants to be nearly every time.
       <span class="aetos-connection__dot" aria-hidden="true"></span>
       <span id="aetos-connection-label" class="aetos-connection__label">Connecting</span>
     </span>
-    <span class="aetos-statusbar__title">{{ game_name }}</span>
+    {% comment %}
+    The page's one <h1>, and the game's name is the right thing for it to be.
+
+    A page with no h1 gives a screen reader user nothing to jump to and no
+    statement of what they are looking at -- the client had none from M4 until
+    axe flagged it at M24. It stays a visible title rather than becoming a
+    hidden one, because the name was already on screen and a heading that
+    exists only for assistive technology is a heading nobody maintains.
+    {% endcomment %}
+    <h1 class="aetos-statusbar__title">{{ game_name }}</h1>
 
     {% comment %}
     A11Y-DOM-002 and A.7: the client stays an ordinary document, so a screen
@@ -170,7 +179,28 @@ it is where a player wants to be nearly every time.
   <div id="aetos-announcer-urgent" class="aetos-visually-hidden" role="alert"
        aria-atomic="true"></div>
 
-  <main id="aetos-workspace" class="aetos-workspace">
+  {% comment %}
+  The workspace announces staleness for a screen reader.
+
+  `aria-describedby` rather than a live region: this is a *property* of what
+  is on screen, not an event. The disconnection itself is announced once
+  through the ordinary announcer; this is what somebody hears when they
+  navigate into a panel afterwards and need to know the number they are
+  reading is the last one that arrived.
+  {% endcomment %}
+  <main id="aetos-workspace" class="aetos-workspace"
+        aria-describedby="aetos-stale-notice">
+
+    {% comment %}
+    Inside the landmark it describes, not before it.
+
+    Placed outside, it was content belonging to no region at all -- which axe
+    flags and which means a screen reader user navigating by landmark skips
+    straight past it. Being inside the thing it describes is also simply true.
+    {% endcomment %}
+    <p id="aetos-stale-notice" class="aetos-stale-notice" hidden>
+      Not connected. Everything shown is the last state received.
+    </p>
 
     {% comment %}
     Regions are created by the layout adapter, and widgets are mounted into them

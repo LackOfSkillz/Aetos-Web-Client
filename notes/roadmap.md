@@ -111,7 +111,7 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M21  Developer inspector  (visual designer not built -- see notes)
 [x] M22  Widget SDK + failure isolation
 [x] M23  Server-described UI manifest
-[ ] M24  Reconnect hardening
+[x] M24  Reconnect hardening
 [ ] M25  Performance hardening
 [ ] M26  Security hardening
 [ ] M27  Configuration validation
@@ -466,6 +466,93 @@ presentation both depend on the theme layer.
 
 **Gate:** A.94 — human AAC review before any claim of AAC support.
 
+### A9 — The accessibility toggle and its feature picker  (new, Gary 2026-09-05)
+
+**Direction, verbatim:** *"the accessibility ui and the standard ui should be a
+toggle and if its toggled on you can choose the accessibility features you
+want."*
+
+```text
+one top-level toggle: standard UI  <->  accessibility UI
+when on, a picker for which accessibility features are active
+the picker is granular -- not a preset, not a bundle
+```
+
+#### Why this is worth building
+
+Today the accessibility preferences are granular and correct and **almost
+nobody will ever find them**. They are spread across five groups in a settings
+panel reached from the command palette. A player who needs three of them has to
+know they exist, know they are separable, and go looking.
+
+A single visible toggle answers the discovery problem that granularity created.
+Somebody arriving who needs help can find *one* control, turn it on, and then be
+shown what is available rather than having to already know.
+
+#### The one constraint that cannot move
+
+A0 deliberately built the schema with **no master on/off switch** (A.70), and
+that reasoning still holds for one specific class of thing: **the baseline must
+not sit behind the toggle.**
+
+Keyboard operation, focus management, landmarks, accessible names, the
+announcement manager, colour never carrying meaning alone — those are not
+features to be switched on. A client that is only operable by keyboard when a
+box is ticked is not an accessible client with a toggle; it is an inaccessible
+client with an apology. They stay unconditional, and nothing in this stage
+touches them.
+
+So the toggle governs the **optional, opinionated** layer — the things that are
+genuinely a matter of need and taste, and that a player might reasonably not
+want:
+
+```text
+governed by the toggle          always on, never behind it
+------------------------------  ---------------------------------
+high contrast                   keyboard operation
+reduced motion                  focus management and visible focus
+minimal stimulation             landmarks and accessible names
+announcement verbosity          the announcement manager itself
+quiet mode / focus mode         colour never carrying meaning alone
+the simplified layout           the two live regions
+orientation and reminders       every control having a name
+the picture and word board      target sizes
+```
+
+That table is the deliverable of this stage as much as the UI is. Getting the
+line in the wrong place is the whole risk here, and it is a design decision
+rather than an implementation detail.
+
+#### Open question for Gary
+
+Two readings of "toggled off", and they build differently:
+
+1. **The panel is hidden, the features keep whatever state they had.** Turning
+   the toggle off tidies the interface away; a player who had high contrast on
+   keeps it. Safe, and closest to what already exists.
+2. **The features are actually off.** Turning it off returns the client to a
+   plain standard UI regardless of what was configured.
+
+Reading 2 is a sharper product and has a real hazard: a player who turns the
+toggle off to see what the standard UI looks like, and cannot read the screen
+well enough to find the toggle again, is stuck. If that is the intent, the
+toggle needs a keyboard shortcut that works regardless of state, and probably a
+confirmation naming what is about to switch off.
+
+**Assumed until told otherwise: reading 1**, because it cannot strand anybody.
+
+#### Placement
+
+After A8, and this matters. A8 is the assistive-technology validation stage, and
+validating an interface that is about to gain a new top-level control means
+validating something short-lived — the same argument that applies to voice
+(questions.md 2). If the toggle lands first, A8 validates the client somebody
+will actually use.
+
+**Gate:** the A.97 checklist as usual, plus one specific to this stage — the
+toggle must be reachable and operable *by every input method* the client
+supports, including the one the player is currently unable to use comfortably.
+
 ### A8 — Assistive-technology validation  (replaces M30, feeds M31)
 
 Addendum A.30–A.35, A.85, A.87–A.99.
@@ -520,13 +607,14 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] M22  Widget SDK + widget failure isolation         -- 1000 py
 [x] M23  Server-described UI manifest                  -- 1036 py
 [x] E6   Mapper metadata + weighted routing            -- 1066 py
-[ ] M24  Reconnect hardening                           <-- NEXT
-[ ] M25  Performance hardening
+[x] M24  Reconnect hardening                           -- 1085 py
+[ ] M25  Performance hardening                         <-- NEXT
 [ ] M26  Security hardening
 [ ] M27  Configuration validation
 [ ] M28  Documentation
 [ ] M29  Compatibility matrix
 [~] M30  WITHDRAWN -- superseded by the A-track (A.106)
+[ ] A9   Accessibility toggle + feature picker  (new)
 [ ] A8   Assistive-technology validation
 [ ] M31  Release candidate
 [ ] M32  Upstream PR

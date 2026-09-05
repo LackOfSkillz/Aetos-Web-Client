@@ -99,8 +99,13 @@ body {
     border-bottom: 1px solid var(--aetos-border);
 }
 
+/* Now an <h1> (M24), so the browser's heading defaults have to be undone --
+   the status bar is one line and a 2em bold heading would dominate it. The
+   element is a heading for structure, not for emphasis. */
 .aetos-statusbar__title {
-    margin-left: auto;
+    margin: 0 0 0 auto;
+    font-size: inherit;
+    font-weight: normal;
     color: var(--aetos-text-muted);
 }
 
@@ -1663,4 +1668,27 @@ body {
 .aetos-resource--pending .aetos-resource__label {
     color: var(--aetos-text-muted);
     font-style: italic;
+}
+
+/*
+ * Stale state, during a disconnect.  M24.
+ *
+ * Dimmed, and paired with a sentence rather than relying on the dimming --
+ * "slightly greyer" is not a message, and it is exactly the kind of signal that
+ * disappears at high contrast, in bright sunlight, or for anyone whose
+ * perception of the difference is not what the designer's was.
+ *
+ * Deliberately restrained: the panels must stay *readable*. Their content is
+ * the last thing the player was told and remains the best information they
+ * have -- this says it is old, not that it is worthless.
+ */
+[data-aetos-stale="true"] .aetos-workspace {
+    opacity: 0.72;
+}
+
+.aetos-stale-notice {
+    margin: 0;
+    padding: 4px var(--aetos-space);
+    color: var(--aetos-warning);
+    border-bottom: 1px solid var(--aetos-border);
 }

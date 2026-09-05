@@ -440,7 +440,7 @@ is served from your own host.
 ## What is built
 
 Roughly 10,900 lines of Python, 17,300 of JavaScript and 2,200 of CSS, with
-**1066 Python tests** passing, plus hand-written browser checks and an axe-core
+**1085 Python tests** passing, plus hand-written browser checks and an axe-core
 audit clean across every view — including the high-contrast and
 minimal-stimulation presets.
 
@@ -563,7 +563,8 @@ Colour never carries meaning alone. `innerHTML` is never used.
 | ~~M22~~ | ~~Widget SDK~~ — **done**; see [`docs/widget-sdk.md`](docs/widget-sdk.md) |
 | ~~M23~~ | ~~Server-described UI manifest~~ — **done** |
 | ~~E6~~ | ~~Mapper metadata and weighted routing~~ — **done** |
-| **M24** | **Reconnect hardening — next** |
+| ~~M24~~ | ~~Reconnect hardening~~ — **done** |
+| **M25** | **Performance hardening — next** |
 | M21–M29 | Inspector, widget SDK, server-described manifest, and hardening |
 | **D0–D6** | **`AETOS_BINDINGS` and `evennia aetos discover` — the easy button above** |
 | E6 | Weighted map routing and widget SDK hardening |
