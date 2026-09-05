@@ -17,6 +17,79 @@ you never get an empty widget implying a system you do not have.
 
 ---
 
+**Status:** 16 feature milestones complete · 409 Python tests · 326 browser checks · no framework, no build step, no CDN
+
+### Working today
+
+**Zero configuration** — install it on a stock Evennia game and you get a
+console with full colour, room/exits/people/items panels, inventory, a local map
+built by walking exits you can actually see, context menus on everything, and
+click-to-walk routing. No game code required.
+
+**When your game exposes it** — resource meters with thresholds, equipment by
+slot, current target, and temporary effects. Declare nothing and nothing
+appears; you never get an empty widget implying a system you do not have.
+
+**Player tools, stored only in the browser** — macros and a hotbar, aliases,
+triggers, timers, a sandboxed scripting language, private notes and relationship
+tags, map notes, a command palette (`Ctrl+K`), searchable in-client help (`F1`),
+layout editing, workspaces, and a responsive layout from phone to wide monitor.
+
+### Accessibility is a first-class citizen, not a later pass
+
+Accessibility is one of the mechanisms by which this client is built, not an
+alternate presentation bolted on afterwards. It is governed by
+[**Addendum A**](docs/addendum-a-accessibility.md), a normative specification
+whose `A11Y-` requirement IDs are **release gates**. Core accessibility
+behaviour cannot be switched off by a game developer — a developer decides
+whether scripting is allowed, not whether a player gets a usable interface.
+
+Already true today:
+
+- **Everything is keyboard-operable.** Nothing in Aetos requires a mouse, and
+  dragging is never the only way to do anything.
+- **Combat spam never floods speech.** The transcript is `role="log"` with
+  `aria-live="off"` set deliberately, so a screen reader is not made to read
+  every line the moment it arrives — the full text stays reviewable.
+- **One announcer, not thirty.** A single central live region; no widget owns
+  its own, so nothing competes for speech.
+- **No character-only shortcuts.** Aetos ships `Ctrl+K`, `Ctrl+Shift+L` and
+  `F1` — never bare letters, which NVDA and JAWS need for structural navigation.
+- **Colour never carries meaning alone.** Severity, effect tone and status are
+  written in words; colour only reinforces them.
+- **The map has a written equivalent** generated from the *same* graph as the
+  picture, so the two cannot disagree.
+- **Game events never steal focus**, and dialogs return focus where they found
+  it.
+- **Countdowns are not announced every second** — and an effect reaching zero
+  shows as *expiring* rather than vanishing, because only the server knows when
+  it truly ended.
+
+Next up, and blocking all further feature work: **A0, the Accessibility
+Foundation** — skip links, a rebindable shortcut manager, a prioritised
+announcement manager, granular accessibility preferences, and an automated axe
+gate. After that come a Current State View, Review Mode with flood control,
+cognitive supports (*Reorient Me*, *How I Got Here*, *Quiet Mode*), AAC and
+picture-supported communication, and validation against NVDA, JAWS, Orca and
+refreshable braille.
+
+> Honest wording, per Addendum A.100: this project is **designed toward
+> WCAG 2.2 AA**. It does not claim compliance, JAWS compatibility or braille
+> compatibility until the assistive-technology testing that would justify those
+> claims has actually happened.
+
+### On the roadmap
+
+Rich chat and event history · audio and multimedia with captions · themes with
+High Contrast in core · a PWA shell and touch gestures · a developer inspector ·
+a documented widget SDK · a server-described UI manifest · reconnect,
+performance and security hardening · voice input.
+
+Full detail: [what is built](#what-is-built) · [what is left](#what-is-left) ·
+[roadmap](notes/roadmap.md) · [changelog](CHANGELOG.md)
+
+---
+
 ## Quick start
 
 Requires an existing Evennia game. Nothing else — no Node, no build step, no CDN.
