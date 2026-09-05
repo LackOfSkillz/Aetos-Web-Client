@@ -15,7 +15,7 @@ still subject to locks, permissions, cooldowns and game rules.
 
 from django.conf import settings
 
-from evennia.contrib.base_systems.aetos_webclient import constants
+from evennia.contrib.base_systems.aetos_webclient import constants, providers
 
 # --- Automation policy ---------------------------------------------------
 
@@ -153,7 +153,7 @@ def build_manifest(character=None):
     features = get_features()
     automation = get_automation_policy()
 
-    return {
+    payload = {
         "protocol": constants.PROTOCOL_VERSION,
         "features": features,
         "automation": automation,
@@ -165,3 +165,25 @@ def build_manifest(character=None):
         "map": {},
         "media": {},
     }
+
+    """
+    Developer diagnostics.  Addendum C.17.
+
+    Off by default and opt-in per game, because the payload names the game's own
+    provider classes -- `world.aetos.MyResourceProvider` and the like. That is
+    exactly what a maintainer needs in a bug report and exactly what a player has
+    no business receiving, so a game says whether it wants to tell them.
+
+    `AETOS_DIAGNOSTICS = True` is a development setting. It carries no secrets
+    even when on -- class names and slot names only, never values, never source.
+    """
+    if getattr(settings, "AETOS_DIAGNOSTICS", False):
+        try:
+            payload["diagnostics"] = {"providers": providers.describe_providers()}
+        except Exception as err:
+            # A provider that cannot even describe itself is precisely the
+            # situation a diagnostic report exists to explain, so the failure is
+            # reported rather than swallowed.
+            payload["diagnostics"] = {"providers": {}, "error": str(err)}
+
+    return payload

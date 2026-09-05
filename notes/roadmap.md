@@ -508,7 +508,8 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] E2   Non-destructive presentation rules            -- 615 py
 [x] E3   Automation groups                             -- 637 py
 [x] E4   Unified validator                             -- 667 py
-[ ] E5   Diagnostic reporting                          <-- NEXT
+[x] E5   Diagnostic reporting                          -- 688 py
+[ ] A5   Cognitive and orientation layer               <-- NEXT
 [ ] A5   Cognitive and orientation layer
 [ ] M18  Audio + multimedia + captions                 (absorbs A6)
 [ ] M19  Themes  (+ contrast validation, A11Y-VIS-003)
@@ -1026,7 +1027,11 @@ Whole-corpus validation means every parser change runs against stored valid,
 invalid, edge-case and malicious samples — rather than waiting for a runtime
 failure to find the regression.
 
-### E5 — Diagnostic reporting
+### E5 — Diagnostic reporting  ✅ COMPLETE
+
+Record: [`e5-diagnostics.md`](e5-diagnostics.md). 688 Python tests OK. Leak test
+run live against six sentinel values -- note text, alias expansion, tell
+content, two accessibility preference keys and "password" -- **zero leaks**.
 
 ```text
 sanitised report generator     provider diagnostics

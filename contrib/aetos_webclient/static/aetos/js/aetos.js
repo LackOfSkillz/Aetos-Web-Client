@@ -558,6 +558,13 @@
                     window.console.error(
                         "Aetos: " + failure.stage + " stage failed on " +
                         failure.eventId, failure.error);
+                    // Recorded for the diagnostic report. The event id is kept
+                    // and the payload is not -- the payload may contain game
+                    // text, which a report has no business carrying.
+                    if (diagnostics) {
+                        diagnostics.record(
+                            "pipeline:" + failure.stage, failure.error);
+                    }
                 }
             })
             : null;
@@ -1056,6 +1063,33 @@
          * automation, so a player is not told two different things about the
          * same regular expression in two different dialogs.
          */
+        /*
+         * Diagnostic reports.  E5.
+         *
+         * Assembled from a fixed list of sources, none of which is the local
+         * data store -- so there is no path by which a note, a macro or an
+         * accessibility preference reaches a report. Excluded by construction
+         * rather than by filtering.
+         */
+        var diagnostics = window.AetosDiagnostics
+            ? window.AetosDiagnostics.create({
+                store: store,
+                canonicalLog: canonicalLog,
+                // Accessors, not arrays: the registry does not exist yet, and
+                // an array captured now would still be empty at report time.
+                widgets: function () {
+                    return registry
+                        ? registry.all().map(function (d) { return d.id; })
+                        : [];
+                },
+                modules: function () {
+                    return Object.keys(window).filter(function (key) {
+                        return key.indexOf("Aetos") === 0;
+                    });
+                }
+            })
+            : null;
+
         var validator = window.AetosValidator
             ? window.AetosValidator.create({
                 triggers: triggers,
@@ -1563,6 +1597,7 @@
                 groups: automationGroups,
                 displayRules: displayRules,
                 validator: validator,
+                diagnostics: diagnostics,
                 reloadTriggers: reloadTriggers,
                 gameName: gameName,
                 announce: function (message) { announcer.announce(message); }
@@ -1646,6 +1681,13 @@
                     "Write an Aetos Script.",
                     function () { settings.editScript(null); },
                     function () { return automationAllowed("scripting"); });
+            }
+
+            if (settings && diagnostics) {
+                addCommand("diagnostics.report", "Diagnostic report", "Help",
+                    "Describe this client for a bug report. Shows you everything " +
+                    "before you share it.",
+                    function () { settings.openDiagnostics(false); });
             }
 
             if (settings && validator) {
@@ -1810,6 +1852,7 @@
             accessibility.start();
         }
 
+
         window.Aetos = {
             version: 1,
             protocol: AETOS_PROTOCOL_VERSION,
@@ -1841,6 +1884,7 @@
             displayRules: displayRules,
             automationGroups: automationGroups,
             validator: validator,
+            diagnostics: diagnostics,
             reloadTriggers: reloadTriggers,
             macros: macros,
             editMacro: editMacro,

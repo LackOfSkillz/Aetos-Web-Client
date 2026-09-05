@@ -211,6 +211,101 @@
 
 
 
+
+        /* --- Diagnostic report (E5) -------------------------------------- */
+
+        /*
+         * Build a report, show it in full, and let the developer decide.
+         *
+         * The whole point is that nothing leaves the browser until a person has
+         * looked at it. A tool that filed an issue on somebody's behalf with a
+         * payload they had not read would be indefensible however convenient.
+         */
+        function openDiagnostics(includeOutput) {
+            var diagnostics = services.diagnostics;
+            if (!diagnostics) {
+                return null;
+            }
+            var report = diagnostics.build({ includeOutput: includeOutput === true });
+            var summary = diagnostics.describe(report);
+            var text = diagnostics.toText(report);
+
+            var body = document.createElement("div");
+
+            var intro = document.createElement("p");
+            intro.className = "aetos-dialog__description";
+            intro.textContent =
+                "This describes your client so a maintainer can understand a " +
+                "bug. Read it before you share it -- nothing has been sent.";
+            body.appendChild(intro);
+
+            [["Includes", summary.contains], ["Never includes", summary.excludes]]
+                .forEach(function (entry) {
+                    var heading = document.createElement("h3");
+                    heading.className = "aetos-help__heading";
+                    heading.textContent = entry[0];
+                    body.appendChild(heading);
+
+                    var list = document.createElement("ul");
+                    list.className = "aetos-list";
+                    entry[1].forEach(function (item) {
+                        var row = document.createElement("li");
+                        row.textContent = item;
+                        list.appendChild(row);
+                    });
+                    body.appendChild(list);
+                });
+
+            var label = document.createElement("label");
+            label.className = "aetos-visually-hidden";
+            label.setAttribute("for", "aetos-diagnostics-text");
+            label.textContent = "Diagnostic report";
+            body.appendChild(label);
+
+            // A textarea rather than a <pre>: it is selectable, scrollable,
+            // keyboard-reachable and copyable with the keys everybody already
+            // knows, without Aetos reimplementing any of that.
+            var area = document.createElement("textarea");
+            area.id = "aetos-diagnostics-text";
+            area.className = "aetos-input aetos-diagnostics__text";
+            area.rows = 12;
+            area.readOnly = true;
+            area.value = text;
+            body.appendChild(area);
+
+            var actions = [
+                {
+                    label: includeOutput ? "Rebuild without game text" : "Include recent game text",
+                    run: function () { openDiagnostics(!includeOutput); }
+                },
+                {
+                    label: "Copy",
+                    run: function () {
+                        area.select();
+                        try {
+                            document.execCommand("copy");
+                            announce("Report copied.", {
+                                category: "system", priority: "important" });
+                        } catch (err) {
+                            announce("Could not copy; select the text and copy it " +
+                                "yourself.", { category: "system",
+                                               priority: "important" });
+                        }
+                    }
+                }
+            ];
+
+            dialog.open({
+                title: "Diagnostic report",
+                content: body,
+                submitLabel: "Close",
+                extraActions: actions,
+                fields: [],
+                onSubmit: function () {}
+            });
+            return report;
+        }
+
         /* --- Validate all local automation (E4) -------------------------- */
 
         /*
@@ -709,6 +804,7 @@
             editTimer: editTimer,
             editScript: editScript,
             validateAll: validateAll,
+            openDiagnostics: openDiagnostics,
             openGroups: openGroups,
             editGroup: editGroup,
             editDisplayRule: editDisplayRule,
