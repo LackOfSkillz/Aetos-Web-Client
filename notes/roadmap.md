@@ -794,3 +794,302 @@ The D-track has no accessibility gates of its own, because it produces no player
 interface. Its A.97 answers are all "not applicable — server-side developer
 tooling", and that should be stated in each D-stage record rather than left to
 inference.
+
+
+---
+
+# Addendum C — Mature Client Engine (E-track)
+
+Normative specification: [`docs/addendum-c-engine.md`](../docs/addendum-c-engine.md).
+
+Adds the **E-track** and refines the D-track. Addendum B's `DISC-` and `BIND-`
+requirements remain in force; where staging differs, C wins.
+
+## Licensing boundary — read this first
+
+The engine ideas come from a review of **Genie5, which is GPL-3.0**. Aetos is
+**BSD-3-Clause**, deliberately, so it can be upstreamed into Evennia — which is
+BSD-3-Clause too.
+
+Those licences are not compatible in that direction. **Ideas and research only;
+no Genie5 source, fixtures or implementation.** Recorded as
+[`decision-005`](decision-005-genie5-clean-room.md), which also lists what is
+deliberately *not* borrowed and why.
+
+The easy trap is not copy-paste. It is reading an implementation and then
+writing "the same thing" from memory, so the reference is documented behaviour
+rather than code.
+
+## Why this track exists
+
+Aetos receives structured state from a server that already knows the answer. A
+traditional client reconstructs the game by parsing prose. Most mature MUD
+client engineering solves the reconstruction problem — and importing those
+solutions would mean importing the problem.
+
+What *is* worth taking is what those clients learned about everything
+downstream of the data: ordering, preservation, reproducibility and diagnosis.
+
+## E0 and E1 come before M17. This is the important scheduling change.
+
+M17 builds the canonical log and Review Mode. Those two decisions determine the
+foundation that highlights, filters, accessibility announcements, replay testing
+and every future diagnostic will sit on.
+
+Building M17 first means building it on an unspecified pipeline and then
+rebuilding it. A0 already showed how much cheaper it is to fix an ordering
+assumption before there are twelve things depending on it.
+
+## The pipeline contract (E0)
+
+```text
+evennia.js
+    ↓  Protocol Validation
+    ↓  Protocol Normalization
+    ↓  Authoritative State Update
+    ↓  Canonical Event Log
+    ↓  Automation Observers
+    ↓  Derived Presentation
+    ↓  Widgets
+    ↓  Announcement Candidate Generation
+    ↓  Announcement Queue
+    ↓  Assistive Technology / User
+```
+
+Two rules carry the whole track:
+
+**State is updated before automation observes an event.** A trigger that fires
+on stale state is a trigger that acts on a world that no longer exists.
+
+**Presentation filtering happens after canonical state and history are
+preserved.** Which produces the rule that catches the most common bug in
+traditional clients:
+
+```text
+Server:         "You drop your sword."
+Canonical log:  "You drop your sword."
+Trigger:        fires
+Display filter: may hide the line from view
+```
+
+A trigger must not fail because the player chose to hide that text. Hiding is a
+presentation choice; it is not deletion, and it is not a fact about the game.
+
+The same reasoning protects accessibility: a visual filter must not silently
+suppress an announcement. A player who hid combat spam and then needs to know
+what killed them must still be able to find out.
+
+## E-track stages
+
+### E0 — Formal event pipeline contract  ← before M17
+
+```text
+incoming pipeline specification      canonical state boundary
+outgoing command specification       canonical log boundary
+automation boundary                  presentation boundary
+announcement boundary                tests proving ordering
+```
+
+**Gate:** a presentation filter provably cannot alter state, canonical history
+or trigger input.
+
+Also freezes the outgoing side: keyboard, button, context action, macro, map
+route, script, voice and AAC all converge on one dispatcher, and **no source
+gains special authority**. That is §2.4 restated as an architectural boundary
+rather than a promise.
+
+### E1 — Capture and replay  ← before or alongside M17
+
+```text
+versioned JSONL format    capture API        sanitisation
+export flow               replay engine      speed control + step mode
+browser QA integration
+```
+
+**Gate:** one captured room/resource/combat sequence reproduces the same state
+transitions with no live server.
+
+Replay feeds records through **the same seams as live data**. A parallel
+"fake UI" path would test the harness rather than the client.
+
+This is release-quality tooling, not debugging convenience, because it is what
+makes announcement prioritisation, pacing, backlog, flood protection and Review
+Mode *testable at all* — none of which can be exercised reliably against a live
+game.
+
+Captures never automatically include notes, relationships, macros, aliases,
+scripts, accessibility preferences, AAC preferences or credentials, and are
+sanitised before export with a summary of what the file does and does not
+contain.
+
+### E2 — Canonical log and non-destructive presentation rules
+
+After M17 establishes canonical log storage.
+
+```text
+Highlight    Substitute    Filter    Collapse
+original-text preservation
+Review Mode integration
+search integration
+```
+
+**Gate:** hidden or substituted output remains fully recoverable from canonical
+history.
+
+Every event keeps `originalText`. A substitution that would invalidate
+structured spans either rebuilds them or drops the metadata — **never stale
+offsets on altered text**.
+
+### E3 — Automation groups
+
+```text
+group model            effective enabled-state logic
+group UI               workspace suggestion hooks
+import/export support
+```
+
+**Gate:** group state never changes automatically without explicit player
+configuration.
+
+`effective = rule.enabled AND group.enabled`. A workspace must not silently
+enable automation — a player switching to a Combat layout has not consented to
+their combat triggers turning on, and finding out otherwise mid-fight is the
+kind of surprise that gets people killed in-game and banned out of it.
+
+### E4 — Unified validator
+
+```text
+validator API      severity model (ERROR / WARNING / INFO)
+script validation  binding validation
+regex warnings     whole-profile validation
+test corpora
+```
+
+Integrates with M13, M14, the D-track bindings and M27.
+
+Regex needs defensive design specifically because JavaScript has no universal
+safe timeout for regex execution: bounded patterns, bounded test input, warnings
+on nested repetition, a Web Worker where practical, and **no rule ever receives
+the unbounded transcript**.
+
+Whole-corpus validation means every parser change runs against stored valid,
+invalid, edge-case and malicious samples — rather than waiting for a runtime
+failure to find the regression.
+
+### E5 — Diagnostic reporting
+
+```text
+sanitised report generator     provider diagnostics
+binding diagnostics            manifest diagnostics
+copy/download flow             review-before-GitHub flow
+```
+
+Reports carry versions, provider class names, binding keys, features, widget
+list, connection state, errors and recent event **types**. They never carry
+notes, relationships, macros, scripts, chat, tells, reminders, AAC history,
+accessibility preferences or credentials.
+
+Including game output is an explicit opt-in. Opening a GitHub issue may prefill
+text and **must not** submit it.
+
+### E6 — Mapper metadata and widget SDK hardening
+
+```text
+optional edge cost         optional availability
+weighted pathfinding       ambiguity rule tests
+versioned widget contract  widget failure containment
+```
+
+Dijkstra suffices. Without cost metadata, every edge costs 1.
+
+The client must not infer skill, class, guild, weather or roundtime
+restrictions, and Aetos core performs **no genre-specific auto-recovery** — no
+automatic standing, retreating, swimming, climbing or door-opening. Those are
+game decisions, and a client that guesses them is a client that is wrong in a
+new game.
+
+**No remote plugin marketplace.** Downloading and executing third-party
+JavaScript brings code trust, supply chain, signing, update, sandbox and RCE
+problems the core contrib does not need.
+
+## The ambiguity rule, project-wide
+
+> When evidence cannot distinguish between multiple valid interpretations, Aetos
+> declines to guess.
+
+Discovery, map identity, voice resolution, AAC mappings, target matching,
+provider diagnostics, entity disambiguation.
+
+```text
+Two possible maximum-health fields found.
+  db.max_hp
+  db.hp_cap
+Aetos cannot determine which is correct.
+```
+
+**Never silently choose the first.** `unknown` is preferable to wrong, and this
+generalises a lesson from mapper behaviour into a project-wide invariant.
+
+## Revised order
+
+```text
+[x] A0   Accessibility Foundation
+[x] A1   Widget accessibility contract
+[ ] A2   Current State View + semantic values     <-- next on the A-track
+[ ] A3   Accessible map completion
+
+[ ] E0   Event pipeline contract                  <-- BEFORE M17
+[ ] E1   Capture + replay                         <-- BEFORE M17
+[ ] M17  Rich chat + event history + Review Mode
+[ ] E2   Non-destructive presentation rules       (needs M17's canonical log)
+[ ] E3   Automation groups
+[ ] E4   Unified validator
+[ ] E5   Diagnostic reporting
+
+[ ] D0   Discovery architecture spike             <-- next on the D-track
+[ ] D1..D6
+
+[ ] A5   Cognitive and orientation layer
+[ ] M18  Audio + multimedia + captions
+[ ] M19  Themes
+[ ] A7   AAC + simplified workspace
+[ ] M20  PWA + touch gestures
+[ ] E6   Mapper metadata + widget SDK hardening   (with M22, M23)
+[ ] M21..M29
+[ ] A8   Assistive-technology validation
+[ ] M31  Release candidate
+[ ] M32  Upstream PR
+[ ] M33  Voice input
+```
+
+Four tracks now run in parallel and only one hard ordering constraint has been
+added: **E0 and E1 precede M17**.
+
+## Two acceptance tests worth quoting
+
+**The Easy Button either works or it does not.** Give a developer unfamiliar
+with Aetos a game with `db.hp`/`db.hp_max`, the README, and no coaching. They
+must reach working resource meters.
+
+> If provider inheritance is required, the Easy Button has failed.
+
+**No subsystem forces another's integration style.** This must stay valid:
+
+```text
+health     complicated custom handler   → custom provider
+mana       simple db attributes         → declarative binding
+equipment  no custom system             → absent
+map        default Evennia rooms        → default provider
+```
+
+## The rule the whole addendum reduces to
+
+> Aetos should make the simple thing almost effortless without making the
+> advanced thing impossible.
+
+And, for the engine half:
+
+> Aetos does not need to become better at guessing what the server meant. It
+> needs to become exceptionally good at receiving what the server actually
+> knows, preserving it correctly, presenting it flexibly, and giving maintainers
+> the tools to reproduce and diagnose everything that happens afterwards.

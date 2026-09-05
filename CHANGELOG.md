@@ -73,6 +73,56 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ---
 
+### Addendum C — mature client engine (E-track)
+
+**Added**
+
+- [`docs/addendum-c-engine.md`](docs/addendum-c-engine.md): a normative event
+  pipeline contract, capture/replay tooling, non-destructive presentation rules,
+  automation groups, a unified validator and sanitised diagnostics.
+- An **E-track** (E0–E6) in the roadmap.
+- [`decision-005`](notes/decision-005-genie5-clean-room.md) — Genie5 is a design
+  reference, never a source.
+
+**Changed — a scheduling decision, not a preference**
+
+- **E0 and E1 now come before M17.** M17 builds the canonical log and Review
+  Mode, and those decisions determine the foundation that display rules,
+  accessibility announcements, replay testing and every future diagnostic sit
+  on. Building M17 first would mean rebuilding it. A0 already demonstrated how
+  much cheaper an ordering fix is before twelve things depend on it.
+- The integration documentation now teaches in the order a newcomer needs it:
+  zero config → Discovery → bindings → providers. The in-client developer help
+  leads with the three levels instead of the provider class.
+
+**The rules this establishes**
+
+- **Presentation can never rewrite reality.** Highlight, substitute, filter,
+  hide and collapse may not touch the store, the canonical event, the canonical
+  log, server state or provider data.
+- **A trigger fires on canonical text, not on what is visible.** Hiding a line
+  is a display choice; it is not a fact about the game. This is the most common
+  bug in clients that treat gagging as deletion.
+- **A visual filter never silently suppresses an announcement.** A player who
+  hid combat spam and then needs to know what killed them must still be able to
+  find out.
+- **Hidden is not deleted** — filtered events stay in search, Review Mode,
+  canonical history and developer captures.
+- **The ambiguity rule, project-wide:** where evidence cannot distinguish
+  between valid interpretations, Aetos declines to guess. `unknown` beats wrong,
+  and never silently choose the first candidate.
+
+**Licensing**
+
+- The engine ideas are informed by a review of Genie5, which is **GPL-3.0**.
+  Aetos stays **BSD-3-Clause** for Evennia upstreaming, so this is ideas and
+  research only. No Genie5 source, fixtures or implementation. The decision
+  record also lists what is deliberately *not* borrowed: solutions to the
+  text-reconstruction problem that Aetos does not have, because Evennia already
+  holds authoritative structured state.
+
+---
+
 ### A0 — Accessibility Foundation
 
 First stage of the A-track. Blocked M17, and did.

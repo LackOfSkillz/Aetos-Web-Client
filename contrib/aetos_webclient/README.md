@@ -148,6 +148,18 @@ why a pristine game gets a clean client rather than empty widgets:
 AETOS_FEATURES = {"resources": True, "map": True}
 ```
 
+## Teaching Aetos about your game
+
+A stock Evennia game works without custom code. For richer systems, tell Aetos
+where your data already lives with `AETOS_BINDINGS`. If you do not know where to
+start, run the server-side Aetos Discovery helper and review the integrations it
+finds. When your data requires calculations or unusual game logic, use the full
+provider API.
+
+The Aetos Web Client never scans or guesses your game model during normal player
+operation. Discovery is an optional development-time helper, not a gameplay
+subsystem.
+
 ### Bindings -- the easy path (planned, see the project roadmap)
 
 Most games only need to say *where* their data lives:

@@ -384,11 +384,66 @@ The map's written description is generated from the same data as the picture, no
 
 *Making Aetos show your game's systems.*
 
-Aetos knows nothing about your game. It asks providers, and you replace any provider through a single setting. There is no genre concept anywhere in the client -- no health, no combat, no inventory slot names.
+Aetos knows nothing about your game, and never guesses during play. There is no genre concept anywhere in the client -- no health, no combat, no inventory slot names. You tell it where your data is, or you supply code that produces it.
 
-Nothing below grants authority. A provider describes state; it never executes a command, and every button the client renders sends an ordinary command subject to your locks and rules.
+Nothing below grants authority. Every button the client renders sends an ordinary command, subject to your locks and rules exactly as if the player had typed it.
 
-### Exposing resources
+### Three levels. Most games never need the third.
+
+```
+Level 0   nothing            a stock game already works
+Level 1   AETOS_BINDINGS     "my health is at db.hp"
+Level 2   custom provider    when a value is calculated
+```
+
+### Level 1 -- tell Aetos where your data is  (planned)
+
+A binding says where a value lives. No class, no import, and normally no feature flag -- declaring a binding is enough to turn the matching interface on.
+
+```
+# server/conf/settings.py
+AETOS_BINDINGS = {
+    "resources": {
+        "health": {"label": "Health",
+                   "value": "db.hp",
+                   "maximum": "db.hp_max"},
+    },
+    "target": {"object": "db.current_target"},
+}
+```
+
+### Not sure where your data is? Run Discovery.
+
+A development-time tool that inspects your own game -- a representative character, your typeclasses, your command set -- and suggests the bindings. It shows its evidence and how confident it is, lets you correct anything, tests each binding against a live character before generating, and writes the result out for you to paste in.
+
+It never edits your game, never runs your code, and is not reachable by players. And when it cannot tell two candidates apart it says so rather than picking one.
+
+```
+evennia aetos discover
+
+Possible resource found
+-----------------------
+Suggested name:  Health
+Current:         db.hp
+Maximum:         db.hp_max
+Test values:     82 / 100
+
+Evidence:
+  both attributes exist        names appear related
+  both are numeric             current <= maximum
+
+Confidence: HIGH
+
+[Y] Use   [E] Edit   [N] Ignore   [?] Explain
+```
+
+### Where bindings stop, and why
+
+Bindings describe where data IS. Providers describe how it is CALCULATED. So db.hp is a binding, and stats.get("health").current is not -- it is a method call, and bindings deliberately do not allow those.
+
+That line is kept sharp on purpose. A binding language that grew until it could express calculations would be a programming language with no debugger, no error messages worth reading, and nowhere to put a breakpoint.
+
+### Level 2 -- exposing resources with a provider
 
 ```
 # world/aetos.py
@@ -412,7 +467,7 @@ class MyResources(AetosResourceProvider):
         ]
 ```
 
-### Turning it on
+### Turning a provider on
 
 ```
 # server/conf/settings.py

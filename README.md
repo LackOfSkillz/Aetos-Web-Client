@@ -87,6 +87,18 @@ and suggests those bindings, with its evidence and its confidence shown. You
 write a provider class only when a value is genuinely calculated rather than
 stored. See [the easy button](#teaching-it-about-your-game).
 
+### The engine promise
+
+Structured state is authoritative; automation observes it; **presentation may
+change how information is shown but never what actually happened**. A line you
+hide from view still fires its trigger, still reaches Review Mode, and is still
+recoverable from canonical history — because hiding is a display choice, not a
+deletion.
+
+Coming with that: session capture and replay, so an accessibility bug that
+happened once can be reproduced deterministically without recreating the game
+situation that caused it.
+
 ### On the roadmap
 
 Rich chat and event history · audio and multimedia with captions · themes with
@@ -334,7 +346,10 @@ Colour never carries meaning alone. `innerHTML` is never used.
 | **A1** | **Widget accessibility contract — next** *(retrofits M6, M7)* |
 | A2 | Current State View and semantic values *(retrofits M8, M16)* |
 | A3 | Accessible map completion *(retrofits M9)* |
+| **E0** | **Event pipeline contract — before M17** |
+| **E1** | **Capture and replay — before M17** |
 | M17 | Rich chat, event history and Review Mode |
+| E2–E5 | Non-destructive display rules, automation groups, unified validator, diagnostics |
 | A5 | Cognitive and orientation layer — Reorient Me, How I Got Here, Quiet Mode |
 | M18 | Audio and multimedia, with captions |
 | M19 | Themes, with contrast validation |
@@ -342,9 +357,28 @@ Colour never carries meaning alone. `innerHTML` is never used.
 | M20 | PWA shell and touch gestures *(responsive layout done)* |
 | M21–M29 | Inspector, widget SDK, server-described manifest, and hardening |
 | **D0–D6** | **`AETOS_BINDINGS` and `evennia aetos discover` — the easy button above** |
+| E6 | Weighted map routing and widget SDK hardening |
 | A8 | Assistive-technology validation — NVDA, JAWS, Orca, braille, cognitive, AAC |
 | M31–M32 | Release candidate and upstream pull request |
 | M33 | Voice input and speech accessibility |
+
+The **E-track** comes from
+[Addendum C](docs/addendum-c-engine.md): a formal contract for the order in
+which incoming events are processed, and capture/replay tooling. **E0 and E1
+land before M17**, because M17 builds the canonical log and Review Mode, and
+those decisions determine the foundation that display rules, accessibility
+announcements and every future diagnostic sit on.
+
+Its central rule is that **presentation can never rewrite reality**. Hiding a
+line is a display choice, not a fact about the game — so a trigger still fires
+on text the player filtered from view, and a visual filter never silently
+suppresses an accessibility announcement. That is the most common bug in clients
+that treat hiding as deletion.
+
+Addendum C is informed by a review of Genie5, which is GPL-3.0. Aetos is
+BSD-3-Clause for Evennia upstreaming, so this is **ideas and research only — no
+Genie5 code**. See [`decision-005`](notes/decision-005-genie5-clean-room.md),
+which also records what is deliberately *not* borrowed.
 
 The **D-track** comes from
 [Addendum B](docs/addendum-b-discovery.md) and runs in parallel: a declarative
@@ -422,8 +456,13 @@ in the page. Never run the Python suite concurrently with live browser QA — se
 ## Clean room
 
 Aetos is written against untouched Evennia. No source file has been imported
-from DireEngine, Dragon's Ire, Maritime, WorldBuilder or Area Forge; those were
-consulted for design lessons only. The intended destination is
+from DireEngine, Dragon's Ire, Maritime, WorldBuilder, Area Forge or Genie5;
+those were consulted for design lessons only.
+
+Genie5 is the strictest case, because it is **GPL-3.0** while Aetos is
+BSD-3-Clause for upstreaming — so the boundary there is legal as well as
+architectural, and is recorded as
+[`decision-005`](notes/decision-005-genie5-clean-room.md). The intended destination is
 `evennia/contrib/base_systems/aetos_webclient`, with the pull request diff
 limited to that directory.
 

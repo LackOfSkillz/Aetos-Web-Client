@@ -588,17 +588,82 @@
             sections: [
                 {
                     body: [
-                        "Aetos knows nothing about your game. It asks providers, and you " +
-                            "replace any provider through a single setting. There is no genre " +
-                            "concept anywhere in the client -- no health, no combat, no " +
-                            "inventory slot names.",
-                        "Nothing below grants authority. A provider describes state; it never " +
-                            "executes a command, and every button the client renders sends an " +
-                            "ordinary command subject to your locks and rules."
+                        "Aetos knows nothing about your game, and never guesses during play. " +
+                            "There is no genre concept anywhere in the client -- no health, " +
+                            "no combat, no inventory slot names. You tell it where your data " +
+                            "is, or you supply code that produces it.",
+                        "Nothing below grants authority. Every button the client renders sends " +
+                            "an ordinary command, subject to your locks and rules exactly as " +
+                            "if the player had typed it."
                     ]
                 },
                 {
-                    heading: "Exposing resources",
+                    heading: "Three levels. Most games never need the third.",
+                    example:
+                        "Level 0   nothing            a stock game already works\n" +
+                        "Level 1   AETOS_BINDINGS     \"my health is at db.hp\"\n" +
+                        "Level 2   custom provider    when a value is calculated"
+                },
+                {
+                    heading: "Level 1 -- tell Aetos where your data is  (planned)",
+                    body: [
+                        "A binding says where a value lives. No class, no import, and " +
+                            "normally no feature flag -- declaring a binding is enough to turn " +
+                            "the matching interface on."
+                    ],
+                    example:
+                        "# server/conf/settings.py\n" +
+                        "AETOS_BINDINGS = {\n" +
+                        '    "resources": {\n' +
+                        '        "health": {"label": "Health",\n' +
+                        '                   "value": "db.hp",\n' +
+                        '                   "maximum": "db.hp_max"},\n' +
+                        "    },\n" +
+                        '    "target": {"object": "db.current_target"},\n' +
+                        "}"
+                },
+                {
+                    heading: "Not sure where your data is? Run Discovery.",
+                    body: [
+                        "A development-time tool that inspects your own game -- a " +
+                            "representative character, your typeclasses, your command set -- " +
+                            "and suggests the bindings. It shows its evidence and how confident " +
+                            "it is, lets you correct anything, tests each binding against a " +
+                            "live character before generating, and writes the result out for " +
+                            "you to paste in.",
+                        "It never edits your game, never runs your code, and is not reachable " +
+                            "by players. And when it cannot tell two candidates apart it says " +
+                            "so rather than picking one."
+                    ],
+                    example:
+                        "evennia aetos discover\n\n" +
+                        "Possible resource found\n" +
+                        "-----------------------\n" +
+                        "Suggested name:  Health\n" +
+                        "Current:         db.hp\n" +
+                        "Maximum:         db.hp_max\n" +
+                        "Test values:     82 / 100\n\n" +
+                        "Evidence:\n" +
+                        "  both attributes exist        names appear related\n" +
+                        "  both are numeric             current <= maximum\n\n" +
+                        "Confidence: HIGH\n\n" +
+                        "[Y] Use   [E] Edit   [N] Ignore   [?] Explain"
+                },
+                {
+                    heading: "Where bindings stop, and why",
+                    body: [
+                        "Bindings describe where data IS. Providers describe how it is " +
+                            "CALCULATED. So db.hp is a binding, and " +
+                            "stats.get(\"health\").current is not -- it is a method call, and " +
+                            "bindings deliberately do not allow those.",
+                        "That line is kept sharp on purpose. A binding language that grew " +
+                            "until it could express calculations would be a programming " +
+                            "language with no debugger, no error messages worth reading, and " +
+                            "nowhere to put a breakpoint."
+                    ]
+                },
+                {
+                    heading: "Level 2 -- exposing resources with a provider",
                     example:
                         "# world/aetos.py\n" +
                         "from evennia.contrib.base_systems.aetos_webclient.providers.base import (\n" +
@@ -620,7 +685,7 @@
                         "        ]"
                 },
                 {
-                    heading: "Turning it on",
+                    heading: "Turning a provider on",
                     example:
                         "# server/conf/settings.py\n" +
                         'AETOS_PROVIDERS = {"resources": "world.aetos.MyResources"}\n' +
