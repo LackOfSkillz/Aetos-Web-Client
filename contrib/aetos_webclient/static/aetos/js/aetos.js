@@ -210,7 +210,28 @@
     // else is discarded rather than trusted.
     var SAFE_CLASS = /^[A-Za-z0-9_ -]{0,200}$/;
 
-    function sanitizeInto(sourceNode, targetNode, doc) {
+    /*
+     * How deep the rebuild will follow nesting before flattening the rest.
+     *
+     * M26. The rebuild is recursive, and the input is markup a builder or
+     * another player was able to produce. Browsers cap their own parser's
+     * nesting depth, so this is a second bound rather than the only one -- but
+     * the cap differs between engines, and a stack overflow here throws inside
+     * the output path, which is where the *game's own text* is being drawn.
+     * Losing a line to a crash is a worse outcome than flattening one.
+     *
+     * 64 is far past any real formatting. Content below it is not discarded:
+     * the deeper nodes are flattened to their text, which is the same thing
+     * that already happens to any tag not on the allowlist.
+     */
+    var MAX_NESTING = 64;
+
+    function sanitizeInto(sourceNode, targetNode, doc, depth) {
+        var level = depth || 0;
+        if (level > MAX_NESTING) {
+            targetNode.appendChild(doc.createTextNode(sourceNode.textContent || ""));
+            return;
+        }
         var children = sourceNode.childNodes;
         for (var i = 0; i < children.length; i++) {
             var node = children[i];
@@ -233,7 +254,7 @@
             var allowedAttrs = ALLOWED_TAGS[node.tagName];
             if (!allowedAttrs) {
                 // Not allowed, but its text still belongs to the player.
-                sanitizeInto(node, targetNode, doc);
+                sanitizeInto(node, targetNode, doc, level + 1);
                 continue;
             }
 
@@ -244,7 +265,7 @@
                     clean.setAttribute("class", value);
                 }
             });
-            sanitizeInto(node, clean, doc);
+            sanitizeInto(node, clean, doc, level + 1);
             targetNode.appendChild(clean);
         }
     }
@@ -256,7 +277,7 @@
             "text/html"
         );
         var fragment = document.createDocumentFragment();
-        sanitizeInto(parsed.body, fragment, document);
+        sanitizeInto(parsed.body, fragment, document, 0);
         return fragment;
     }
 

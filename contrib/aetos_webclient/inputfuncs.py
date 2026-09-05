@@ -55,11 +55,24 @@ def aetos_hello(session, *args, **kwargs):
         _send_error(session, str(err))
         return
 
-    if hello.unknown_capabilities:
+    # Once per session, not once per handshake.
+    #
+    # A client may send `aetos_hello` as often as it likes -- Evennia's Portal
+    # throttles it to MAX_COMMAND_RATE like any other input, but that is still
+    # 80 a second, each writing up to 4KB of attacker-chosen capability names
+    # into the game's log. The rejection path above already declined to log at
+    # error level for exactly this reason; the acceptance path had the same
+    # problem and not the same care.
+    #
+    # Comparing against the last set logged, rather than a "have logged" flag,
+    # so a client that genuinely changes its capabilities is still reported.
+    unknown = hello.unknown_capabilities
+    if unknown and unknown != getattr(session, "aetos_logged_unknown", None):
         logger.log_info(
             "Aetos: session %s advertised unknown capabilities %s (ignored)"
-            % (session.sessid, sorted(hello.unknown_capabilities))
+            % (session.sessid, sorted(unknown))
         )
+        session.aetos_logged_unknown = unknown
 
     # Record the handshake on the session so later milestones can tailor what
     # they send. This is transient connection state, not a stored player

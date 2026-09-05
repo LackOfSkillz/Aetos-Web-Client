@@ -269,17 +269,27 @@ class TestScriptsDoNotBlockTheParser(TestCase):
 
         """
         tags = self._script_tags(BASE_TEMPLATE)
-        self.assertEqual(len(tags), 2)
+        self.assertEqual(len(tags), 3)
         for tag in tags:
             self.assertIn("defer", tag, "not deferred: %s" % tag)
 
-    def test_the_inline_bootstrap_is_not_deferred(self):
+    def test_the_transport_bootstrap_is_deferred_like_the_rest(self):
         """
-        `wsurl` and `cuid` are defined by an inline script and read by
-        `evennia.js`. Inline scripts cannot be deferred and do not need to be:
-        they run at parse time, which is before every deferred script.
+        M26 replaced the page's one inline script with `transport_bootstrap.js`,
+        which defines the globals `evennia.js` reads.
+
+        It has to be deferred *and* first: deferred scripts run in document
+        order, and that ordering is the only thing guaranteeing the globals
+        exist before `evennia.js` initialises. An inline script would have run
+        at parse time and needed no ordering care, which is what made this the
+        one place the change could go wrong.
 
         """
-        self.assertIn("var wsurl", BASE_TEMPLATE)
-        inline = BASE_TEMPLATE[: BASE_TEMPLATE.index("var wsurl")]
-        self.assertNotIn("defer", inline.split("<script")[-1])
+        tags = self._script_tags(BASE_TEMPLATE)
+        bootstrap = [tag for tag in tags if "transport_bootstrap.js" in tag]
+        self.assertEqual(len(bootstrap), 1)
+        self.assertIn("defer", bootstrap[0])
+        self.assertLess(
+            BASE_TEMPLATE.index("transport_bootstrap.js"),
+            BASE_TEMPLATE.index("webclient/js/evennia.js"),
+        )

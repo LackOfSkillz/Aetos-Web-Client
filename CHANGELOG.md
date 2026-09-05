@@ -11,6 +11,58 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### M26 — Security hardening
+
+1134 tests. axe clean at every severity.
+[`notes/m26-security-hardening.md`](notes/m26-security-hardening.md)
+
+**Added — the client page carries a Content-Security-Policy**
+
+- `script-src 'self'`, no `'unsafe-inline'`, no `'unsafe-eval'`. Verified
+  *enforced* in a browser, not merely present: an injected inline `<script>` did
+  not run, a script from another origin was refused, and `eval("1+1")` was
+  refused — so "Aetos evaluates no JavaScript" is now a browser guarantee rather
+  than a maintained discipline.
+- Declared as `<meta http-equiv>` rather than a header, because a contrib does
+  not own the webclient view and middleware would apply the policy to the game's
+  entire website. `frame-ancestors`, `report-uri` and `sandbox` cannot be
+  expressed that way, so `AETOS_CSP` **refuses** them with an error naming
+  `X-Frame-Options` rather than letting a game believe it is protected.
+- `AETOS_CSP` adds sources to the defaults per directive; `AETOS_CSP = False`
+  declines the policy for a game sending its own header.
+
+**Changed — the page's last inline script became a file**
+
+- The four transport globals `evennia.js` reads now travel as `<meta>` tags and
+  are assigned by `transport_bootstrap.js`. One inline script is all it takes to
+  force a game into `script-src 'unsafe-inline'`, which is the same as having no
+  script policy at all.
+
+**Fixed — a client could fill a game's log through its handshake**
+
+- Unknown capability names were logged on every `aetos_hello`: bounded per
+  message, unbounded per session. Now logged once, and again only if the set
+  changes. The rejection path directly above already declined to log at error
+  level for exactly this reason.
+
+**Fixed — the sanitiser could be made to recurse until the stack ran out**
+
+- Nesting deeper than 64 levels is flattened to text rather than followed.
+  Content is not discarded — flattening is what already happens to any tag off
+  the allowlist.
+
+**Added — a referrer policy**, `strict-origin-when-cross-origin`. A small
+improvement, stated as one: it matches the modern browser default and pins it for
+browsers that sent the full URL.
+
+**Investigated and deliberately not changed — request rate limiting**
+
+- `aetos_request_sync` is reachable before login and runs every provider, which
+  looked like unbounded amplification. Measured: 2000 requests produced exactly
+  80 syncs and 1920 "You entered commands too fast" refusals. Evennia's Portal
+  applies `MAX_COMMAND_RATE` to every inputfunc, not only to `text`. A second
+  throttle inside the contrib could only disagree with the first.
+
 ### M25 — Performance hardening
 
 1102 tests. axe clean at every severity.

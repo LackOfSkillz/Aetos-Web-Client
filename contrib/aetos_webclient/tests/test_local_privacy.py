@@ -119,13 +119,22 @@ class TestServerStoresNothing(TestCase):
     def test_session_state_is_transient_only(self):
         """
         The handshake records the client's protocol and capabilities on the
-        session. That is connection state which dies with the session, not a
-        stored profile -- and it must stay that way.
+        session, and since M26 also the set of unknown capabilities it has
+        already logged, so a client cannot fill the game's log by repeating its
+        handshake. All three are connection state that dies with the session,
+        not a stored profile -- and they must stay that way.
+
+        The assertion is an exact list rather than a search for anything
+        suspicious, so adding a fourth is a deliberate act with a reason
+        attached rather than something that slides in.
 
         """
         source = (CONTRIB_DIR / "inputfuncs.py").read_text(encoding="utf-8")
         stored = re.findall(r"session\.(\w+)\s*=", source)
-        self.assertEqual(sorted(stored), ["aetos_capabilities", "aetos_protocol"])
+        self.assertEqual(
+            sorted(stored),
+            ["aetos_capabilities", "aetos_logged_unknown", "aetos_protocol"],
+        )
 
 
 class TestLocalDataStaysClientSide(TestCase):

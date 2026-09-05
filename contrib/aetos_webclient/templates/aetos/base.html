@@ -27,10 +27,45 @@ come from Evennia's documented webclient view and context processor
 <html dir="ltr" lang="en">
   <head>
     <meta charset="utf-8" />
+
+    {% comment %}
+    Content-Security-Policy, declared in the document rather than sent as a
+    header, and first in the head because a meta policy governs only what the
+    parser has not yet reached.
+
+    A contrib cannot set a response header without owning the view or installing
+    middleware, and middleware would apply this to the game's entire website --
+    front page, admin, wiki -- which is not a decision a webclient makes on a
+    game's behalf. A meta policy applies to exactly this page.
+
+    What that costs, stated rather than glossed: `frame-ancestors`, `report-uri`
+    and `sandbox` are ignored in a meta policy. Clickjacking protection needs a
+    real header, and README.md says so.
+
+    A game extends it with AETOS_CSP, or sets AETOS_CSP = False to declare none.
+    {% endcomment %}
+    {% aetos_csp as aetos_policy %}{% if aetos_policy %}<meta http-equiv="Content-Security-Policy" content="{{ aetos_policy }}" />
+    {% endif %}
     <title>{{ game_name }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="generator" content="Aetos Web Client" />
     <meta name="color-scheme" content="dark light" />
+
+    {% comment %}
+    Referrer policy.
+
+    Media a game declares may be hosted anywhere, and the browser fetches it
+    directly -- so a third-party host learns the player's IP address, which is
+    inherent to showing remote media and not something a client should silently
+    prevent. What it need not learn is the URL of the page they were on.
+
+    A small improvement, stated as one: this matches what modern browsers
+    already default to, and pins it for those that defaulted to sending the full
+    URL. `no-referrer` would be stricter and is not used, because media hosts
+    commonly refuse requests with no referrer and the failure would look to a
+    game like "Aetos does not show my images".
+    {% endcomment %}
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
 
     {% comment %}
     This page must not be cached.
@@ -56,33 +91,24 @@ come from Evennia's documented webclient view and context processor
 
     {% block styles %}{% endblock %}
 
-    <script type="text/javascript">
-        // Transport parameters read by evennia.js. Names and semantics match the
-        // stock webclient base template exactly.
-        {% if websocket_enabled %}
-            var wsactive = true;
-        {% else %}
-            var wsactive = false;
-        {% endif %}
+    {% comment %}
+    Transport parameters for `evennia.js`, as data rather than as code.
 
-        {% if browser_sessid %}
-            var csessid = "{{ browser_sessid }}";
-        {% else %}
-            var csessid = false;
-        {% endif %}
+    These were an inline `<script>` until M26. It was the only inline script in
+    the whole client, and one inline script is all it takes to force a game into
+    `script-src 'unsafe-inline'` -- which is the same as having no script policy
+    at all. Carried as `<meta>` and read by `transport_bootstrap.js`, the client
+    runs under a strict policy. See `csp.py`.
 
-        {% if websocket_url %}
-            var wsurl = "{{ websocket_url }}";
-        {% else %}
-            var wsurl = "ws://" + window.location.hostname + ":{{ websocket_port }}";
-        {% endif %}
+    Names and semantics still match Evennia's stock webclient base template
+    exactly; only the delivery changed.
+    {% endcomment %}
+    <meta name="aetos-websocket-active" content="{% if websocket_enabled %}true{% else %}false{% endif %}" />
+    <meta name="aetos-browser-sessid" content="{{ browser_sessid|default_if_none:"" }}" />
+    <meta name="aetos-websocket-url" content="{{ websocket_url|default_if_none:"" }}" />
+    <meta name="aetos-websocket-port" content="{{ websocket_port }}" />
 
-        // Distinguishes multiple tabs of the same browser session.
-        var cuid = (function () {
-            var random = function () { return Math.random().toString(36).substring(2, 15); };
-            return random() + random();
-        })();
-    </script>
+    <script defer src={% aetos_static "aetos/js/transport_bootstrap.js" %} type="text/javascript" charset="utf-8"></script>
 
     <!-- Minimal shim for the single jQuery call at the end of evennia.js.
          Must load before it. See compat.js for the reasoning. -->

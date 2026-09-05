@@ -161,14 +161,27 @@ class TestAetosTemplateContract(TestCase):
         """
         self.assertIn(constants.EVENNIA_TRANSPORT_SCRIPT, self.base_text)
 
-    def test_base_defines_the_transport_variables_evennia_js_expects(self):
+    def test_base_supplies_the_transport_variables_evennia_js_expects(self):
         """
         evennia.js reads these globals. Omitting one breaks the connection in a
         way that looks like a server fault rather than a template bug.
 
+        They were `var` declarations in an inline script until M26, when the
+        last inline script was removed so the page could carry a real
+        Content-Security-Policy. The values now travel as `<meta>` tags and are
+        assigned by `transport_bootstrap.js`, so this checks the template still
+        supplies each one -- the contract with `evennia.js` is unchanged, only
+        the delivery.
+
         """
-        for variable in ("wsactive", "csessid", "wsurl", "cuid"):
-            self.assertIn("var %s" % variable, self.base_text, "missing %r" % variable)
+        for name in (
+            "aetos-websocket-active",
+            "aetos-browser-sessid",
+            "aetos-websocket-url",
+            "aetos-websocket-port",
+        ):
+            self.assertIn('name="%s"' % name, self.base_text, "missing %r" % name)
+        self.assertIn("transport_bootstrap.js", self.base_text)
 
 
 class TestNoExternalResources(TestCase):

@@ -355,7 +355,66 @@ release gate, and no claim will ship ahead of its evidence.
 All server-provided markup is parsed in an inert document and rebuilt from an
 allowlist of elements and attributes. Aetos never uses `innerHTML`. Elements
 outside the allowlist are replaced by their text content rather than discarded, so
-game output is never silently lost.
+game output is never silently lost. Nesting deeper than 64 levels is flattened to
+text rather than followed, so hostile markup cannot exhaust the stack in the code
+path that draws your game's output.
+
+Aetos evaluates no JavaScript at runtime. The scripting language players can
+write is tokenised, parsed and interpreted from its own syntax tree; `eval` and
+`Function` appear nowhere in the client.
+
+### Content-Security-Policy
+
+The client page carries its own policy:
+
+```text
+default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
+connect-src 'self' ws: wss:; img-src 'self' data: https:;
+media-src 'self' https:; font-src 'self'; object-src 'none'; frame-src 'none';
+form-action 'none'; base-uri 'none'; worker-src 'self'; manifest-src 'self'
+```
+
+It is declared in the document rather than sent as a header, because a contrib
+does not own the webclient view, and middleware would apply the policy to your
+whole website -- front page, admin, wiki -- which is not a decision a webclient
+should make on your behalf.
+
+**Two things that costs you, stated plainly:**
+
+- **`frame-ancestors` cannot be expressed in a `<meta>` policy.** Neither can
+  `report-uri` or `sandbox`. If you want clickjacking protection, send
+  `X-Frame-Options: SAMEORIGIN` or a real `Content-Security-Policy` header with
+  `frame-ancestors` from your own web server or middleware. Aetos will refuse
+  `AETOS_CSP = {"frame-ancestors": ...}` with an error rather than let you
+  believe it took effect.
+- **`style-src` needs `'unsafe-inline'`.** Theme tokens and layout sizes are
+  written as inline styles. This permits no script execution, and the sanitiser
+  accepts no `style` attribute or `<style>` element from game content at all, so
+  there is no injection point for it to widen.
+
+If your game serves media, fonts or scripts from another host, add them --
+sources are added to the defaults rather than replacing them:
+
+```python
+AETOS_CSP = {"img-src": ["https://cdn.example.com"]}
+```
+
+To send your own header instead, turn the page's policy off. Do not run both:
+two policies both apply and the result is their intersection, which is very hard
+to debug.
+
+```python
+AETOS_CSP = False
+```
+
+### Rate limiting
+
+Aetos adds no throttle of its own. Every message a client sends -- including
+`aetos_hello` and `aetos_request_sync` -- passes through Evennia's Portal, which
+applies `MAX_COMMAND_RATE` to all input rather than only to typed commands. A
+client that exceeds it gets `COMMAND_RATE_WARNING` and its excess is dropped. If
+you want Aetos's sync requests limited differently, change that setting; a second
+throttle inside the contrib would only be able to disagree with the first.
 
 ## Requirements
 

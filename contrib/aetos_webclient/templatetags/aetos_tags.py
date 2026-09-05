@@ -21,7 +21,7 @@ from django import template
 from django.conf import settings
 from django.templatetags.static import static
 
-from evennia.contrib.base_systems.aetos_webclient import AETOS_STATIC_DIR, constants
+from evennia.contrib.base_systems.aetos_webclient import AETOS_STATIC_DIR, constants, csp
 
 register = template.Library()
 
@@ -69,3 +69,15 @@ def aetos_static(path):
         if stamp:
             version = "%s-%s" % (version, stamp)
     return "%s?v=%s" % (static(path), version)
+
+
+@register.simple_tag
+def aetos_csp():
+    """
+    Return the Content-Security-Policy for the client page.
+
+    Returns:
+        str: The policy string, or "" if the game has disabled it.
+
+    """
+    return csp.build_policy()
