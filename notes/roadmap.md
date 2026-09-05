@@ -114,7 +114,7 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M24  Reconnect hardening
 [x] M25  Performance hardening
 [x] M26  Security hardening
-[ ] M27  Configuration validation
+[x] M27  Configuration validation
 [ ] M28  Documentation
 [ ] M29  Compatibility matrix
 [~] M30  Accessibility review  -- WITHDRAWN, see Addendum A below
@@ -612,8 +612,9 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (the 5000-line cap was itself the bottleneck)
 [x] M26  Security hardening                             -- 1134 py
          (CSP enforced; the sync flood was Evennia already defending)
-[ ] M27  Configuration validation                      <-- NEXT
-[ ] M28  Documentation
+[x] M27  Configuration validation                       -- 1156 py
+         (startup checks; the silent one is template precedence)
+[ ] M28  Documentation                                 <-- NEXT
 [ ] M29  Compatibility matrix
 [~] M30  WITHDRAWN -- superseded by the A-track (A.106)
 [ ] A9   Accessibility toggle + feature picker  (new)

@@ -17,3 +17,14 @@ class AetosWebClientConfig(AppConfig):
     name = "evennia.contrib.base_systems.aetos_webclient"
     label = "aetos_webclient"
     verbose_name = "Aetos Web Client"
+
+    def ready(self):
+        """
+        Register Aetos's startup checks.
+
+        Imported here rather than at module level because the checks read
+        settings and import the validators, and neither is safe before Django
+        has finished loading applications.
+
+        """
+        from evennia.contrib.base_systems.aetos_webclient import checks  # noqa: F401

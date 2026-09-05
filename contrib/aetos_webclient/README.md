@@ -436,9 +436,26 @@ settings, and the full slot list.
 
 ## Troubleshooting
 
+**Start here: read what `evennia start` printed.** Aetos checks its own
+installation and settings at startup and reports problems by name, with the fix
+in the message. They are warnings rather than errors, so the game still starts --
+a typo in a webclient setting should not stop a MUD that also serves telnet.
+
+| Code | Meaning |
+|---|---|
+| `aetos.W001` | The template directory is not in `TEMPLATES[0]["DIRS"]`, so the stock client is being served |
+| `aetos.W002` | It is there, but after a directory that also has a `webclient.html`, so it still loses -- `append` instead of `insert(0, ...)` |
+| `aetos.W003` | The input handlers are not registered, so no manifest is sent and no configured features appear |
+| `aetos.W01x` | One of the `AETOS_*` settings is malformed; the message names the key |
+
+**The checks themselves are silent.** They are registered by Aetos's app config,
+so they only run when the app is in `INSTALLED_APPS`. If you are seeing no Aetos
+warnings *and* no Aetos, that line is the one to check first.
+
 **The stock client still appears.** The `TEMPLATES` insert is missing or ran
 before `settings_default` was imported. It must come after the
-`from evennia.settings_default import *` line.
+`from evennia.settings_default import *` line. `aetos.W001` and `aetos.W002`
+catch both shapes of this.
 
 **Styles or scripts 404.** Static files were not collected. Restart with
 `evennia reload`, which runs `collectstatic`.

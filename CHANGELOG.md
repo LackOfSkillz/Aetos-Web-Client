@@ -11,6 +11,35 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### M27 — Configuration validation
+
+1156 tests.
+[`notes/m27-configuration-validation.md`](notes/m27-configuration-validation.md)
+
+**Added — Aetos checks its own installation and settings at `evennia start`**
+
+- The settings were already validated, and validated well. What was missing was
+  *when*: validation ran when a player connected, and reported to that player's
+  browser and to a log nobody was watching.
+- `aetos.W001` / `aetos.W002` catch the only Aetos misconfiguration with **no
+  symptom** — the template directory missing from `TEMPLATES[0]["DIRS"]`, or
+  present but appended rather than inserted so Evennia's own directory still
+  wins. The game starts, `/webclient/` works, and it serves the stock client.
+  `W002` names the directory that is winning, because "something is ahead of
+  you" is a fact and "`evennia/web/templates` is ahead of you" is a fix.
+- `aetos.W003` catches unregistered input handlers — a client that loads and
+  plays with every configured feature silently absent.
+- `aetos.W01x` runs each `AETOS_*` setting through **the validator the runtime
+  uses**, not a copy. A check with its own idea of what is valid disagrees with
+  the code, and the original messages — which name the key and list the valid
+  options — survive intact.
+- **Every finding is a Warning, never an Error.** Django refuses to start on a
+  check Error, and stopping a MUD that also serves telnet because its webclient
+  has a settings typo would be worse than the typo.
+- Known limit, recorded in the source: the checks are registered by Aetos's app
+  config, so they cannot warn about `INSTALLED_APPS` itself. The README's
+  troubleshooting leads with that.
+
 ### M26 — Security hardening
 
 1134 tests. axe clean at every severity.
