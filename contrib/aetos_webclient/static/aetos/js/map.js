@@ -29,11 +29,58 @@
      * Routing
      * ------------------------------------------------------------------ */
 
+    //: What an edge costs when a game says nothing.  C.19.
+    //:
+    //: One, so a game supplying no costs gets exactly the behaviour it had
+    //: before weighting existed. Mirrors `map_layout.DEFAULT_EDGE_COST`.
+    var DEFAULT_EDGE_COST = 1;
+
+    //: Arithmetic hygiene rather than a judgement about what "expensive" means:
+    //: a cost of 1e308 makes every comparison in the search meaningless.
+    var MAX_EDGE_COST = 10000;
+
+    function edgeCost(link) {
+        var raw = link.cost;
+        if (raw === undefined || raw === null || typeof raw === "boolean") {
+            // `true` is not 1. It would be right by accident and wrong as a
+            // habit, and the server refuses it for the same reason.
+            return DEFAULT_EDGE_COST;
+        }
+        var cost = Number(raw);
+        if (!isFinite(cost) || cost < 0) {
+            // A negative edge would let a route improve by walking in circles,
+            // which Dijkstra cannot express and no game means.
+            return DEFAULT_EDGE_COST;
+        }
+        return Math.min(cost, MAX_EDGE_COST);
+    }
+
     /*
-     * Breadth-first route between two rooms, mirroring the server's own
-     * find_route. Done client-side so clicking a room does not need a round
-     * trip, and kept identical in shape so the two cannot disagree about what
-     * "shortest" means.
+     * Whether the game says this edge can currently be used.
+     *
+     * Absent means available. Treating silence as "blocked" would empty the map
+     * of every game that has not adopted the field.
+     */
+    function edgeIsAvailable(link) {
+        return link.available !== false;
+    }
+
+    /*
+     * Cheapest route between two rooms, mirroring the server's `find_route`.
+     *
+     * Dijkstra, as C.19 permits -- costs are non-negative by construction, so
+     * nothing more elaborate buys anything. **With no declared costs this is
+     * exactly the breadth-first search it replaced**: every edge costs 1, so
+     * the cheapest route is the one with fewest moves.
+     *
+     * Done client-side so clicking a room needs no round trip, and kept
+     * identical in shape to the server's so the two cannot disagree about what
+     * "shortest" means. A test pins both to the same fixtures.
+     *
+     * Edges the game marked unavailable are excluded. Aetos does not route
+     * through a door the game says is shut -- and does not guess why it is
+     * shut either, because C.19 forbids inferring skill, class, guild, weather
+     * or roundtime restrictions.
      */
     function findRoute(mapData, from, to) {
         if (from === to) {
@@ -42,7 +89,8 @@
         var links = {};
         (mapData.rooms || []).forEach(function (room) { links[room.id] = []; });
         (mapData.exits || []).forEach(function (link) {
-            if (links[link.from] && links[link.to] !== undefined) {
+            if (links[link.from] && links[link.to] !== undefined &&
+                    edgeIsAvailable(link)) {
                 links[link.from].push(link);
             }
         });
@@ -54,31 +102,90 @@
 
         var previous = {};
         previous[from] = null;
-        var queue = [from];
+        var best = {};
+        best[from] = 0;
+        var settled = {};
 
-        while (queue.length) {
-            var current = queue.shift();
-            var options = links[current] || [];
-            for (var i = 0; i < options.length; i++) {
-                var link = options[i];
-                if (previous[link.to] !== undefined) {
-                    continue;
+        /*
+         * A linear scan for the cheapest unsettled room rather than a heap.
+         *
+         * A map is tens of rooms, not thousands; a binary heap here would be
+         * more code to get wrong for a saving nobody could measure. If a game
+         * ever ships a map large enough to notice, the fix is a heap and the
+         * tests will not change.
+         */
+        function cheapestUnsettled() {
+            var chosen = null;
+            var lowest = Infinity;
+            Object.keys(best).forEach(function (room) {
+                if (settled[room]) {
+                    return;
                 }
-                previous[link.to] = { from: current, direction: link.direction };
-                if (link.to === to) {
-                    var steps = [];
-                    var cursor = to;
-                    while (previous[cursor]) {
-                        steps.push(previous[cursor].direction);
-                        cursor = previous[cursor].from;
-                    }
-                    steps.reverse();
-                    return steps;
+                // Ties break on room id, so two equally cheap routes resolve
+                // the same way every time -- a map that suggests a different
+                // equally-good route on each sync is one nobody can follow.
+                if (best[room] < lowest || (best[room] === lowest && room < chosen)) {
+                    lowest = best[room];
+                    chosen = room;
                 }
-                queue.push(link.to);
+            });
+            return chosen;
+        }
+
+        var current = cheapestUnsettled();
+        while (current !== null) {
+            if (current === to) {
+                var steps = [];
+                var cursor = to;
+                while (previous[cursor]) {
+                    steps.push(previous[cursor].direction);
+                    cursor = previous[cursor].from;
+                }
+                steps.reverse();
+                return steps;
             }
+            settled[current] = true;
+
+            (links[current] || []).forEach(function (link) {
+                if (settled[link.to]) {
+                    return;
+                }
+                var candidate = best[current] + edgeCost(link);
+                if (best[link.to] === undefined || candidate < best[link.to]) {
+                    best[link.to] = candidate;
+                    previous[link.to] = { from: current, direction: link.direction };
+                }
+            });
+
+            current = cheapestUnsettled();
         }
         return null;
+    }
+
+    /*
+     * Exits the game says are shut, with its own stated reason.
+     *
+     * Surfaced rather than hidden: a player is entitled to know a door exists
+     * and is closed, and a map that silently omits it looks like a map with a
+     * missing room -- a worse thing to be looking at.
+     *
+     * The reason is never invented. Where the game supplies none the exit is
+     * reported as blocked with no explanation, because "unknown" is preferable
+     * to wrong (C.6).
+     */
+    function blockedExits(mapData) {
+        return ((mapData && mapData.exits) || [])
+            .filter(function (link) { return !edgeIsAvailable(link); })
+            .map(function (link) {
+                return {
+                    from: link.from,
+                    to: link.to,
+                    direction: link.direction || "",
+                    reason: typeof link.reason === "string" && link.reason
+                        ? link.reason
+                        : null
+                };
+            });
     }
 
     /* ------------------------------------------------------------------
@@ -612,9 +719,29 @@
                 function walkTo(roomId) {
                     var steps = findRoute(data, data.current, roomId);
                     if (!steps || !steps.length) {
-                        announce("No route to that location.", {
-                            category: "system", priority: "important"
+                        /*
+                         * Say why, but only what the game said.
+                         *
+                         * A player who can see a room on the map and cannot
+                         * walk to it is owed better than "no route" -- that
+                         * reads as a broken map rather than a shut door. So a
+                         * blocked exit's own reason is repeated verbatim.
+                         *
+                         * Where the game supplied no reason, none is invented
+                         * (C.19, C.6): "unknown" is preferable to wrong, and a
+                         * guessed explanation is exactly the confident error
+                         * that costs a player their trust in the map.
+                         */
+                        var blocked = blockedExits(data).filter(function (exit) {
+                            return exit.reason;
                         });
+                        announce(
+                            blocked.length
+                                ? "No route to that location. " +
+                                  blocked[0].reason
+                                : "No route to that location.",
+                            { category: "system", priority: "important" }
+                        );
                         return;
                     }
 
@@ -704,6 +831,10 @@
     window.AetosMap = {
         createWidget: createMapWidget,
         findRoute: findRoute,
+        blockedExits: blockedExits,
+        edgeCost: edgeCost,
+        edgeIsAvailable: edgeIsAvailable,
+        DEFAULT_EDGE_COST: DEFAULT_EDGE_COST,
         describeRoute: describeRoute,
         renderRoute: renderRoute,
         renderPlaces: renderPlaces,

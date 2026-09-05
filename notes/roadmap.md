@@ -519,8 +519,8 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] M21  Developer inspector                           -- 973 py
 [x] M22  Widget SDK + widget failure isolation         -- 1000 py
 [x] M23  Server-described UI manifest                  -- 1036 py
-[ ] E6   Mapper metadata  (SDK half done at M22)       <-- NEXT
-[ ] M24  Reconnect hardening
+[x] E6   Mapper metadata + weighted routing            -- 1066 py
+[ ] M24  Reconnect hardening                           <-- NEXT
 [ ] M25  Performance hardening
 [ ] M26  Security hardening
 [ ] M27  Configuration validation
@@ -1113,7 +1113,7 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [x] M19  Themes + contrast validation
 [x] A7   AAC architecture + simplified workspace
 [x] M20  PWA + touch gestures
-[ ] E6   Mapper metadata + widget SDK hardening   (with M22, M23)
+[x] E6   Mapper metadata + widget SDK hardening   (M22 + E6)
 [ ] M21..M29
 [ ] A8   Assistive-technology validation
 [ ] M31  Release candidate

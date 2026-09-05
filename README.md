@@ -440,7 +440,7 @@ is served from your own host.
 ## What is built
 
 Roughly 10,900 lines of Python, 17,300 of JavaScript and 2,200 of CSS, with
-**1036 Python tests** passing, plus hand-written browser checks and an axe-core
+**1066 Python tests** passing, plus hand-written browser checks and an axe-core
 audit clean across every view — including the high-contrast and
 minimal-stimulation presets.
 
@@ -453,7 +453,7 @@ minimal-stimulation presets.
 | **Inventory** | From ordinary `contents` |
 | **Map** | Built by walking visible exits, with a written equivalent from the same data |
 | **Context menus** | On every entity — right-click, Menu key or Shift+F10 |
-| **Route walking** | Click a room; commands are sent one at a time and the server decides each |
+| **Route walking** | Click a room; commands are sent one at a time and the server decides each. Weighted edges route around what costs more, and around what your game says is shut |
 | **Command palette** | `Ctrl+K`, subsequence matching, teaches its own shortcuts |
 | **In-client help** | `F1`, searchable, gated on your automation policy |
 | **Layout and workspaces** | Keyboard-operable editing, named arrangements |
@@ -562,7 +562,8 @@ Colour never carries meaning alone. `innerHTML` is never used.
 | ~~M21~~ | ~~Developer inspector~~ — **done** |
 | ~~M22~~ | ~~Widget SDK~~ — **done**; see [`docs/widget-sdk.md`](docs/widget-sdk.md) |
 | ~~M23~~ | ~~Server-described UI manifest~~ — **done** |
-| **E6** | **Mapper metadata — next** *(the SDK half landed at M22)* |
+| ~~E6~~ | ~~Mapper metadata and weighted routing~~ — **done** |
+| **M24** | **Reconnect hardening — next** |
 | M21–M29 | Inspector, widget SDK, server-described manifest, and hardening |
 | **D0–D6** | **`AETOS_BINDINGS` and `evennia aetos discover` — the easy button above** |
 | E6 | Weighted map routing and widget SDK hardening |

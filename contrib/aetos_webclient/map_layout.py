@@ -27,6 +27,7 @@ Three properties matter more than prettiness:
 
 """
 
+import heapq
 from collections import deque
 
 #: Unit vectors for the directions Evennia games conventionally use.
@@ -110,16 +111,79 @@ def opposite_direction(direction):
     return OPPOSITE_DIRECTIONS.get(str(direction).strip().lower())
 
 
-def _adjacency(rooms, exits):
+#: What an edge costs when a game says nothing.  C.19.
+#:
+#: One, so a game that supplies no costs gets exactly the behaviour it had
+#: before weighting existed: every edge equal, shortest path by move count.
+DEFAULT_EDGE_COST = 1
+
+#: An upper bound on a declared cost.
+#:
+#: Not a judgement about what a game may mean by "expensive" -- it is arithmetic
+#: hygiene. A cost of `1e308` makes every sum in the search infinite and the
+#: comparison meaningless, and a provider returning a bad number is a bug the
+#: player should not experience as a map that silently stops routing.
+MAX_EDGE_COST = 10000
+
+
+def edge_cost(link):
+    """
+    What one edge costs to traverse.
+
+    Args:
+        link (dict): A link dict, possibly carrying `cost`.
+
+    Returns:
+        float: The cost, defaulting to `DEFAULT_EDGE_COST`.
+
+    """
+    raw = link.get("cost")
+    if raw is None or isinstance(raw, bool):
+        # `True` is an int in Python and would silently mean "cost 1", which is
+        # right by accident and wrong as a habit.
+        return DEFAULT_EDGE_COST
+    try:
+        cost = float(raw)
+    except (TypeError, ValueError):
+        return DEFAULT_EDGE_COST
+    if cost != cost or cost < 0:
+        # NaN or negative. A negative edge would let a route improve by walking
+        # in circles, which Dijkstra cannot express and no game means.
+        return DEFAULT_EDGE_COST
+    return min(cost, MAX_EDGE_COST)
+
+
+def edge_is_available(link):
+    """
+    Whether a game says this edge can currently be used.
+
+    Absent means available. A game that says nothing about availability has an
+    ordinary exit, and treating silence as "blocked" would empty the map of
+    every game that has not adopted the field.
+
+    Args:
+        link (dict): A link dict, possibly carrying `available`.
+
+    Returns:
+        bool: True unless the game explicitly said otherwise.
+
+    """
+    return link.get("available") is not False
+
+
+def _adjacency(rooms, exits, include_unavailable=False):
     """
     Build a room-id keyed adjacency map.
 
     Args:
         rooms (list): Room dicts with an `id`.
         exits (list): Link dicts with `from`, `to` and `direction`.
+        include_unavailable (bool): Keep edges the game marked unavailable.
+            Routing excludes them; describing the map does not, because a
+            player is entitled to know a door exists and is shut.
 
     Returns:
-        dict: room id -> list of (direction, destination id), sorted.
+        dict: room id -> list of (direction, destination id, cost), sorted.
 
     """
     known = {room["id"] for room in rooms}
@@ -127,8 +191,11 @@ def _adjacency(rooms, exits):
     for link in exits:
         source = link.get("from")
         target = link.get("to")
-        if source in known and target in known:
-            links[source].append((link.get("direction") or "", target))
+        if source not in known or target not in known:
+            continue
+        if not include_unavailable and not edge_is_available(link):
+            continue
+        links[source].append((link.get("direction") or "", target, edge_cost(link)))
     # Sorting makes traversal order independent of the input ordering, which is
     # what makes the whole layout deterministic.
     for room_id in links:
@@ -153,7 +220,11 @@ def assign_coordinates(rooms, exits, origin=None):
     if not rooms:
         return {"positions": {}, "conflicts": [], "components": 0}
 
-    links = _adjacency(rooms, exits)
+    # Unavailable exits are included here, unlike in routing: a door the game
+    # says is shut still connects two rooms, and leaving it out of the layout
+    # would move rooms around on the map whenever one closed. Position is
+    # geography; availability is a state of the door.
+    links = _adjacency(rooms, exits, include_unavailable=True)
     room_ids = sorted(links)
 
     start = origin if origin in links else room_ids[0]
@@ -188,7 +259,7 @@ def assign_coordinates(rooms, exits, origin=None):
             current = frontier.popleft()
             base = positions[current]
 
-            for direction, destination in links[current]:
+            for direction, destination, _cost in links[current]:
                 if destination in positions:
                     continue
                 vector = direction_vector(direction)
@@ -261,14 +332,24 @@ def _first_free(around, occupied):
 
 def find_route(rooms, exits, start, goal):
     """
-    Find the shortest route between two rooms.
+    Find the cheapest route between two rooms.
 
-    Breadth-first, so the result is the fewest moves rather than the shortest
-    distance -- which is what a player actually walks.
+    Dijkstra, which C.19 says suffices and it does: costs are non-negative by
+    construction (`edge_cost` clamps them), so nothing more elaborate buys
+    anything.
+
+    **With no declared costs this is exactly breadth-first search.** Every edge
+    costs 1, so the cheapest route is the one with fewest moves -- the behaviour
+    every game had before weighting existed, unchanged rather than approximated.
+
+    Edges a game marked `available: False` are excluded. Aetos does not route
+    through a door the game says is shut, and equally does not guess *why* it is
+    shut: C.19 forbids inferring skill, class, guild, weather or roundtime
+    restrictions, so the reason is reported only when the game supplies one.
 
     Args:
         rooms (list): Room dicts.
-        exits (list): Link dicts.
+        exits (list): Link dicts, optionally carrying `cost` and `available`.
         start (str): Room id to start from.
         goal (str): Room id to reach.
 
@@ -285,19 +366,101 @@ def find_route(rooms, exits, start, goal):
         return None
 
     previous = {start: None}
-    frontier = deque([start])
+    best = {start: 0.0}
+    # (cost, tie-break, room). The tie-break is the room id, so two routes of
+    # equal cost resolve the same way every time -- a map that suggests a
+    # different equally-good route on each sync is one nobody can follow.
+    frontier = [(0.0, start, start)]
+    settled = set()
 
     while frontier:
-        current = frontier.popleft()
-        for direction, destination in links[current]:
-            if destination in previous:
+        cost, _, current = heapq.heappop(frontier)
+        if current in settled:
+            continue
+        settled.add(current)
+        if current == goal:
+            return _rebuild_route(previous, goal)
+
+        for direction, destination, step_cost in links[current]:
+            if destination in settled:
                 continue
-            previous[destination] = (current, direction)
-            if destination == goal:
-                return _rebuild_route(previous, goal)
-            frontier.append(destination)
+            candidate = cost + step_cost
+            if candidate < best.get(destination, float("inf")):
+                best[destination] = candidate
+                previous[destination] = (current, direction)
+                heapq.heappush(frontier, (candidate, destination, destination))
 
     return None
+
+
+def route_cost(rooms, exits, start, goal):
+    """
+    What the cheapest route costs, for a caller that wants to compare.
+
+    Args:
+        rooms (list): Room dicts.
+        exits (list): Link dicts.
+        start (str): Room id to start from.
+        goal (str): Room id to reach.
+
+    Returns:
+        float or None: Total cost, 0 if already there, None if unreachable.
+
+    """
+    route = find_route(rooms, exits, start, goal)
+    if route is None:
+        return None
+    if not route:
+        return 0.0
+
+    by_pair = {}
+    for link in exits:
+        by_pair[(link.get("from"), link.get("direction"))] = link
+
+    total = 0.0
+    current = start
+    for step in route:
+        link = by_pair.get((current, step["direction"]))
+        total += edge_cost(link) if link else DEFAULT_EDGE_COST
+        current = step["to"]
+    return total
+
+
+def blocked_exits(exits):
+    """
+    Exits the game says are currently unusable, with its stated reason.
+
+    Surfaced rather than hidden. A player is entitled to know a door exists and
+    is shut -- a map that silently omits it looks like a map with a missing
+    room, which is a worse thing to be looking at.
+
+    **The reason is never invented.** Where the game supplies none, the exit is
+    reported as blocked with no explanation, because "unknown" is preferable to
+    wrong (C.6) and a guessed reason is the kind of confident error that costs a
+    player their trust in the whole map.
+
+    Args:
+        exits (list): Link dicts.
+
+    Returns:
+        list: `{"from", "to", "direction", "reason"}` for each blocked exit,
+            with `reason` None where the game gave none.
+
+    """
+    blocked = []
+    for link in exits:
+        if edge_is_available(link):
+            continue
+        reason = link.get("reason")
+        blocked.append(
+            {
+                "from": link.get("from"),
+                "to": link.get("to"),
+                "direction": link.get("direction") or "",
+                "reason": str(reason)[:200] if isinstance(reason, str) and reason.strip() else None,
+            }
+        )
+    return blocked
 
 
 def _rebuild_route(previous, goal):

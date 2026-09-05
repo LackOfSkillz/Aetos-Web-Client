@@ -11,6 +11,49 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### E6 — Mapper metadata and weighted routing
+
+1066 tests. Addendum C.19. [`notes/e6-weighted-map.md`](notes/e6-weighted-map.md)
+(E6's widget-SDK half shipped at M22.)
+
+**Added**
+
+- Optional `cost` and `available` on a map edge, with Dijkstra replacing
+  breadth-first search. **Without declared costs this is exactly the search it
+  replaced** — every edge defaults to 1, so the cheapest route is the one with
+  fewest moves. Not an approximation of the old behaviour; the same behaviour
+  reached by a more general route.
+- Three cheap moves now beat one expensive one, which is the case a
+  move-counting search gets wrong.
+- `blocked_exits()` reports what a game says is shut, with the game's own
+  reason. Routing excludes a blocked edge; **describing the map does not** — a
+  player is entitled to know a door exists and is closed, and a map that
+  silently omits it looks like a map with a missing room.
+- A failed route now says why, where the game said: *"No route to that
+  location. The gate is barred."*
+
+**The ambiguity rule, where it bites**
+
+- No reason is ever invented. C.19 forbids inferring skill, class, guild,
+  weather or roundtime restrictions, and C.6 prefers `unknown` to wrong. A
+  guessed explanation is the confident error that costs a player their trust in
+  the whole map — and once lost, that is not recovered by being right
+  afterwards. A test strips comments and fails on those words appearing in
+  executable code.
+
+**Both implementations pinned together**
+
+- The server routes and so does the client. Verified live against the same
+  fixtures rather than only asserted structurally: weighted, uniform, blocked,
+  longer-but-cheaper, five cost edge cases and unreachable all agree.
+- `true` is not a cost of 1 (in Python `True` is an int, so it would have meant
+  1 by accident — right by accident is wrong as a habit). A negative cost is
+  refused, since it would let a route improve by walking in circles. Costs clamp
+  at 10000, which is arithmetic hygiene rather than a view on what "expensive"
+  means.
+- Ties break on room id on both sides, because a map that suggests a different
+  equally-good route on each sync is one nobody can follow.
+
 ### M23 — Server-described UI manifest
 
 1036 tests. [`notes/m23-ui-manifest.md`](notes/m23-ui-manifest.md)
