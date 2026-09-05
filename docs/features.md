@@ -43,6 +43,18 @@ In the client, press `F1` for the same content, searchable and filtered to the f
 - [Privacy and your data](#privacy-and-your-data) — What is stored, where, and how to take it or delete it.
 - [Accessibility](#accessibility) — Keyboard operation, screen readers and announcements.
 
+**Basics**
+
+- [Finding something that already happened](#finding-something-that-already-happened) — Search everything the game has said, and read around it.
+
+**Automation**
+
+- [Turning sets of automation on and off](#turning-sets-of-automation-on-and-off) — Switch a whole set of macros, aliases and triggers at once.
+
+**Basics**
+
+- [Installing the client, and what happens offline](#installing-the-client-and-what-happens-offline) — Keep the client on your device, and what a lost connection looks like.
+
 **Running a game**
 
 - [For game developers](#for-game-developers) — Making Aetos show your game's systems.
@@ -399,7 +411,7 @@ Nobody familiar with picture-supported communication has reviewed the word choic
 
 Search the palette for "Simplified layout". You get the game text, who is here, the map, your character, and the Talk board -- with help where it always is.
 
-**Nothing is removed.** Every feature is still in the palette, every command still works, and switching back restores what you had.
+Nothing is removed. Every feature is still in the palette, every command still works, and switching back restores what you had.
 
 That distinction matters. A "simple mode" that quietly took features away would be making a decision about what you are capable of because you asked for a calmer screen. Those are not the same request.
 
@@ -554,6 +566,76 @@ Countdowns are deliberately not announced. A live region updating every second w
 ### The map without a map
 
 The map's written description is generated from the same data as the picture, not written separately, so the two cannot drift apart.
+
+---
+
+## Finding something that already happened
+
+*Search everything the game has said, and read around it.*
+
+Everything the game sends you is kept for this session, whether or not it is still on screen. The console keeps the last few thousand lines; the record behind it keeps more, and keeps the ones the console was told to hide.
+
+That record is what the History panel searches. It is stored in this browser and nowhere else -- the game is not asked, and is not told what you searched for.
+
+### Review Mode
+
+Opening a result puts you in Review Mode, which pins the console to that moment so you can read around it. New output keeps arriving and is not lost; you are simply not being dragged to the bottom while you read.
+
+Leave Review Mode and the console returns to following the game. There is no way to be left in it by accident: it says so on screen and announces itself when it starts and stops.
+
+| Key | Does |
+| --- | --- |
+| `Escape` | Leave Review Mode and follow the game again |
+
+### Filtering
+
+Results can be narrowed to one channel -- say, tells, or combat -- using the buttons above the list. The channel is written as a word on every entry rather than shown as a colour, so the list reads the same however you see it.
+
+---
+
+## Turning sets of automation on and off
+
+*Switch a whole set of macros, aliases and triggers at once.*
+
+Once you have more than a few aliases and triggers, most of them are wrong most of the time. A trigger that is useful in a fight is a nuisance in a shop.
+
+A group is a named set of your own automation that you can switch on and off together. Anything can belong to more than one group, and anything belonging to no group is always active.
+
+### Where they are
+
+Settings, under Automation groups. Each group shows how many things belong to it and whether it is currently on, in words rather than as a colour.
+
+### What switching off actually does
+
+A group that is off stops its members from firing. It does not delete them, does not edit them, and does not change anything you wrote. Turning it back on returns everything exactly as it was.
+
+Groups are yours and live in this browser. The game does not know they exist and is not told which ones are on.
+
+---
+
+## Installing the client, and what happens offline
+
+*Keep the client on your device, and what a lost connection looks like.*
+
+Aetos can be installed as an application on most desktop and mobile browsers, which gives it its own window and its own icon. It is the same client either way -- installing changes where it opens, not what it does.
+
+Look for your browser's install control, or the Install option in the command palette when your browser offers one. Some browsers do not, in which case the client works exactly as before.
+
+### Offline
+
+Once installed, the client itself loads without the network. The game itself does not. You will get the interface and a clear message that it is not connected, rather than a browser error page -- which is worth having on a train, but is not a way to play.
+
+Nothing the game sends is ever stored for offline use. What is kept is the client's own files, and that is deliberate: a cache of game text would be a copy of your session sitting on the device.
+
+### When the connection drops
+
+Everything on screen dims and says so. What the panels show is the last state the game sent, which was true when it arrived and may not be true now.
+
+Commands typed while disconnected are not sent and not saved for later. You are told each time. Nothing is queued up to fire when the connection returns, because by then you may be somewhere else entirely and the command would be a decision about a situation that no longer exists.
+
+### Updates
+
+When the game updates the client, you are told and nothing changes until you choose to apply it. An update that reloaded the page on its own would do it in the middle of somebody's fight.
 
 ---
 

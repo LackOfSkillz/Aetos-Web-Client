@@ -27,6 +27,34 @@ const HELP_JS = path.join(
 );
 const OUTPUT = path.join(ROOT, "docs", "features.md");
 
+/*
+ * Generated from the published mirror, not the Evennia work tree.
+ *
+ * The mirror is what this repository actually contains -- somebody who cloned
+ * it has no `evennia/` directory at all -- so it has to be the source, or the
+ * script only works on one machine.
+ *
+ * The cost is a trap worth guarding: edit `help.js` in the work tree, run this,
+ * and it cheerfully regenerates from the last mirrored copy and reports
+ * success. That happened while writing M28. So the two are compared, and a
+ * disagreement stops the run rather than producing documentation for code that
+ * is not the code you just wrote.
+ */
+const WORKTREE_HELP_JS = path.join(
+    ROOT, "evennia", "evennia", "contrib", "base_systems", "aetos_webclient",
+    "static", "aetos", "js", "help.js"
+);
+if (fs.existsSync(WORKTREE_HELP_JS)) {
+    const mirrored = fs.readFileSync(HELP_JS, "utf8");
+    const working = fs.readFileSync(WORKTREE_HELP_JS, "utf8");
+    if (mirrored !== working) {
+        console.error("help.js in the mirror differs from the Evennia work tree.");
+        console.error("Run `python scripts/sync_contrib.py` first, or this would");
+        console.error("generate docs from the older copy and say it succeeded.");
+        process.exit(1);
+    }
+}
+
 global.window = {};
 global.document = {};
 require(HELP_JS);

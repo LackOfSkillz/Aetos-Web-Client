@@ -95,3 +95,45 @@ attribute — before believing any measurement taken from that page.
 The rule generalises past this tool: **before measuring a fix, prove the fix is
 what is running.** Every step between the editor and the browser is a place the
 old version can survive.
+
+## Addendum (M28): the cache can be poisoned under a *correct* version stamp
+
+The third variant, and the most deceptive of the three.
+
+`?v=` is computed from the **source** file's mtime, but `/static/` serves the
+**collected** copy. Those are updated at different moments, and between them
+there is a window where the URL is already new and the bytes are still old.
+
+Requesting the page in that window caches stale content under the new,
+correct-looking version — after which the M21 advice ("check `?v=` changed")
+gives a false all-clear, because it did change. Editing the file again does not
+help either: the mtime is already newer than the cached entry's URL.
+
+At M28 that cost three reload cycles and produced two measurements of an
+unchanged client, each of which looked like "the new help topics did not
+register".
+
+The window is entered by doing the obvious thing: edit, reload the browser to
+look, *then* restart the server. Reloading the browser first is what poisons it.
+
+Order that avoids it entirely:
+
+```text
+1. edit
+2. evennia reload          (runs collectstatic)
+3. only now look
+```
+
+And to recover once poisoned, from the page's console:
+
+```javascript
+fetch(document.querySelector('script[src*="js/help.js"]').src, {cache: "reload"})
+```
+
+then reload the page. `{cache: "reload"}` is the only thing that replaces an
+entry whose URL has not changed.
+
+The general rule from the M25 addendum still covers all three variants:
+**before measuring, assert on something the change introduced.** Here that is
+`window.AetosHelp.TOPICS.length` — one number, checked before believing
+anything else on the page.

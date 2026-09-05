@@ -11,6 +11,53 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### M28 — Documentation
+
+1168 tests. [`notes/m28-documentation.md`](notes/m28-documentation.md)
+
+**Fixed — the README described nine shipped features as "still to come"**
+
+- Event history, audio and captions, themes, the PWA shell, touch gestures, the
+  developer inspector, the widget SDK, the server-described UI manifest and the
+  accessibility foundation had all shipped. Only voice was outstanding. The
+  README is the file that ships with the contrib and the first thing an Evennia
+  reviewer reads, and it had been quietly wrong for nine milestones.
+
+**Fixed — the integration guide recommended a setting that does not exist**
+
+- "Teaching Aetos about your game" opened by telling developers to declare
+  `AETOS_BINDINGS` and to run `evennia aetos discover`. Nothing reads that
+  setting and there is no management command in the contrib. Following the
+  documentation top-down produced a settings block that did nothing, silently.
+  Bindings are now a blockquote saying plainly that they are not built.
+
+**Fixed — one help topic used markdown the client cannot render**
+
+- The same string is rendered as markdown on the website and as `textContent`
+  in the client, so `**bold**` worked in one and showed asterisks in the other.
+
+**Added**
+
+- A settings reference table; `AETOS_UI`, `AETOS_DIAGNOSTICS` and `AETOS_CSP`
+  were readable by the code and undocumented.
+- Three in-client help topics for features players had no way to discover:
+  Review Mode and history search, automation groups, and installing the client
+  / what happens offline.
+- Tests that pin the three ways this documentation can become false: a settings
+  example that stops validating, a shipped feature described as forthcoming,
+  and the generated reference falling behind the help topics it comes from.
+  **Voice is pinned in both directions** — the test fails when voice ships and
+  the README still promises it, which is the mechanism that would have caught
+  the other nine.
+- `export_help_docs.js` now refuses to run when the mirror it reads differs
+  from the work tree, instead of silently generating docs from the older copy.
+
+**Changed — the accessibility section states what it does not claim.** The
+picture-and-word board is described as symbol-supported command composition and
+explicitly **not** as AAC support, because no one who works with augmentative and
+alternative communication has reviewed it. The section also says what a clean
+axe run is and is not worth.
+
 ### M27 — Configuration validation
 
 1156 tests.

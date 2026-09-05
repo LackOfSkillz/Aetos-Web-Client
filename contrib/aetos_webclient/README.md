@@ -53,20 +53,52 @@ matching interface appears. Declare nothing and nothing appears.
 - Profile export and import as a single JSON file
 - A privacy panel reporting what is stored, counted from storage
 
+### Reading, reviewing and presentation
+
+- Full session history with search, and a Review Mode that pins the console to
+  a moment so you can read around it without losing what arrives next
+- Non-destructive display rules: filter or highlight output without the record
+  of what happened being altered
+- Automation groups -- switch a whole set of your macros, aliases and triggers
+  on or off together, for a fight or for a shop
+- Themes with automatic contrast validation, so a theme cannot ship a
+  combination that fails to be readable
+- Audio and multimedia with a durable caption list, and per-category volume
+
+### Installable, and honest when offline
+
+- Installs as an application on browsers that support it, with its own window
+- Offline, the client's own files load and say clearly that the game has not.
+  **No game output is ever cached** -- that would be a copy of a player's
+  session sitting on their device
+- On a dropped connection, every panel dims and says that what it shows is the
+  last state received. Commands typed while disconnected are refused and said
+  to be refused, rather than reported as sent and quietly lost
+- Touch gestures on phones and tablets, each with a keyboard equivalent
+
+### For people building on it
+
+- A documented widget SDK: third-party widgets get the same contract the
+  built-in ones have, including failure isolation -- a widget that throws is
+  disabled on its own and takes nothing else with it
+- A developer inspector showing the live protocol, providers, state and events
+- `AETOS_UI`: describe your interface's resources and panels from settings,
+  with no client code at all
+- Capture and replay of a session as JSONL, for reproducing a bug exactly
+
 ### Throughout
 
 - Versioned protocol with handshake and capability manifest
 - Provider system for exposing your game's data without editing Aetos
 - Allowlist sanitisation of all server-provided markup; `innerHTML` is never used
+- A Content-Security-Policy on the client page: no inline script, no `eval`
 - Keyboard operation of everything; colour never carries meaning alone
+- Startup checks that report a misconfigured install by name, with the fix
 - No CDN, no build step, no JavaScript framework
 
-Still to come: an accessibility foundation and assistive-technology validation
-(see Accessibility below), rich chat and event history, audio and multimedia
-with captions, themes, a PWA shell and touch gestures, a developer inspector, a
-documented widget SDK, a server-described advanced UI manifest,
-picture-supported communication, and voice input. See the project repository for
-the full roadmap.
+**Still to come:** voice input and speech accessibility, and the
+assistive-technology validation described under Accessibility below. See the
+project repository for the full roadmap.
 
 ## Installation
 
@@ -118,7 +150,19 @@ Delete the block above and restart. The stock webclient returns unchanged.
 
 ## Configuration
 
-Aetos requires no configuration. Everything below is optional.
+Aetos requires no configuration. Everything below is optional, and every setting
+is checked at `evennia start` -- a malformed one is reported by name with the fix
+in the message, rather than surfacing later as a feature that quietly does not
+appear.
+
+| Setting | What it does | Documented in |
+|---|---|---|
+| `AETOS_PROVIDERS` | Where your game's data comes from, one dotted path per slot | [Teaching Aetos about your game](#teaching-aetos-about-your-game) |
+| `AETOS_FEATURES` | Which structured subsystems your game exposes | below |
+| `AETOS_AUTOMATION` | What the client is permitted to offer players | below |
+| `AETOS_UI` | Names, order and announcement thresholds for your resources and panels, from settings alone | below |
+| `AETOS_DIAGNOSTICS` | Whether the developer inspector and capture tools are available | below |
+| `AETOS_CSP` | Extra sources for the client page's Content-Security-Policy | [Security](#security) |
 
 ### Automation policy
 
@@ -148,52 +192,71 @@ why a pristine game gets a clean client rather than empty widgets:
 AETOS_FEATURES = {"resources": True, "map": True}
 ```
 
-## Teaching Aetos about your game
+### Describing your interface
 
-A stock Evennia game works without custom code. For richer systems, tell Aetos
-where your data already lives with `AETOS_BINDINGS`. If you do not know where to
-start, run the server-side Aetos Discovery helper and review the integrations it
-finds. When your data requires calculations or unusual game logic, use the full
-provider API.
-
-The Aetos Web Client never scans or guesses your game model during normal player
-operation. Discovery is an optional development-time helper, not a gameplay
-subsystem.
-
-### Bindings -- the easy path (planned, see the project roadmap)
-
-Most games only need to say *where* their data lives:
+`AETOS_UI` names things and orders them. It says a resource called `health`
+exists, what to call it, where it sits and when it is worth announcing -- and it
+says nothing about where the number comes from, which is a provider's job. That
+separation is deliberate: you can describe your interface today and change how
+the values are sourced later without rewriting any of this.
 
 ```python
-AETOS_BINDINGS = {
-    "resources": {
-        "health": {"label": "Health", "value": "db.hp", "maximum": "db.hp_max"},
-    },
+AETOS_UI = {
+    "resources": [
+        {
+            "id": "health",
+            "label": "Vitality",
+            "order": 1,
+            "thresholds": [
+                {"at": 0.25, "label": "badly hurt", "level": "critical"},
+                {"at": 0.5, "label": "hurt", "level": "warning"},
+            ],
+        },
+    ],
+    "panels": {"inventory": {"title": "Pack"}},
 }
 ```
 
-No provider class and no import. Declaring a binding is enough to expose the
-matching feature.
+Unknown sections, unknown panels and unknown threshold keys are refused with an
+error naming what would have been valid. A typo in a settings key is otherwise
+silent, and a developer who believed they had renamed a gauge would simply never
+see it change.
 
-If you are not sure what to write, the server-side discovery tool inspects your
-own game and suggests it:
+### Developer tools
 
+Off by default, because the inspector shows the live protocol and session state:
+
+```python
+AETOS_DIAGNOSTICS = True
 ```
-evennia aetos discover
-```
 
-It shows its evidence and confidence, tests each binding against a live
-character, and writes suggestions to `aetos-discovery/` for you to review. It
-never edits your game, never executes your code, and is not reachable by
-players.
+With it on, the client offers a developer inspector -- providers, manifest, live
+events, layout and storage -- and the ability to capture a session to a JSONL
+file and replay it. Useful when a player reports something you cannot reproduce.
 
-Bindings say where data *is*. If a value is *calculated* -- a method call, a
-derived stat -- bindings deliberately stop and you write a provider instead.
+## Teaching Aetos about your game
 
-### Providers -- the advanced path
+A stock Evennia game works without custom code. For anything more, you write
+a provider: a small class returning your data in the shape Aetos expects.
+That is the path that exists today, and the rest of this section describes it.
 
-For anything bindings cannot express. Aetos never assumes where you store
-anything:
+**Start with `AETOS_UI`** if all you want is to name, order and label what you
+already have -- it needs no code at all. Reach for a provider when the values
+themselves have to come from somewhere Aetos cannot see.
+
+Aetos never scans or guesses your game model during play.
+
+> **Not yet built: bindings and discovery.** A future release is planned to add
+> `AETOS_BINDINGS`, declaring *where* a value lives rather than writing code to
+> fetch it, and a development-time helper that inspects a game and suggests
+> them. Neither exists today: nothing reads `AETOS_BINDINGS`, and setting it
+> does nothing at all. The design is in the project repository's Addendum B.
+> It is mentioned here only so that nobody plans around a setting that is not
+> there.
+
+### Providers -- how to expose your game's data
+
+Aetos never assumes where you store anything:
 
 ```python
 AETOS_PROVIDERS = {
@@ -328,6 +391,27 @@ and reduced-motion support are always present.
 - Game events never move focus. Dialogs trap focus and return it where they
   found it.
 
+### What a player can turn on for themselves
+
+None of these needs anything from you, and all of them are stored in the
+player's own browser:
+
+- A contrast and colour-scheme choice, with every theme validated against WCAG
+  contrast ratios before it can be applied -- a theme cannot ship a combination
+  that is not readable
+- Reduced motion and reduced stimulation, honouring the operating system's own
+  setting as the default
+- Announcement verbosity, so a player decides what is worth speaking rather than
+  Aetos deciding for them
+- A simplified layout that reduces what is on screen at once. Nothing is
+  removed: every feature is still reachable, and it can be switched back
+- Orientation help -- where you are, how you got here, and how to go back --
+  built only from moves the game confirmed, never from guesses about intent
+- Reminders and a resume card, for picking up an interrupted session
+- A picture-and-word board for composing commands from symbols rather than
+  spelling them. **This is not a claim of AAC support**; see the honest status
+  below
+
 ### What only you can supply
 
 Aetos can make an ordinary Evennia game substantially more accessible. It cannot
@@ -349,6 +433,18 @@ compliance, JAWS compatibility or braille compatibility, because the
 assistive-technology testing that would justify those claims has not yet been
 done. Testing against NVDA, JAWS, Orca and refreshable braille is a scheduled
 release gate, and no claim will ship ahead of its evidence.
+
+The same applies to the picture-and-word board. It is a symbol-supported way to
+compose commands, and it has not been reviewed by anyone who works with
+augmentative and alternative communication. Until it has, Aetos does not
+describe itself as supporting AAC -- the architecture is there, the judgement
+that it serves the people it is for is not.
+
+Automated accessibility testing runs on every release and currently reports no
+violations at any severity. That is worth exactly what it is worth: it finds
+missing names, broken roles and unreachable regions. It cannot tell whether a
+label means anything, whether a task takes forty keystrokes, or whether a braille
+display keeps losing its place.
 
 ## Security
 

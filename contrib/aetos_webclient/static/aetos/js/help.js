@@ -602,7 +602,7 @@
                         "Search the palette for \"Simplified layout\". You get the " +
                             "game text, who is here, the map, your character, and the " +
                             "Talk board -- with help where it always is.",
-                        "**Nothing is removed.** Every feature is still in the " +
+                        "Nothing is removed. Every feature is still in the " +
                             "palette, every command still works, and switching back " +
                             "restores what you had.",
                         "That distinction matters. A \"simple mode\" that quietly " +
@@ -915,6 +915,140 @@
                     body: [
                         "The map's written description is generated from the same data as the " +
                             "picture, not written separately, so the two cannot drift apart."
+                    ]
+                }
+            ]
+        },
+
+        {
+            id: "history",
+            title: "Finding something that already happened",
+            group: "Basics",
+            summary: "Search everything the game has said, and read around it.",
+            sections: [
+                {
+                    body: [
+                        "Everything the game sends you is kept for this session, whether or " +
+                            "not it is still on screen. The console keeps the last few " +
+                            "thousand lines; the record behind it keeps more, and keeps the " +
+                            "ones the console was told to hide.",
+                        "That record is what the History panel searches. It is stored in this " +
+                            "browser and nowhere else -- the game is not asked, and is not " +
+                            "told what you searched for."
+                    ]
+                },
+                {
+                    heading: "Review Mode",
+                    body: [
+                        "Opening a result puts you in Review Mode, which pins the console to " +
+                            "that moment so you can read around it. New output keeps arriving " +
+                            "and is not lost; you are simply not being dragged to the bottom " +
+                            "while you read.",
+                        "Leave Review Mode and the console returns to following the game. " +
+                            "There is no way to be left in it by accident: it says so on " +
+                            "screen and announces itself when it starts and stops."
+                    ],
+                    keys: [
+                        ["Escape", "Leave Review Mode and follow the game again"]
+                    ]
+                },
+                {
+                    heading: "Filtering",
+                    body: [
+                        "Results can be narrowed to one channel -- say, tells, or combat -- " +
+                            "using the buttons above the list. The channel is written as a " +
+                            "word on every entry rather than shown as a colour, so the list " +
+                            "reads the same however you see it."
+                    ]
+                }
+            ]
+        },
+
+        {
+            id: "groups",
+            title: "Turning sets of automation on and off",
+            group: "Automation",
+            summary: "Switch a whole set of macros, aliases and triggers at once.",
+            sections: [
+                {
+                    body: [
+                        "Once you have more than a few aliases and triggers, most of them are " +
+                            "wrong most of the time. A trigger that is useful in a fight is a " +
+                            "nuisance in a shop.",
+                        "A group is a named set of your own automation that you can switch on " +
+                            "and off together. Anything can belong to more than one group, and " +
+                            "anything belonging to no group is always active."
+                    ]
+                },
+                {
+                    heading: "Where they are",
+                    body: [
+                        "Settings, under Automation groups. Each group shows how many things " +
+                            "belong to it and whether it is currently on, in words rather than " +
+                            "as a colour."
+                    ]
+                },
+                {
+                    heading: "What switching off actually does",
+                    body: [
+                        "A group that is off stops its members from firing. It does not delete " +
+                            "them, does not edit them, and does not change anything you wrote. " +
+                            "Turning it back on returns everything exactly as it was.",
+                        "Groups are yours and live in this browser. The game does not know they " +
+                            "exist and is not told which ones are on."
+                    ]
+                }
+            ]
+        },
+
+        {
+            id: "install",
+            title: "Installing the client, and what happens offline",
+            group: "Basics",
+            summary: "Keep the client on your device, and what a lost connection looks like.",
+            sections: [
+                {
+                    body: [
+                        "Aetos can be installed as an application on most desktop and mobile " +
+                            "browsers, which gives it its own window and its own icon. It is " +
+                            "the same client either way -- installing changes where it opens, " +
+                            "not what it does.",
+                        "Look for your browser's install control, or the Install option in the " +
+                            "command palette when your browser offers one. Some browsers do " +
+                            "not, in which case the client works exactly as before."
+                    ]
+                },
+                {
+                    heading: "Offline",
+                    body: [
+                        "Once installed, the client itself loads without the network. The " +
+                            "game itself does not. You will get the interface and a clear message " +
+                            "that it is not connected, rather than a browser error page -- " +
+                            "which is worth having on a train, but is not a way to play.",
+                        "Nothing the game sends is ever stored for offline use. What is kept " +
+                            "is the client's own files, and that is deliberate: a cache of " +
+                            "game text would be a copy of your session sitting on the device."
+                    ]
+                },
+                {
+                    heading: "When the connection drops",
+                    body: [
+                        "Everything on screen dims and says so. What the panels show is the " +
+                            "last state the game sent, which was true when it arrived and may " +
+                            "not be true now.",
+                        "Commands typed while disconnected are not sent and not saved for " +
+                            "later. You are told each time. Nothing is queued up to fire when " +
+                            "the connection returns, because by then you may be somewhere else " +
+                            "entirely and the command would be a decision about a situation " +
+                            "that no longer exists."
+                    ]
+                },
+                {
+                    heading: "Updates",
+                    body: [
+                        "When the game updates the client, you are told and nothing changes " +
+                            "until you choose to apply it. An update that reloaded the page on " +
+                            "its own would do it in the middle of somebody's fight."
                     ]
                 }
             ]
