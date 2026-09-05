@@ -923,8 +923,18 @@
             if (window.AetosMap) {
                 registry.register(window.AetosMap.createWidget({
                     sendCommand: function (text) { return sendCommand(text); },
-                    announce: function (message) { announcer.announce(message); },
-                    queueRoute: function (steps) { return walkRoute(steps); }
+                    announce: function (message, options) {
+                        announcer.announce(message, options);
+                    },
+                    queueRoute: function (steps) { return walkRoute(steps); },
+                    // The player's own points of interest, which are notes with
+                    // a room subject (M11). Browser-local, and the map is the
+                    // only place they are useful -- so the map lists them
+                    // beside the game's own rooms, clearly labelled as the
+                    // player's rather than the game's.
+                    listPois: notes
+                        ? function () { return notes.search("", { poi: true }); }
+                        : null
                 }));
             }
 

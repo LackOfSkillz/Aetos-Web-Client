@@ -375,7 +375,14 @@ threshold rounding          A11Y-BRL-005, no millisecond flooding
 relationship as text        A.80, already partly done in M11
 ```
 
-### A3 — Accessible map completion  (retrofits M9)
+### A3 — Accessible map completion  ✅ COMPLETE
+
+Record: [`a3-accessible-map.md`](a3-accessible-map.md). 508 Python tests OK.
+Three of the five A11Y-MAP requirements were already met by M9. A0's focus test
+caught a defect I introduced here -- a search box that rebuilt itself on every
+keystroke -- two milestones after that foundation shipped.
+
+_(retrofits M9)_
 
 Addendum A.29.
 
@@ -489,7 +496,8 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] A0   Accessibility Foundation                      -- 467 py, axe clean
 [x] A1   Widget accessibility contract                 -- 484 py
 [x] A2   Current State View + semantic values          -- 486 py
-[ ] A3   Accessible map completion                     <-- NEXT
+[x] A3   Accessible map completion                     -- 508 py
+[ ] E0   Event pipeline contract                       <-- NEXT (before M17)
 [ ] M17  Rich chat + event history + Review Mode       (absorbs A4)
 [ ] A5   Cognitive and orientation layer
 [ ] M18  Audio + multimedia + captions                 (absorbs A6)
@@ -788,7 +796,8 @@ D-track   developer integration            D0 next, independent
 [x] A0   Accessibility Foundation
 [x] A1   Widget accessibility contract
 [x] A2   Current State View + semantic values
-[ ] A3   Accessible map completion               <-- next on the A-track
+[x] A3   Accessible map completion
+[ ] A5   Cognitive and orientation layer          <-- next on the A-track
 [ ] D0   Discovery architecture spike           <-- next on the D-track
 [ ] D1   Safe AETOS_BINDINGS foundation
 [ ] D2   Declarative provider suite
@@ -1044,7 +1053,8 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [x] A0   Accessibility Foundation
 [x] A1   Widget accessibility contract
 [x] A2   Current State View + semantic values
-[ ] A3   Accessible map completion               <-- next on the A-track
+[x] A3   Accessible map completion
+[ ] A5   Cognitive and orientation layer          <-- next on the A-track
 [ ] A3   Accessible map completion
 
 [ ] E0   Event pipeline contract                  <-- BEFORE M17

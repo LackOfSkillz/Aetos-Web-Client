@@ -1298,3 +1298,28 @@ body {
 .aetos-state__list li {
     font-variant-numeric: tabular-nums;
 }
+
+/* Map: route preview and places search (A3) --------------------------------- */
+
+.aetos-map__search { margin-bottom: 6px; }
+.aetos-map__search .aetos-input { width: 100%; }
+
+.aetos-map__route {
+    margin: var(--aetos-space) 0;
+    padding-left: 8px;
+    border-left: 3px solid var(--aetos-accent);
+}
+
+.aetos-map__route-summary {
+    margin: 0 0 4px;
+    color: var(--aetos-text-muted);
+}
+
+/* An ordered list, because the order IS the information -- a screen reader
+   announcing "3 of 5" gives the player their position in the journey. */
+.aetos-map__route-steps {
+    margin: 0;
+    padding-left: 1.6em;
+}
+
+.aetos-map__empty { color: var(--aetos-text-muted); }

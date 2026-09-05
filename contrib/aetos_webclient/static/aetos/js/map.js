@@ -186,6 +186,217 @@
      * Reads as prose rather than as a table of coordinates, because a player
      * navigating by ear needs "North: Tower Road", not "(3, -1, 0)".
      */
+    /*
+     * A route, written out.  A11Y-MAP-003.
+     *
+     * The visual map answers "how do I get there" by being looked at. That
+     * answer is unavailable to a large part of the audience and unhelpful to
+     * anyone who wants to know how far it is before committing, so the route
+     * has a text form generated from the same step list the walker executes.
+     *
+     * Same list, not a parallel description -- if these could disagree, the
+     * one a player was reading would eventually be the wrong one.
+     */
+    function describeRoute(mapData, steps, destinationId) {
+        var rooms = {};
+        (mapData.rooms || []).forEach(function (room) { rooms[room.id] = room; });
+
+        var links = mapData.exits || [];
+        var current = mapData.current;
+        var described = [];
+
+        steps.forEach(function (direction) {
+            // Find where this step actually lands, so the description names
+            // real rooms rather than repeating the direction back.
+            var link = null;
+            for (var i = 0; i < links.length; i++) {
+                if (links[i].from === current && links[i].direction === direction) {
+                    link = links[i];
+                    break;
+                }
+            }
+            var destination = link && rooms[link.to];
+            described.push({
+                direction: direction,
+                to: link ? link.to : null,
+                name: destination ? destination.name : null
+            });
+            if (link) {
+                current = link.to;
+            }
+        });
+
+        var target = rooms[destinationId];
+        return {
+            destination: target ? target.name : null,
+            steps: described,
+            // The number a player actually wants first. "Five steps" decides
+            // whether to go now; the list decides how.
+            count: described.length
+        };
+    }
+
+    /*
+     * Render a route as an ordered list.
+     *
+     * <ol>, not <ul>: the order is the information. A screen reader announcing
+     * "1 of 5" gives a player their position in the journey for free, which an
+     * unordered list does not.
+     */
+    function renderRoute(route) {
+        var container = document.createElement("div");
+        container.className = "aetos-map__route";
+
+        var heading = document.createElement("h3");
+        heading.className = "aetos-map__subheading";
+        heading.textContent = route.destination
+            ? "Route to " + route.destination
+            : "Route";
+        container.appendChild(heading);
+
+        var summary = document.createElement("p");
+        summary.className = "aetos-map__route-summary";
+        summary.textContent = route.count === 1 ? "1 step" : route.count + " steps";
+        container.appendChild(summary);
+
+        var list = document.createElement("ol");
+        list.className = "aetos-map__route-steps";
+        route.steps.forEach(function (step) {
+            var item = document.createElement("li");
+            item.textContent = step.name
+                ? step.direction + " to " + step.name
+                : step.direction;
+            list.appendChild(item);
+        });
+        container.appendChild(list);
+
+        return container;
+    }
+
+    /*
+     * Everywhere the player could go, searchable.  A11Y-MAP-004.
+     *
+     * Two sources, deliberately merged and deliberately labelled:
+     *
+     *   - rooms the map has walked to, which the game supplied
+     *   - the player's own points of interest, which are notes with a room
+     *     subject and never leave this browser
+     *
+     * Merged because a player looking for "the bank" does not care which of
+     * those it came from. Labelled because one is the game's knowledge and the
+     * other is their own, and confusing the two would be the same mistake as
+     * confusing a game relationship with a private tag.
+     *
+     * Searchable because scanning a list of forty rooms is not navigation, and
+     * because a list is the only form of the map available to somebody who
+     * cannot see the picture.
+     */
+    function renderPlaces(mapData, pois, query, onWalk) {
+        var container = document.createElement("div");
+        container.className = "aetos-map__places";
+
+        var needle = String(query || "").trim().toLowerCase();
+        var current = mapData.current;
+        var entries = [];
+
+        (mapData.rooms || []).forEach(function (room) {
+            if (room.id === current) {
+                return;
+            }
+            entries.push({
+                id: room.id,
+                name: room.name || room.id,
+                distance: typeof room.distance === "number" ? room.distance : null,
+                own: false
+            });
+        });
+
+        (pois || []).forEach(function (poi) {
+            // A POI on a room the map already knows enriches that entry rather
+            // than duplicating it -- two lines for one place is a worse list.
+            var existing = null;
+            for (var i = 0; i < entries.length; i++) {
+                if (entries[i].name.toLowerCase() === String(poi.subject || "").toLowerCase()) {
+                    existing = entries[i];
+                    break;
+                }
+            }
+            if (existing) {
+                existing.own = true;
+                existing.note = poi.body;
+            } else {
+                entries.push({
+                    id: null,
+                    name: poi.subject,
+                    distance: null,
+                    own: true,
+                    note: poi.body
+                });
+            }
+        });
+
+        if (needle) {
+            entries = entries.filter(function (entry) {
+                return entry.name.toLowerCase().indexOf(needle) !== -1 ||
+                    (entry.note || "").toLowerCase().indexOf(needle) !== -1;
+            });
+        }
+
+        // Nearest first, then places with no known distance -- a player's own
+        // POI on a room the map has not reached is still worth listing, just
+        // not at the top where the reachable ones are.
+        entries.sort(function (a, b) {
+            if (a.distance === b.distance) {
+                return a.name.localeCompare(b.name);
+            }
+            if (a.distance === null) { return 1; }
+            if (b.distance === null) { return -1; }
+            return a.distance - b.distance;
+        });
+
+        if (!entries.length) {
+            var empty = document.createElement("p");
+            empty.className = "aetos-map__empty";
+            empty.textContent = needle
+                ? "Nothing matches " + query + "."
+                : "No other places known yet.";
+            container.appendChild(empty);
+            return container;
+        }
+
+        var list = document.createElement("ul");
+        list.className = "aetos-list";
+        entries.slice(0, 40).forEach(function (entry) {
+            var item = document.createElement("li");
+            var label = entry.name;
+            if (entry.distance !== null) {
+                label += ", " + entry.distance +
+                    (entry.distance === 1 ? " room away" : " rooms away");
+            }
+            if (entry.own) {
+                // Said in words, because the visual marker is unavailable to
+                // exactly the player this list exists for.
+                label += " (your note)";
+            }
+
+            if (entry.id && onWalk) {
+                var button = document.createElement("button");
+                button.type = "button";
+                button.className = "aetos-list__button";
+                button.textContent = label;
+                button.addEventListener("click", function () { onWalk(entry.id); });
+                item.appendChild(button);
+            } else {
+                // No id means the map cannot route there. A disabled button
+                // would suggest it might; plain text says it cannot.
+                item.textContent = label;
+            }
+            list.appendChild(item);
+        });
+        container.appendChild(list);
+        return container;
+    }
+
     function renderText(mapData, onWalk) {
         var surroundings = mapData.surroundings || {};
         var container = document.createElement("div");
@@ -263,6 +474,17 @@
         var sendCommand = services.sendCommand;
         var announce = services.announce || function () {};
         var queueRoute = services.queueRoute;
+        // The player's own points of interest, if the notes store exists.
+        // Absent on a browser with no storage, which simply means the places
+        // list shows only what the game supplied.
+        var listPois = services.listPois || null;
+
+        // Kept across updates, so a sync arriving mid-search does not throw the
+        // player back to an unfiltered list while they are reading it.
+        var placesQuery = "";
+        var pois = [];
+        var lastRoute = null;
+        var lastRouteOrigin = null;
 
         return {
             id: "map",
@@ -285,8 +507,71 @@
             // ordinary rooms and exits, so it works on a pristine game.
             subscriptions: ["map"],
 
+            /*
+             * A stable skeleton, built once.  A11Y-FOCUS-005.
+             *
+             * Each region is a container that gets refilled; the containers
+             * themselves, and the search input in particular, are never
+             * replaced.
+             *
+             * The first version rebuilt the whole subtree on every render and
+             * called focus() afterwards to put the player back in the search
+             * box. That failed A0's own test, correctly: a sync arriving while
+             * someone was typing would rebuild the field under them, and
+             * restoring focus by hand only papers over a DOM that is being
+             * destroyed for no reason. Not replacing the element is the fix;
+             * putting focus back is the workaround.
+             */
             mount: function (context) {
                 context.element.classList.add("aetos-map");
+
+                function region(className) {
+                    var node = document.createElement("div");
+                    node.className = className;
+                    context.element.appendChild(node);
+                    return node;
+                }
+
+                context.hosts = {
+                    svg: region("aetos-map__svg-host"),
+                    text: region("aetos-map__text-host"),
+                    route: region("aetos-map__route-host"),
+                    places: region("aetos-map__places-host")
+                };
+
+                var heading = document.createElement("h3");
+                heading.className = "aetos-map__subheading";
+                heading.textContent = "Places";
+
+                var label = document.createElement("label");
+                label.className = "aetos-visually-hidden";
+                label.setAttribute("for", "aetos-map-search");
+                label.textContent = "Search places";
+
+                var input = document.createElement("input");
+                input.type = "text";
+                input.id = "aetos-map-search";
+                input.className = "aetos-input aetos-map__search";
+                input.placeholder = "Search places";
+
+                context.searchInput = input;
+                context.hosts.places.appendChild(heading);
+                context.hosts.places.appendChild(label);
+                context.hosts.places.appendChild(input);
+
+                // The list is the only thing a keystroke changes.
+                context.hosts.list = document.createElement("div");
+                context.hosts.places.appendChild(context.hosts.list);
+
+                context.element.appendChild(
+                    (function () {
+                        var note = document.createElement("p");
+                        note.className = "aetos-map__note";
+                        note.hidden = true;
+                        context.hosts.note = note;
+                        return note;
+                    })()
+                );
             },
 
             update: function (context, mapData) {
@@ -297,20 +582,57 @@
                 var hasRooms = (data.rooms || []).length > 0;
                 if (panel) {
                     // Emptiness, not the player's visibility choice.
-                    panel.setAttribute(
-                        "data-aetos-empty", hasRooms ? "false" : "true");
+                    panel.setAttribute("data-aetos-empty", hasRooms ? "false" : "true");
                 }
-                context.element.textContent = "";
-                if (!hasRooms) {
+
+                var hosts = context.hosts;
+                if (!hosts) {
                     return;
+                }
+                if (!hasRooms) {
+                    hosts.svg.textContent = "";
+                    hosts.text.textContent = "";
+                    hosts.route.textContent = "";
+                    hosts.list.textContent = "";
+                    return;
+                }
+
+                function fill(host, child) {
+                    host.textContent = "";
+                    if (child) {
+                        host.appendChild(child);
+                    }
+                }
+
+                function refreshPlaces() {
+                    fill(hosts.list, renderPlaces(
+                        data, pois, context.searchInput.value, walkTo));
                 }
 
                 function walkTo(roomId) {
                     var steps = findRoute(data, data.current, roomId);
                     if (!steps || !steps.length) {
-                        announce("No route to that location.");
+                        announce("No route to that location.", {
+                            category: "system", priority: "important"
+                        });
                         return;
                     }
+
+                    /*
+                     * The route is written out before it is walked.
+                     * A11Y-MAP-003.
+                     *
+                     * Not a confirmation step -- clicking still walks, because
+                     * a dialog on every movement would punish everyone to
+                     * satisfy a requirement about text. The route simply
+                     * becomes readable: the destination and step count are
+                     * announced, and the enumerated steps stay in the panel to
+                     * be read at the player's own pace, or checked afterwards
+                     * to see why they ended up somewhere unexpected.
+                     */
+                    lastRoute = describeRoute(data, steps, roomId);
+                    fill(hosts.route, renderRoute(lastRoute));
+
                     // Queued as ordinary movement commands. The server decides
                     // whether each one succeeds; a locked door stops the route.
                     if (queueRoute) {
@@ -318,28 +640,63 @@
                     } else {
                         steps.forEach(function (step) { sendCommand(step); });
                     }
-                    announce("Walking " + steps.length +
-                        (steps.length === 1 ? " step." : " steps."));
+
+                    announce(
+                        (lastRoute.destination
+                            ? "Walking to " + lastRoute.destination + ", "
+                            : "Walking ") +
+                        steps.length + (steps.length === 1 ? " step." : " steps."),
+                        { category: "movement", priority: "important" }
+                    );
                 }
 
-                var svg = renderSvg(data, walkTo);
-                if (svg) {
-                    context.element.appendChild(svg);
+                if (!context.searchBound) {
+                    context.searchBound = true;
+                    // Only the list is rebuilt, so the field the player is
+                    // typing in is never touched and focus never moves.
+                    context.searchInput.addEventListener("input", function () {
+                        refreshPlaces();
+                    });
                 }
-                context.element.appendChild(renderText(data, walkTo));
 
-                // Approximate geometry is stated rather than hidden. A map drawn
-                // with nudged rooms is still useful; a map that silently lies
-                // about the world is not.
-                if ((data.conflicts || []).length) {
-                    var note = document.createElement("p");
-                    note.className = "aetos-map__note";
-                    note.textContent = "Layout approximate here: " +
-                        data.conflicts.length +
-                        (data.conflicts.length === 1 ? " room does" : " rooms do") +
-                        " not fit the grid.";
-                    context.element.appendChild(note);
+                fill(hosts.svg, renderSvg(data, walkTo));
+                fill(hosts.text, renderText(data, walkTo));
+
+                /*
+                 * A route describes the map it was found on, so it is dropped
+                 * when the map moves underneath it. Yesterday's route beside
+                 * today's rooms is worse than no route at all.
+                 */
+                if (lastRoute && data.current !== lastRouteOrigin) {
+                    lastRoute = null;
+                    hosts.route.textContent = "";
                 }
+                lastRouteOrigin = data.current;
+
+                refreshPlaces();
+
+                if (listPois) {
+                    // Asynchronous, so the first paint may have no POIs and a
+                    // later one will. Only the list is refreshed, so this
+                    // cannot disturb a player mid-search either.
+                    listPois().then(function (found) {
+                        pois = found || [];
+                        refreshPlaces();
+                    }).catch(function () {
+                        pois = [];
+                    });
+                }
+
+                // Approximate geometry is stated rather than hidden. A map
+                // drawn with nudged rooms is still useful; a map that silently
+                // lies about the world is not.
+                var conflicts = (data.conflicts || []).length;
+                hosts.note.hidden = !conflicts;
+                hosts.note.textContent = conflicts
+                    ? "Layout approximate here: " + conflicts +
+                        (conflicts === 1 ? " room does" : " rooms do") +
+                        " not fit the grid."
+                    : "";
             }
         };
     }
@@ -347,6 +704,9 @@
     window.AetosMap = {
         createWidget: createMapWidget,
         findRoute: findRoute,
+        describeRoute: describeRoute,
+        renderRoute: renderRoute,
+        renderPlaces: renderPlaces,
         renderText: renderText,
         renderSvg: renderSvg
     };
