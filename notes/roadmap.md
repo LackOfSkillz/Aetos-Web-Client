@@ -618,10 +618,10 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (the README called nine shipped features "still to come")
 [x] M29  Compatibility matrix                           -- 1199 py
          (a :focus fallback that removed the thing it fell back to)
-[ ] A9   -- next in sequence; A8 needs people (questions.md 3)
+[x] A9   Accessibility toggle + feature picker          -- 1222 py
+[ ] A8   Assistive-technology validation  <-- BLOCKED: needs a braille
+         tester and an AAC reviewer (questions.md 3)
 [~] M30  WITHDRAWN -- superseded by the A-track (A.106)
-[ ] A9   Accessibility toggle + feature picker  (new)
-[ ] A8   Assistive-technology validation
 [ ] M31  Release candidate
 [ ] M32  Upstream PR
 [ ] M33  Voice input + speech accessibility

@@ -159,38 +159,24 @@ does not claim the command works today.
 
 ---
 
-## 6. Does the accessibility toggle turn features *off*, or just hide the panel?
+## 6. Does the accessibility toggle hide the panel, or switch the features off?
 
-**Status:** assumed and proceeding; the assumption is the safe one.
+**Status:** built under reading 1. Still worth your decision.
 
-Your direction (2026-09-05): *"the accessibility ui and the standard ui should
-be a toggle and if its toggled on you can choose the accessibility features you
-want."* Recorded as stage **A9**, scheduled after A8.
+A9 is done and shipped as **the panel hides; nothing you chose changes**. Closing
+it writes exactly one preference -- its own -- and says so on screen: *"Nothing
+you chose was changed."*
 
-Two readings, and they build differently:
+I chose that reading because the other one can strand somebody: flick a switch
+labelled "accessibility" to see what the standard interface looks like, then be
+unable to read the screen well enough to find the switch again.
 
-1. **The panel is hidden; features keep their state.** Turning the toggle off
-   tidies the interface away, and a player who had high contrast on keeps it.
-2. **The features actually switch off.** Turning it off returns the client to a
-   plain standard UI regardless of what was configured.
+**If you want the sharper version** -- toggle off really means a plain standard
+UI regardless of what was configured -- it is a small change, and it needs two
+things with it: a confirmation naming what is about to switch off, and a
+shortcut that works regardless of state so there is always a way back.
 
-Reading 2 is a sharper product and carries a real hazard: somebody who turns the
-toggle off to see what the standard UI looks like, and then cannot read the
-screen well enough to find the toggle again, is stuck in a client they cannot
-operate. If that is what you want, it needs a keyboard shortcut that works
-regardless of state and probably a confirmation naming what is about to go.
-
-**Assumed until you say otherwise: reading 1**, because it cannot strand anyone.
-
-One thing that does not move either way: the **baseline** stays outside the
-toggle. Keyboard operation, focus management, landmarks, accessible names, the
-announcement manager and "colour never alone" are not features to switch on — a
-client only operable by keyboard when a box is ticked is not an accessible
-client with a toggle, it is an inaccessible one with an apology. The toggle
-governs the opinionated layer: contrast, motion, stimulation, verbosity, quiet
-and focus modes, the simplified layout, orientation, the word board. The full
-split is tabulated in the roadmap's A9 section, and getting that line right is
-more of the work than the UI is.
+**What I need:** a yes to what shipped, or a "make it the other one".
 
 ---
 

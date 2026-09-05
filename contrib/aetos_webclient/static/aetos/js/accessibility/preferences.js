@@ -54,6 +54,23 @@
     var DEFAULTS = {
         version: VERSION,
 
+        /*
+         * The shell's own state.  A9.
+         *
+         * `accessibilityPanel` is whether the accessibility options are shown.
+         * It changes what is *offered*, never what is on: a player who turns
+         * the panel off keeps every accommodation they had chosen, and finds
+         * the same controls in Settings where they have always been.
+         *
+         * That asymmetry is deliberate. The alternative -- a switch that turns
+         * the accommodations themselves off -- can strand somebody who flicks
+         * it to see what the standard interface looks like and then cannot read
+         * the screen well enough to find the switch again.
+         */
+        shell: {
+            accessibilityPanel: false
+        },
+
         screenReader: {
             // "selective" honours the per-category flags below. "all" and
             // "minimal" are shortcuts that ignore them.
@@ -168,6 +185,115 @@
      * to work while nothing it set survived a reload. A player would have
      * concluded the client was broken, and they would have been right.
      */
+    /*
+     * What the accessibility panel offers.  A9.
+     *
+     * This table is the deliverable of A9 as much as the panel is: it draws the
+     * line between the accommodations a player chooses and the ones that are
+     * simply how the client is built.
+     *
+     * Everything here is **optional and opinionated** -- a matter of need and
+     * taste, which a player might reasonably not want. Nothing here is load
+     * bearing for basic operation.
+     *
+     * `kind` says how to render it; `label` is what a player reads; `detail`
+     * says what changes, in terms of what they will see rather than what the
+     * code does.
+     */
+    var GOVERNED = [
+        {
+            path: "visual.contrast",
+            kind: "enum",
+            label: "Contrast",
+            detail: "Higher contrast strengthens every border and text colour."
+        },
+        {
+            path: "visual.scale",
+            kind: "range",
+            label: "Text size",
+            detail: "Scales the whole interface, not only the text."
+        },
+        {
+            path: "visual.motion",
+            kind: "enum",
+            label: "Motion",
+            detail: "Your choice wins over the system setting, in both directions."
+        },
+        {
+            path: "visual.stimulation",
+            kind: "enum",
+            label: "Visual detail",
+            detail: "Removes decoration that carries no information."
+        },
+        {
+            path: "screenReader.announcementMode",
+            kind: "enum",
+            label: "How much is announced",
+            detail: "What is spoken aloud or sent to a braille display."
+        },
+        {
+            path: "cognitive.quietMode",
+            kind: "boolean",
+            label: "Quiet mode",
+            detail: "Fewer interruptions. Nothing is lost -- it is still in the log."
+        },
+        {
+            path: "cognitive.focusMode",
+            kind: "boolean",
+            label: "Focus mode",
+            detail: "A calmer screen. Separate from quiet mode, because wanting "
+                + "less on screen and wanting fewer interruptions are different needs."
+        },
+        {
+            path: "cognitive.reorientEnabled",
+            kind: "boolean",
+            label: "Orientation help",
+            detail: "Where you are, how you got here, and how to go back."
+        },
+        {
+            path: "aac.enabled",
+            kind: "boolean",
+            label: "Picture and word board",
+            detail: "Compose commands from symbols and words instead of typing."
+        },
+        {
+            path: "pointer.gestures",
+            kind: "boolean",
+            label: "Touch gestures",
+            detail: "Every gesture also has a keyboard command, so turning these "
+                + "off costs only the shortcut."
+        },
+        {
+            path: "audio.muted",
+            kind: "boolean",
+            label: "Mute all sound",
+            detail: "Captions stay on screen regardless."
+        }
+    ];
+
+    /*
+     * What is NOT here, and must never be.
+     *
+     * A0 built this schema with no master switch (A.70) and the reasoning holds
+     * for exactly this list. These are not features to be enabled; they are
+     * what makes the client usable at all, and they are unconditional.
+     *
+     * A client that is only operable by keyboard when a box is ticked is not an
+     * accessible client with a toggle. It is an inaccessible client with an
+     * apology.
+     *
+     * Stated as data so the panel can *show* it -- somebody deciding whether to
+     * turn accessibility "on" deserves to know what was never off.
+     */
+    var UNCONDITIONAL = [
+        "Every function is operable from the keyboard.",
+        "Focus is always visible and never moves on its own.",
+        "Landmarks, headings and accessible names on every control.",
+        "One announcement channel, so nothing competes to speak.",
+        "Colour never carries meaning on its own.",
+        "Target sizes that do not require fine pointing."
+    ];
+
     var SCALE_MIN = 0.75;
     var SCALE_MAX = 2.5;
 
@@ -447,6 +573,8 @@
         DEFAULTS: DEFAULTS,
         ENUMS: ENUMS,
         RANGES: RANGES,
+        GOVERNED: GOVERNED,
+        UNCONDITIONAL: UNCONDITIONAL,
         VERSION: VERSION,
         DOC_ID: DOC_ID,
         normalize: normalize

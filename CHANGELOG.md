@@ -11,6 +11,43 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### A9 — The accessibility toggle and its feature picker
+
+1222 tests. axe clean at every severity with the panel open, including in high
+contrast. [`notes/a9-accessibility-toggle.md`](notes/a9-accessibility-toggle.md)
+
+**Added — one visible control that reveals the accessibility options**
+
+- Nothing behind it is new. Every option has worked since the A-track built it
+  and every one is in Settings — spread across five groups of a panel reached
+  from the command palette, where almost nobody found them. Granularity was
+  right and it created a discovery problem; this answers that and nothing else.
+- A button reading **Accessibility** in the status bar, plus `Ctrl+Shift+A` and
+  a command-palette entry. A word rather than an icon, because an icon would be
+  a symbol somebody has to recognise before they can ask for help reading
+  symbols.
+- Eleven independent controls — contrast, text size, motion, visual detail,
+  announcement verbosity, quiet mode, focus mode, orientation help, the picture
+  and word board, gestures, mute. No preset, no bundle.
+
+**The line, which is the deliverable as much as the UI is**
+
+- The toggle governs the optional, opinionated layer. It does **not** govern
+  keyboard operation, focus management, landmarks, accessible names, the
+  announcer, colour never carrying meaning alone, or target sizes. A client only
+  operable by keyboard when a box is ticked is not an accessible client with a
+  toggle; it is an inaccessible client with an apology.
+- Those are not merely excluded — the panel **lists them** under "Always on",
+  because somebody deciding whether to turn accessibility "on" deserves to know
+  what was never off. Both lists are code, so the roadmap's table is now what the
+  panel is built from.
+
+**Toggling changes what is offered, never what is on.** Closing the panel writes
+exactly one preference — its own — and says so: *"Nothing you chose was
+changed."* The alternative reading can strand somebody who flicks the switch to
+look and then cannot read the screen well enough to find it again.
+`questions.md` 6 asks whether that is the reading you want.
+
 ### Fixed — raw markup shown to the player (reported by Gary)
 
 Running a macro put lines like `<span class="color-002"><a id="mxplink" ...` on

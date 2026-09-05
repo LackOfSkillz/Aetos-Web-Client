@@ -256,8 +256,17 @@ class TestScriptsDoNotBlockTheParser(TestCase):
         return re.findall(r"<script\b[^>]*\bsrc=[^>]*>", template)
 
     def test_every_script_in_the_client_template_is_deferred(self):
+        """
+        A floor rather than an exact count.
+
+        The count guards against a regex that silently matches nothing, which
+        would let the loop below pass by having no work to do. It is not itself
+        interesting, and pinning it exactly meant every new module broke this
+        test for a reason unrelated to what it checks.
+
+        """
         tags = self._script_tags(CLIENT_TEMPLATE)
-        self.assertEqual(len(tags), 53)
+        self.assertGreater(len(tags), 40, "found only %d script tags" % len(tags))
         for tag in tags:
             self.assertIn("defer", tag, "not deferred: %s" % tag)
 

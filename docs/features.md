@@ -553,6 +553,20 @@ Export writes all of it to a single JSON file you can read, edit and import on a
 
 *Keyboard operation, screen readers and announcements.*
 
+### Where the options are
+
+The Accessibility button in the bar at the top opens a panel of options you can turn on and off individually -- contrast, text size, motion, how much is announced, a calmer screen, orientation help, a picture and word board, and more. Ctrl+Shift+A opens the same panel.
+
+There is no bundle to accept or refuse. Each one is separate, and all of them are also in Settings if that is where you looked first.
+
+Closing that panel does not switch anything off. It puts the options away; whatever you chose stays exactly as you left it.
+
+| Key | Does |
+| --- | --- |
+| `Ctrl+Shift+A` | Show or hide the accessibility options |
+
+### What is always on
+
 Everything in Aetos is reachable from the keyboard. Nothing requires a mouse, and nothing requires seeing a colour: where colour carries meaning, the same meaning is written in the text.
 
 Dialogs trap focus while open and return it where it came from on close, so you never have to tab through the whole interface to find your place again.

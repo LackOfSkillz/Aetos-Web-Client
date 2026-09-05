@@ -53,6 +53,7 @@ unmodified from Evennia's own static files, and the Portal is not involved.
     <script defer src={% aetos_static "aetos/js/accessibility/shortcuts.js" %} type="text/javascript" charset="utf-8"></script>
     <script defer src={% aetos_static "aetos/js/accessibility/orientation.js" %} type="text/javascript" charset="utf-8"></script>
     <script defer src={% aetos_static "aetos/js/accessibility/cognitive.js" %} type="text/javascript" charset="utf-8"></script>
+    <script defer src={% aetos_static "aetos/js/accessibility/panel.js" %} type="text/javascript" charset="utf-8"></script>
     <script defer src={% aetos_static "aetos/js/accessibility/accessibility.js" %} type="text/javascript" charset="utf-8"></script>
     <script defer src={% aetos_static "aetos/js/store.js" %} type="text/javascript" charset="utf-8"></script>
     <script defer src={% aetos_static "aetos/js/events/canonical_log.js" %} type="text/javascript" charset="utf-8"></script>
@@ -158,8 +159,30 @@ it is where a player wants to be nearly every time.
       <button id="aetos-edit-layout" class="aetos-statusbar__button" type="button"
               aria-pressed="false">Edit Layout</button>
       <button id="aetos-open-help" class="aetos-statusbar__button" type="button">Help</button>
+      {% comment %}
+      A9. The one control that has to be findable without already knowing the
+      client.
+
+      In the status bar rather than in Settings, because the whole point is
+      discovery: the options behind it have worked since the A-track built them
+      and are all in Settings already, where almost nobody finds them.
+
+      It says "Accessibility" and not an icon. An icon here would be a symbol
+      somebody has to recognise before they can ask for help reading symbols.
+      {% endcomment %}
+      <button id="aetos-accessibility-toggle" class="aetos-statusbar__button"
+              type="button" aria-expanded="false">Accessibility</button>
     </nav>
   </header>
+
+  {% comment %}
+  Where the accessibility panel renders. Empty and hidden until asked for.
+
+  Directly after the status bar and before the workspace, so that a keyboard or
+  screen-reader user who has just activated the toggle reaches its contents next
+  rather than after every widget.
+  {% endcomment %}
+  <div id="aetos-accessibility-host"></div>
 
   {% comment %}
   The two announcement regions. Addendum A.15, A11Y-ANN-001.

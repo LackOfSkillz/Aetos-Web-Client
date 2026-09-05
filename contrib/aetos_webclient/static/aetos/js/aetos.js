@@ -2267,6 +2267,36 @@
             })
             : null;
 
+            /*
+         * The accessibility panel.  A9.
+         *
+         * The options it shows are not new -- they are the A-track's, and all
+         * of them are in Settings. What is new is that somebody can find them
+         * without knowing they exist, which was the one thing granularity cost.
+         */
+        var accessibilityPanel = window.AetosAccessibilityPanel && accessibility
+            ? window.AetosAccessibilityPanel.create({
+                preferences: accessibility.preferences,
+                announce: function (message) {
+                    accessibility.announce(message, { priority: "normal" });
+                },
+                focusManager: window.AetosFocusManager || null
+            })
+            : null;
+        if (accessibilityPanel) {
+            var a11yHost = document.getElementById("aetos-accessibility-host");
+            var a11yToggle = document.getElementById("aetos-accessibility-toggle");
+            if (a11yHost) {
+                accessibilityPanel.attach(a11yHost, a11yToggle);
+            }
+        } else {
+            var orphanToggle = document.getElementById("aetos-accessibility-toggle");
+            if (orphanToggle) {
+                // A control that does nothing is worse than an absent one.
+                orphanToggle.hidden = true;
+            }
+        }
+
         if (palette) {
             // No self-binding: Ctrl+K is registered with the shortcut manager
             // below, so a player can see it, rebind it or turn it off (A.23).
@@ -2276,6 +2306,13 @@
                     id: id, label: label, group: group, description: description,
                     run: run, when: when, shortcut: shortcut
                 });
+            }
+
+            /* Accessibility */
+            if (accessibilityPanel) {
+                addCommand("accessibility.panel", "Accessibility options", "Accessibility",
+                    "Show or hide the accessibility options.",
+                    function () { accessibilityPanel.toggle(); }, null, "Ctrl+Shift+A");
             }
 
             /* Layout */
@@ -2746,6 +2783,21 @@
                     run: function () { help.toggle(); }
                 });
             }
+
+            if (accessibilityPanel) {
+                shortcuts.register({
+                    id: "accessibility.panel",
+                    label: "Accessibility options",
+                    description: "Show or hide the accessibility options.",
+                    // Ctrl+Shift+A. Not a bare character: single letters are
+                    // what NVDA and JAWS use for structural navigation, and
+                    // taking one would break reading the client to reach a
+                    // panel about reading the client.
+                    defaultBinding: "Ctrl+Shift+A",
+                    paletteCommand: "accessibility.panel",
+                    run: function () { accessibilityPanel.toggle(); }
+                });
+            }
             if (review) {
                 shortcuts.register({
                     id: "review.toggle",
@@ -2815,6 +2867,7 @@
             dispatcher: dispatcher,
             store: store,
             consoleWidget: consoleWidget,
+            accessibilityPanel: accessibilityPanel,
             announcer: announcer,
             storage: storage,
             profile: profile,

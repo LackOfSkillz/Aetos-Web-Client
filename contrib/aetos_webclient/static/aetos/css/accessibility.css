@@ -299,3 +299,82 @@
         background: Highlight;
     }
 }
+
+/* ----------------------------------------------------------------------
+ * The accessibility panel.  A9.
+ *
+ * Sits between the status bar and the workspace, full width, and is plainly
+ * a panel rather than a dialog: it does not cover the game, does not trap
+ * focus, and does not have to be dismissed before play continues. Somebody
+ * adjusting contrast should be able to watch the room description change
+ * while they do it.
+ * ---------------------------------------------------------------------- */
+
+.aetos-a11y-panel {
+    padding: var(--aetos-space) calc(var(--aetos-space) * 2);
+    background: var(--aetos-panel);
+    border-bottom: 2px solid var(--aetos-border);
+}
+
+.aetos-a11y-panel__heading {
+    margin: 0 0 4px;
+    font-size: 1rem;
+}
+
+.aetos-a11y-panel__detail {
+    margin: 0;
+    color: var(--aetos-text-dim);
+    font-size: 0.9em;
+}
+
+/*
+ * A grid that becomes one column when there is not room for two.
+ *
+ * `auto-fit` with a `minmax` floor rather than a breakpoint, so it also does
+ * the right thing when the text is scaled up rather than the window scaled
+ * down -- which is the case a width breakpoint gets wrong.
+ */
+.aetos-a11y-panel__options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+    gap: var(--aetos-space);
+    margin: var(--aetos-space) 0;
+}
+
+.aetos-a11y-panel__row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: baseline;
+    gap: 4px 8px;
+}
+
+.aetos-a11y-panel__label {
+    font-weight: 600;
+}
+
+/* The explanation spans both columns, under the control it explains. */
+.aetos-a11y-panel__row .aetos-a11y-panel__detail {
+    grid-column: 1 / -1;
+}
+
+.aetos-a11y-panel__checkbox {
+    /* A target big enough to hit without fine pointing (A.57). */
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.aetos-a11y-panel__select,
+.aetos-a11y-panel__range {
+    min-height: 2.25rem;
+    max-width: 100%;
+}
+
+.aetos-a11y-panel__value {
+    font-variant-numeric: tabular-nums;
+}
+
+.aetos-a11y-panel__always {
+    margin: 4px 0 0;
+    padding-left: 1.25rem;
+    color: var(--aetos-text-dim);
+}
