@@ -67,7 +67,7 @@ class TestSeverityIsAContract(TestCase):
             self.assertIn(level, VALIDATOR)
 
     def test_only_errors_block(self):
-        self.assertIn('item.severity === ERROR', VALIDATOR)
+        self.assertIn("item.severity === ERROR", VALIDATOR)
         start = VALIDATOR.index("function validate(kind, subject)")
         window = VALIDATOR[start : start + 600]
         self.assertIn("blocked", window)
@@ -299,8 +299,14 @@ class TestTheValidatorIsWiredAfterItsEngines(TestCase):
 
     def test_it_is_created_after_every_engine_it_consults(self):
         position = SHELL.index("var validator = window.AetosValidator")
-        for engine in ("var triggers =", "var aliases =", "var timers =",
-                       "var scripting =", "var macros =", "var displayRules ="):
+        for engine in (
+            "var triggers =",
+            "var aliases =",
+            "var timers =",
+            "var scripting =",
+            "var macros =",
+            "var displayRules =",
+        ):
             self.assertLess(
                 SHELL.index(engine),
                 position,

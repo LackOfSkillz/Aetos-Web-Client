@@ -33,7 +33,6 @@ def _read(relative):
     return (JS_DIR / relative).read_text(encoding="utf-8")
 
 
-
 def _code_only(source):
     """
     Strip comments and the user-facing `excludes` list.
@@ -52,6 +51,7 @@ def _code_only(source):
     without_line = re.sub(r"^\s*//.*$", "", without_block, flags=re.MULTILINE)
     # The `excludes:` array is text shown to the player, not a data access.
     return re.sub(r"excludes:\s*\[.*?\]", "", without_line, flags=re.DOTALL)
+
 
 DIAGNOSTICS = _read("developer/diagnostics.js")
 SETTINGS = _read("settings.js")
@@ -78,8 +78,15 @@ class TestTheReportCannotCarryPrivateData(TestCase):
 
         """
         code = _code_only(DIAGNOSTICS)
-        for forbidden in ("notes", "relationships", "macros", "aliases",
-                          "triggers", "scripts", "storage"):
+        for forbidden in (
+            "notes",
+            "relationships",
+            "macros",
+            "aliases",
+            "triggers",
+            "scripts",
+            "storage",
+        ):
             self.assertNotIn(
                 "settings." + forbidden,
                 code,
@@ -94,8 +101,13 @@ class TestTheReportCannotCarryPrivateData(TestCase):
 
         """
         code = _code_only(DIAGNOSTICS)
-        for probe in ("settings.preferences", "preferences.value",
-                      'get("preferences")', "screenReader", "braille"):
+        for probe in (
+            "settings.preferences",
+            "preferences.value",
+            'get("preferences")',
+            "screenReader",
+            "braille",
+        ):
             self.assertNotIn(probe, code, "diagnostics.js reads %r" % probe)
 
     def test_it_reports_event_types_rather_than_events(self):
@@ -141,8 +153,14 @@ class TestNothingIsSent(TestCase):
     """
 
     def test_the_module_makes_no_requests(self):
-        for forbidden in ("fetch(", "XMLHttpRequest", "sendBeacon", "WebSocket",
-                          "dispatcher", "Evennia.msg"):
+        for forbidden in (
+            "fetch(",
+            "XMLHttpRequest",
+            "sendBeacon",
+            "WebSocket",
+            "dispatcher",
+            "Evennia.msg",
+        ):
             self.assertNotIn(forbidden, DIAGNOSTICS, "diagnostics.js uses %r" % forbidden)
 
     def test_the_github_helper_returns_a_url_and_does_not_open_it(self):
@@ -153,7 +171,7 @@ class TestNothingIsSent(TestCase):
         """
         start = DIAGNOSTICS.index("function issueUrl")
         window = DIAGNOSTICS[start : start + 700]
-        self.assertIn("return \"https://github.com/\"", window)
+        self.assertIn('return "https://github.com/"', window)
         self.assertNotIn("window.open", window)
         self.assertNotIn("location", window)
 
@@ -231,7 +249,7 @@ class TestWiring(TestCase):
     """The report is only useful if something records into it."""
 
     def test_pipeline_failures_are_recorded(self):
-        self.assertIn('diagnostics.record(', SHELL)
+        self.assertIn("diagnostics.record(", SHELL)
         self.assertIn('"pipeline:" + failure.stage', SHELL)
 
     def test_the_widget_list_is_an_accessor_not_an_array(self):

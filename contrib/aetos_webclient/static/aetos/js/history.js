@@ -186,6 +186,22 @@
 
                 var rows = document.createElement("div");
                 rows.className = "aetos-history__rows";
+                /*
+                 * Focusable, because it scrolls.
+                 *
+                 * Arrow keys scroll whatever has focus, so a scrolling region
+                 * outside the tab order cannot be scrolled by keyboard at all:
+                 * the player can see there is more and has no way to reach it.
+                 * Third instance of this in the client -- it is invisible to
+                 * anyone testing with a mouse wheel, and axe is the only thing
+                 * that has ever caught it.
+                 *
+                 * A focusable region needs a name, or it is announced as an
+                 * unlabelled group.
+                 */
+                rows.setAttribute("tabindex", "0");
+                rows.setAttribute("role", "region");
+                rows.setAttribute("aria-label", "Event history");
 
                 var pager = document.createElement("div");
                 pager.className = "aetos-history__pager";

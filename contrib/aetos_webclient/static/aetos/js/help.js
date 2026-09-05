@@ -498,6 +498,92 @@
         },
 
         {
+            id: "orientation",
+            title: "Where am I, and how did I get here",
+            group: "Your data",
+            summary: "Pick up where you left off after an interruption.",
+            sections: [
+                {
+                    body: [
+                        "Press Ctrl+Shift+W, or search the palette for \"Where am I\". " +
+                            "Aetos reads back where you are, the exits, who is present, " +
+                            "your character's state, your target, and the last few " +
+                            "commands you sent.",
+                        "The game does not pause when you take a phone call, lose your " +
+                            "place on a braille display, or simply look away. Scrollback " +
+                            "answers \"what happened\"; this answers \"where am I\"."
+                    ]
+                },
+                {
+                    heading: "It reports facts, and only facts",
+                    body: [
+                        "Aetos will tell you that you sent \"look at Renn\". It will " +
+                            "never tell you that you were investigating Renn.",
+                        "That restraint is the point. A client that guessed at what you " +
+                            "were doing would be confidently wrong at exactly the moment " +
+                            "you were relying on it, and a wrong answer delivered with " +
+                            "certainty costs you the time to discover it was wrong plus " +
+                            "the trust you had in the feature."
+                    ]
+                },
+                {
+                    heading: "How I got here, and walking back",
+                    body: [
+                        "\"How I got here\" lists the rooms you have moved through. The " +
+                            "trail is built from rooms the game actually put you in, not " +
+                            "from movement you typed -- if you walked into a wall, that is " +
+                            "not on the trail.",
+                        "\"Walk back\" retraces it using ordinary movement commands, " +
+                            "through the same queue a macro uses. A locked door stops it " +
+                            "exactly where the game stops you. It also stops rather than " +
+                            "guessing wherever a step has no clear reverse -- \"north\" " +
+                            "reverses to \"south\", but \"enter the portal\" reverses to " +
+                            "nothing anybody can be sure of."
+                    ]
+                },
+                {
+                    heading: "Reminders and tasks",
+                    body: [
+                        "Notes to yourself, kept in this browser. Pin one to keep it in " +
+                            "view, attach one to a room so it comes back when you next " +
+                            "walk in, or hold one until your next session.",
+                        "Aetos never creates one. It does not notice you have not visited " +
+                            "somewhere lately and it does not build a checklist out of " +
+                            "your behaviour. A memory aid that edits itself is a memory " +
+                            "aid you cannot trust.",
+                        "A room reminder surfaces once per visit, not once per second."
+                    ]
+                },
+                {
+                    heading: "Finding things",
+                    body: [
+                        "The command palette searches your notes, your reminders and " +
+                            "what has been said, alongside the client's own commands. You " +
+                            "do not have to remember which panel something is in before " +
+                            "you can look for it.",
+                        "A result from the history jumps to that moment in Review Mode, " +
+                            "so it is reachable even if a display rule has since hidden " +
+                            "the line."
+                    ]
+                },
+                {
+                    heading: "Focus mode and quiet mode",
+                    body: [
+                        "Focus mode hides everything except the game text and your " +
+                            "input. Quiet mode stops routine announcements.",
+                        "They are separate on purpose: wanting a calmer screen and " +
+                            "wanting fewer interruptions are different needs. Quiet mode " +
+                            "is about interruption, not information -- anything important " +
+                            "still gets through, nothing leaves the transcript, and if you " +
+                            "ask a direct question you still get an answer.",
+                        "Nothing the game sends turns either of them on or off. Only you " +
+                            "do."
+                    ]
+                }
+            ]
+        },
+
+        {
             id: "privacy",
             title: "Privacy and your data",
             group: "Your data",

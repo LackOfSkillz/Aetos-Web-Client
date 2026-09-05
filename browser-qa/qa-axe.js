@@ -153,6 +153,24 @@
             function () { window.AetosDialog.close(null); });
     }
 
+    /*
+     * A5. Both panels are lists of the player's own items, which is the shape
+     * axe is best at: an unlabelled row of identical "Delete" buttons and an
+     * unreachable scroll region are exactly the defects that are invisible to
+     * whoever wrote them.
+     */
+    if (A.settings && A.orientation && window.AetosDialog) {
+        await scan("reorientation summary",
+            function () { A.settings.openOrientation(); },
+            function () { window.AetosDialog.close(null); });
+    }
+
+    if (A.settings && A.cognitive && window.AetosDialog) {
+        await scan("reminders and tasks",
+            function () { A.settings.openReminders(); },
+            function () { window.AetosDialog.close(null); });
+    }
+
     if (A.workspaces) {
         await scan("edit layout",
             function () { A.workspaces.toggleEditing(); },

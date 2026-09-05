@@ -162,8 +162,11 @@ class TestTheEnginesConsultIt(TestCase):
         self.assertIn("return !rule || rule.enabled !== false;", window)
 
     def test_rules_carry_a_group(self):
-        for source, name in ((TRIGGERS, "triggers"), (ALIASES, "aliases"),
-                             (RULES, "display rules")):
+        for source, name in (
+            (TRIGGERS, "triggers"),
+            (ALIASES, "aliases"),
+            (RULES, "display rules"),
+        ):
             self.assertIn("group", source, "%s cannot be grouped" % name)
 
     def test_display_rules_receive_the_active_map(self):

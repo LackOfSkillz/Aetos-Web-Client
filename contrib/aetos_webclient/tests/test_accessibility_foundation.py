@@ -273,8 +273,14 @@ class TestFocusIsNeverStolen(TestCase):
         unusable in a way entirely invisible to a sighted mouse user testing it.
 
         """
-        for name in ("store.js", "character.js", "resources.js", "builtins.js",
-                     "map.js", "widgets.js"):
+        for name in (
+            "store.js",
+            "character.js",
+            "resources.js",
+            "builtins.js",
+            "map.js",
+            "widgets.js",
+        ):
             source = _read(JS_DIR / name)
             self.assertNotIn(".focus()", source, "%s moves focus on server data" % name)
 

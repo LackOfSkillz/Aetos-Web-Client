@@ -87,6 +87,11 @@
             reorientEnabled: true,
             orientationChecklist: "manual",
             quietMode: false,
+            // A.47. Visual quieting, separate from quietMode's announcement
+            // quieting: wanting a calmer screen and wanting fewer
+            // interruptions are different needs, and somebody may want either
+            // without the other.
+            focusMode: false,
             // A11Y-COG-007. A game event rearranging the workspace under
             // someone is disorienting for everyone and disabling for some.
             automaticWorkspaceSwitching: "never"

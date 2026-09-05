@@ -72,11 +72,23 @@ class TestAetosAppConfig(TestCase):
         )
 
     def test_app_label_does_not_collide_with_a_stock_app(self):
-        """A duplicate label raises ImproperlyConfigured at startup."""
+        """
+        A duplicate label raises ImproperlyConfigured at startup.
+
+        Checked against the apps Evennia ships rather than against whatever is
+        loaded right now. The earlier version compared with the live registry,
+        which meant the test passed only in a game dir that had *not* installed
+        Aetos -- so it failed in every game that had, including the lab. It was
+        asserting a fact about the deployment while claiming to assert one
+        about the label.
+
+        """
         self.assertEqual(AetosWebClientConfig.label, "aetos_webclient")
-        stock_labels = {config.label for config in django_apps.get_app_configs()}
-        # Aetos is not installed in the default test settings, so a collision
-        # here would mean a stock app already claimed the label.
+        stock_labels = {
+            config.label
+            for config in django_apps.get_app_configs()
+            if config.name != AetosWebClientConfig.name
+        }
         self.assertNotIn(AetosWebClientConfig.label, stock_labels)
 
 

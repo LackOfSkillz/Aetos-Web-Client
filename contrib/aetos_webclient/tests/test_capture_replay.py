@@ -52,8 +52,15 @@ class TestCaptureNeverCarriesPlayerData(TestCase):
     """
 
     def test_it_does_not_reach_into_local_stores(self):
-        for forbidden in ("notes", "relationships", "macros", "aliases",
-                          "scripts", "storage", "preferences"):
+        for forbidden in (
+            "notes",
+            "relationships",
+            "macros",
+            "aliases",
+            "scripts",
+            "storage",
+            "preferences",
+        ):
             self.assertNotIn(
                 forbidden + ".",
                 CAPTURE,

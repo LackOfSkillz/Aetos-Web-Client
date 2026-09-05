@@ -509,9 +509,9 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] E3   Automation groups                             -- 637 py
 [x] E4   Unified validator                             -- 667 py
 [x] E5   Diagnostic reporting                          -- 688 py
-[ ] A5   Cognitive and orientation layer               <-- NEXT
-[ ] A5   Cognitive and orientation layer
-[ ] M18  Audio + multimedia + captions                 (absorbs A6)
+[x] A5   Cognitive and orientation layer               -- 727 py
+[ ] M18  Audio + multimedia + captions                 <-- NEXT
+[ ] M18  (absorbs A6)
 [ ] M19  Themes  (+ contrast validation, A11Y-VIS-003)
 [ ] A7   AAC + simplified workspace
 [ ] M20  PWA + touch gestures  (+ A.57 pointer targets)
@@ -808,7 +808,8 @@ D-track   developer integration            D0 next, independent
 [x] A1   Widget accessibility contract
 [x] A2   Current State View + semantic values
 [x] A3   Accessible map completion
-[ ] A5   Cognitive and orientation layer          <-- next on the A-track
+[x] A5   Cognitive and orientation layer
+[ ] A7   AAC + simplified workspace               <-- next on the A-track
 [ ] D0   Discovery architecture spike           <-- next on the D-track
 [ ] D1   Safe AETOS_BINDINGS foundation
 [ ] D2   Declarative provider suite
@@ -1092,7 +1093,8 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [x] A1   Widget accessibility contract
 [x] A2   Current State View + semantic values
 [x] A3   Accessible map completion
-[ ] A5   Cognitive and orientation layer          <-- next on the A-track
+[x] A5   Cognitive and orientation layer
+[ ] A7   AAC + simplified workspace               <-- next on the A-track
 [ ] A3   Accessible map completion
 
 [ ] E0   Event pipeline contract                  <-- BEFORE M17

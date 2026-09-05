@@ -1404,3 +1404,51 @@ body {
     opacity: 0.65;
     font-size: 0.92em;
 }
+
+/*
+ * Section headings inside a dialog body (A5).
+ *
+ * A real <h3> rather than a styled paragraph, so a screen reader can jump
+ * between the sections of a reorientation summary -- which is the whole point
+ * of the panel for the person most likely to open it.
+ */
+.aetos-dialog__subheading {
+    margin: 10px 0 2px;
+    font-size: 0.95em;
+    color: var(--aetos-accent);
+}
+
+/*
+ * Focus Mode.  Addendum A.47.
+ *
+ * The client drops to its essentials: the game text and the input the player
+ * types into. Everything else is hidden.
+ *
+ * `display: none` rather than visual hiding, deliberately. A panel that is
+ * merely invisible is still in the tab order and still read by a screen
+ * reader, which would make Focus Mode a trap -- the clutter a sighted player
+ * wanted gone would remain in full for everyone else, plus a screenful of
+ * controls nobody could see to explain.
+ *
+ * Nothing the game sends can set this attribute. It follows one preference the
+ * player owns, so a layout never rearranges itself under somebody -- A11Y-COG-007
+ * for workspaces, and the same reasoning here.
+ */
+/*
+ * Selected from the document element, because that is where the accessibility
+ * layer writes its preference attributes -- the same place `data-aetos-quiet`,
+ * `data-aetos-contrast` and `data-aetos-motion` land. Writing this against
+ * `.aetos-root` looked right and matched nothing at all.
+ */
+[data-aetos-focus="true"] .aetos-region--sidebar,
+[data-aetos-focus="true"] .aetos-region--aside,
+[data-aetos-focus="true"] .aetos-region--bottom {
+    display: none;
+}
+
+/* The grid lives on the workspace, not the root. */
+[data-aetos-focus="true"] .aetos-workspace {
+    grid-template-areas: "main";
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+}

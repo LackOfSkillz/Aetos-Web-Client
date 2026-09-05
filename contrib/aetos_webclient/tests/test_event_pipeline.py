@@ -91,14 +91,10 @@ class TestTheOrderIsDeclared(TestCase):
         decision, not a fact about the game.
 
         """
-        self.assertLess(
-            PIPELINE.index("/* 5. Automation"), PIPELINE.index("/* 6. Presentation")
-        )
+        self.assertLess(PIPELINE.index("/* 5. Automation"), PIPELINE.index("/* 6. Presentation"))
 
     def test_announcements_come_after_presentation_but_independently(self):
-        self.assertLess(
-            PIPELINE.index("/* 6. Presentation"), PIPELINE.index("/* 7. Announcement")
-        )
+        self.assertLess(PIPELINE.index("/* 6. Presentation"), PIPELINE.index("/* 7. Announcement"))
 
 
 class TestOnlyOneThingWritesState(TestCase):
@@ -192,13 +188,25 @@ class TestTheCanonicalLog(TestCase):
         self.assertNotIn("nextId = 1", window)
 
     def test_every_category_in_the_spec_is_supported(self):
-        for category in ("room", "movement", "tell", "chat", "combat", "system",
-                         "resource", "effect", "inventory", "target", "command", "media"):
+        for category in (
+            "room",
+            "movement",
+            "tell",
+            "chat",
+            "combat",
+            "system",
+            "resource",
+            "effect",
+            "inventory",
+            "target",
+            "command",
+            "media",
+        ):
             self.assertIn('"%s"' % category, LOG)
 
     def test_an_unknown_category_is_kept_as_other(self):
         """An unrecognised event is still something that happened."""
-        self.assertIn('CATEGORIES.indexOf(entry.category) === -1', LOG)
+        self.assertIn("CATEGORIES.indexOf(entry.category) === -1", LOG)
 
 
 class TestTheShellUsesThePipeline(TestCase):

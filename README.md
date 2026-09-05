@@ -439,9 +439,9 @@ is served from your own host.
 
 ## What is built
 
-Roughly 6,900 lines of Python, 9,200 of JavaScript and 1,800 of CSS, with
-**467 Python tests** passing, plus 326 hand-written browser checks and an
-axe-core audit clean across six views — including the high-contrast and
+Roughly 10,900 lines of Python, 17,300 of JavaScript and 2,200 of CSS, with
+**741 Python tests** passing, plus hand-written browser checks and an axe-core
+audit clean across every view — including the high-contrast and
 minimal-stimulation presets.
 
 ### Works on a pristine game, with no configuration
@@ -483,6 +483,30 @@ minimal-stimulation presets.
 | **Export / import** | One JSON file; import reports what it refused |
 | **Privacy panel** | Counts read from storage, not assumed |
 
+### The event engine
+
+| | |
+| --- | --- |
+| **Fixed pipeline** | validate → normalize → state → log → automation → presentation → announce, with only two stages permitted to write |
+| **Canonical log** | Every later feature reads from one record; readers get copies |
+| **Display rules** | Highlight, substitute, filter, collapse — presentation only, never touching the record |
+| **Automation groups** | One switch for related rules, stating how many each currently suppresses |
+| **Unified validator** | One answer to "is this pattern dangerous", across all six kinds of automation |
+| **Capture and replay** | JSONL, fed through the same seam the websocket uses |
+| **Diagnostic reports** | Built locally, shown in full, and structurally incapable of carrying your data |
+
+### Orientation and cognitive support
+
+| | |
+| --- | --- |
+| **Reorient Me** | `Ctrl+Shift+W` — where you are, who is here, what you last sent. Facts only |
+| **How I got here** | A trail of rooms the game actually put you in, not movement you typed |
+| **Walk back** | Retraces it with ordinary commands, stopping where the game stops you |
+| **Reminders and tasks** | Yours, browser-local, and never invented by Aetos |
+| **Universal search** | The palette searches notes, reminders and history alongside its commands |
+| **Focus and Quiet modes** | A calmer screen and fewer interruptions, kept separate |
+| **Event history and Review Mode** | Read back through what happened, with flood control for screen readers |
+
 ### Throughout
 
 Versioned protocol with a capability manifest. Everything keyboard-operable,
@@ -496,16 +520,11 @@ Colour never carries meaning alone. `innerHTML` is never used.
 
 | Stage | |
 | --- | --- |
-| ~~A0~~ | ~~Accessibility Foundation~~ — **done**: subsystem, skip links, landmarks, rebindable shortcuts, axe gate |
-| **A1** | **Widget accessibility contract — next** *(retrofits M6, M7)* |
-| A2 | Current State View and semantic values *(retrofits M8, M16)* |
-| A3 | Accessible map completion *(retrofits M9)* |
-| **E0** | **Event pipeline contract — before M17** |
-| **E1** | **Capture and replay — before M17** |
-| M17 | Rich chat, event history and Review Mode |
-| E2–E5 | Non-destructive display rules, automation groups, unified validator, diagnostics |
-| A5 | Cognitive and orientation layer — Reorient Me, How I Got Here, Quiet Mode |
-| M18 | Audio and multimedia, with captions |
+| ~~A0–A3~~ | ~~Accessibility foundation, widget contract, Current State View, accessible map~~ — **done** |
+| ~~E0–E5~~ | ~~Event pipeline, capture/replay, display rules, automation groups, validator, diagnostics~~ — **done** |
+| ~~M17~~ | ~~Rich chat, event history and Review Mode~~ — **done** |
+| ~~A5~~ | ~~Cognitive and orientation layer~~ — **done** |
+| **M18** | **Audio and multimedia, with captions — next** |
 | M19 | Themes, with contrast validation |
 | A7 | AAC and simplified workspace |
 | M20 | PWA shell and touch gestures *(responsive layout done)* |

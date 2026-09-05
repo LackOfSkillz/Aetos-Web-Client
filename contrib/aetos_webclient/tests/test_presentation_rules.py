@@ -148,9 +148,7 @@ class TestHighlightsCarryMeaningNotJustColour(TestCase):
         perception.
 
         """
-        css = (Path(AETOS_STATIC_DIR) / "aetos" / "css" / "aetos.css").read_text(
-            encoding="utf-8"
-        )
+        css = (Path(AETOS_STATIC_DIR) / "aetos" / "css" / "aetos.css").read_text(encoding="utf-8")
         start = css.index(".aetos-console__mark {")
         window = css[start : start + 400]
         self.assertIn("text-decoration", window)

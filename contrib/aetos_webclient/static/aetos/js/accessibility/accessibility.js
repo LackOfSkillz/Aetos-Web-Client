@@ -94,6 +94,13 @@
 
             var cognitive = (current && current.cognitive) || {};
             root.setAttribute("data-aetos-quiet", cognitive.quietMode ? "true" : "false");
+            /*
+             * A.47. Driven by the preference rather than set directly, so it
+             * survives a reload without the shell having to remember to
+             * restore it -- and so there is exactly one thing to read when
+             * asking whether focus mode is on.
+             */
+            root.setAttribute("data-aetos-focus", cognitive.focusMode ? "true" : "false");
         }
 
         /*

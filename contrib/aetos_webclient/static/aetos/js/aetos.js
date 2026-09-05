@@ -587,6 +587,104 @@
             : null;
 
         /*
+         * Orientation and cognitive support.  A5.
+         *
+         * Created here because both need the store, the announcer and the
+         * queue, and none of them needs a widget to exist. Orientation is
+         * driven by authoritative room changes rather than typed movement
+         * (A11Y-COG-003): a player who walked into a wall has not moved, and a
+         * trail built from intentions would lead somewhere they have never
+         * been.
+         */
+        var cognitive = (storage && window.AetosCognitive)
+            ? window.AetosCognitive.create({
+                storage: storage,
+                store: store,
+                announce: function (message, options) {
+                    announcer.announce(message, options);
+                }
+            })
+            : null;
+
+        var orientation = window.AetosOrientation
+            ? window.AetosOrientation.create({
+                store: store,
+                announce: function (message, options) {
+                    announcer.announce(message, options);
+                },
+                // The queue already reports this; a second accessor could
+                // disagree with it.
+                queueState: function () {
+                    return commandQueue ? commandQueue.state() : null;
+                },
+                queueRoute: function (steps) { return walkRoute(steps); },
+                pinnedReminders: cognitive
+                    ? function () { return cognitive.pinned(); }
+                    : null
+            })
+            : null;
+
+        if (cognitive) {
+            cognitive.load();
+        }
+
+        /*
+         * Focus Mode.  A.47.
+         *
+         * Visual quieting: the client drops to its essentials and the rest is
+         * hidden. Distinct from Quiet Mode, which is about *announcements* --
+         * the two are separate because wanting a calmer screen and wanting
+         * fewer interruptions are different needs, and somebody may want either
+         * without the other.
+         *
+         * Nothing in the game can turn this on or off. A11Y-COG-007 makes that
+         * explicit for workspace switching, and the same reasoning applies
+         * here: a layout that rearranges itself under somebody is disorienting
+         * for everyone and disabling for some.
+         */
+        function setFocusMode(on) {
+            if (accessibility && accessibility.preferences) {
+                // The preference is the single source of truth; the
+                // accessibility layer reflects it onto the root, so the mode
+                // survives a reload without the shell restoring anything.
+                accessibility.preferences.update({
+                    cognitive: { focusMode: on !== false }
+                });
+            }
+            announcer.announce(
+                on !== false
+                    ? "Focus mode on. Extra panels are hidden."
+                    : "Focus mode off.",
+                { category: "system", priority: "important" }
+            );
+            return on !== false;
+        }
+
+        function focusModeIsOn() {
+            return !!(accessibility && accessibility.preferences &&
+                accessibility.preferences.value("cognitive.focusMode", false));
+        }
+
+        /*
+         * Reorient: speak the summary and show it.
+         *
+         * One function rather than two call sites, because the keyboard
+         * shortcut and the palette entry must do the same thing. An earlier
+         * draft had the shortcut speak only, which meant a sighted player who
+         * pressed it saw nothing happen at all.
+         */
+        function reorientNow() {
+            if (!orientation) {
+                return null;
+            }
+            var summary = orientation.speakReorientation();
+            if (settings && settings.openOrientation) {
+                settings.openOrientation();
+            }
+            return summary;
+        }
+
+        /*
          * Replay feeds records through `pipeline.ingest` -- the same seam the
          * websocket uses. There is deliberately no second path: a harness that
          * exercises different code from production tests the harness.
@@ -807,12 +905,14 @@
                     category: "room",
                     payload: kwargs || {}
                 });
+                observeLocation();
                 return;
             }
             // Fallback, same order: state before automation.
             if (store) {
                 store.applySync(kwargs || {});
             }
+            observeLocation();
             if (triggers && triggerCache.length) {
                 triggers.onState(triggerCache);
             }
@@ -1396,6 +1496,30 @@
             }, 200);
         }
 
+        /*
+         * Tell orientation and cognitive support where the player now is.
+         *
+         * Called after the store has been updated, never from the raw payload:
+         * the store is what everything else reads, so a breadcrumb taken from
+         * anywhere else could describe a room the rest of the client does not
+         * believe in.
+         *
+         * Both modules ignore a repeat of the same room id, so calling this on
+         * every sync is harmless.
+         */
+        function observeLocation() {
+            var room = store ? store.get("room") : null;
+            if (!room) {
+                return;
+            }
+            if (orientation) {
+                orientation.observeRoom(room);
+            }
+            if (cognitive) {
+                cognitive.observeRoom(room);
+            }
+        }
+
         // The single outbound seam. Widgets, and later voice and macros, all go
         // through here rather than talking to the transport themselves.
         function sendCommand(text) {
@@ -1407,6 +1531,9 @@
                 // could not reproduce the session.
                 if (capture) {
                     capture.recordOutbound(text);
+                }
+                if (orientation) {
+                    orientation.observeCommand(text);
                 }
                 requestSync();
                 return true;
@@ -1598,6 +1725,8 @@
                 displayRules: displayRules,
                 validator: validator,
                 diagnostics: diagnostics,
+                cognitive: cognitive,
+                orientation: orientation,
                 reloadTriggers: reloadTriggers,
                 gameName: gameName,
                 announce: function (message) { announcer.announce(message); }
@@ -1620,9 +1749,31 @@
             : null;
 
 
+        /*
+         * Universal search needs a synchronous view of the player's notes.
+         *
+         * Notes live in IndexedDB and palette search runs on every keystroke,
+         * so the shell keeps a snapshot and refreshes it whenever the palette
+         * opens. Nothing else reads this: it exists only so that search can
+         * answer immediately.
+         */
+        var noteSnapshot = [];
+
+        function refreshNoteSnapshot() {
+            if (!notes) {
+                return;
+            }
+            notes.all().then(function (all) {
+                noteSnapshot = all || [];
+            }).catch(function () {
+                // Search finds fewer things rather than failing.
+            });
+        }
+
         var palette = window.AetosPalette
             ? window.AetosPalette.create({
-                announce: function (message) { announcer.announce(message); }
+                announce: function (message) { announcer.announce(message); },
+                onOpen: refreshNoteSnapshot
             })
             : null;
 
@@ -1758,6 +1909,82 @@
                     function () { review.latest(); });
             }
 
+            /* Orientation.  A5.
+
+               Grouped separately from Review because they answer different
+               questions: Review is "what happened", orientation is "where am I
+               now". Somebody who has lost their place usually wants the second
+               and would have to read the whole of the first to get it. */
+            if (orientation) {
+                addCommand("orientation.reorient", "Where am I", "Orientation",
+                    "Read back your location, exits, who is here and what you " +
+                    "last did. Facts only -- Aetos never guesses what you were " +
+                    "trying to do.",
+                    function () { reorientNow(); }, null, "Ctrl+Shift+W");
+                addCommand("orientation.trail", "How I got here", "Orientation",
+                    "The rooms you have walked through this session.",
+                    function () {
+                        var trail = orientation.trail();
+                        announcer.announce(
+                            trail.length
+                                ? trail.map(function (step) { return step.name; }).join(", ")
+                                : "No movement recorded yet.",
+                            { category: "system", priority: "important" }
+                        );
+                    });
+                addCommand("orientation.walkback", "Walk back", "Orientation",
+                    "Retrace your steps using ordinary movement commands. Stops " +
+                    "wherever the game stops you.",
+                    function () { orientation.walkBack(); });
+            }
+            if (cognitive && settings) {
+                addCommand("reminder.new", "New reminder", "Orientation",
+                    "A note to yourself, kept in this browser.",
+                    function () {
+                        settings.editReminder(store ? store.get("room") : null);
+                    });
+                addCommand("reminder.list", "Reminders and tasks", "Orientation",
+                    "Everything you have asked to be reminded about.",
+                    function () { settings.openReminders(); });
+                addCommand("session.resume", "What did I miss", "Orientation",
+                    "A short summary of where you left off.",
+                    function () {
+                        var card = cognitive.resumeCard(
+                            !!(store && store.get("room") && store.get("room").name)
+                        );
+                        announcer.announce(
+                            card.lines.length
+                                ? card.lines.join(" ")
+                                : "Nothing saved from last time.",
+                            { category: "system", priority: "important" }
+                        );
+                    });
+            }
+
+            /* Comfort.  A.47, A.48.
+
+               Both are toggles the player owns. Neither is ever changed by the
+               game, and neither hides anything from the transcript -- they
+               change what interrupts you and what is on screen, not what
+               happened. */
+            addCommand("focus.toggle", "Focus mode", "Comfort",
+                "Hide everything except the game text and your input.",
+                function () { setFocusMode(!focusModeIsOn()); });
+            if (accessibility && accessibility.preferences) {
+                addCommand("quiet.toggle", "Quiet mode", "Comfort",
+                    "Stop routine announcements. Anything important still " +
+                    "gets through, and nothing is removed from the transcript.",
+                    function () {
+                        var preferences = accessibility.preferences;
+                        var now = preferences.value("cognitive.quietMode", false);
+                        preferences.update({ cognitive: { quietMode: !now } });
+                        announcer.announce(
+                            now ? "Quiet mode off." : "Quiet mode on.",
+                            { category: "system", priority: "important" }
+                        );
+                    });
+            }
+
             /* Session */
             if (commandQueue) {
                 addCommand("queue.cancel", "Stop queued commands", "Session",
@@ -1768,6 +1995,74 @@
             addCommand("console.focus", "Focus the command input", "Session",
                 "Put the cursor back in the game input.",
                 function () { inputEl.focus(); });
+        }
+
+        /*
+         * Universal search sources.  A11Y-COG-006.
+         *
+         * Registered after the commands so that a query searches both at once.
+         * The point is that a player who half-remembers something does not
+         * have to work out *which panel* it is in before they can look for it
+         * -- reconstructing that is exactly the recall this replaces.
+         */
+        if (palette) {
+            if (notes) {
+                palette.registerSource(function (query) {
+                    var needle = String(query).toLowerCase();
+                    return noteSnapshot.filter(function (note) {
+                        return (note.title || "").toLowerCase().indexOf(needle) !== -1 ||
+                            (note.body || "").toLowerCase().indexOf(needle) !== -1;
+                    }).slice(0, 8).map(function (note) {
+                        return {
+                            id: "note:" + note.id,
+                            label: note.title || note.subjectName || "Note",
+                            group: "Your notes",
+                            description: (note.body || "").slice(0, 80),
+                            run: function () { editNote(note); }
+                        };
+                    });
+                });
+            }
+
+            if (cognitive) {
+                palette.registerSource(function (query) {
+                    var needle = String(query).toLowerCase();
+                    return cognitive.all().filter(function (item) {
+                        return item.text.toLowerCase().indexOf(needle) !== -1;
+                    }).slice(0, 8).map(function (item) {
+                        return {
+                            id: "reminder:" + item.id,
+                            label: item.text,
+                            group: item.kind === "task" ? "Your tasks" : "Your reminders",
+                            description: item.completed ? "Done" : item.trigger,
+                            run: function () {
+                                if (settings) { settings.openReminders(); }
+                            }
+                        };
+                    });
+                });
+            }
+
+            if (canonicalLog && review) {
+                palette.registerSource(function (query) {
+                    var needle = String(query).toLowerCase();
+                    return canonicalLog.all().filter(function (event) {
+                        return (event.originalText || "").toLowerCase()
+                            .indexOf(needle) !== -1;
+                    }).slice(-8).reverse().map(function (event) {
+                        return {
+                            id: "event:" + event.id,
+                            label: (event.originalText || "").slice(0, 90),
+                            group: "What happened",
+                            description: event.category || "",
+                            // Jumps in Review Mode rather than scrolling the
+                            // console, so the line is reachable even when a
+                            // display rule has since hidden it (E2).
+                            run: function () { review.jumpTo(event.id); }
+                        };
+                    });
+                });
+            }
         }
 
         /*
@@ -1816,6 +2111,20 @@
                     defaultBinding: "Ctrl+Shift+R",
                     paletteCommand: "review.toggle",
                     run: function () { review.toggle(); }
+                });
+            }
+
+            if (orientation) {
+                shortcuts.register({
+                    id: "orientation.reorient",
+                    label: "Where am I",
+                    // Ctrl+Shift+W: W for "where", and not Ctrl+W, which closes
+                    // the tab -- an accelerator for the lost that ended the
+                    // session would be a cruel joke.
+                    description: "Read back where you are and what you last did.",
+                    defaultBinding: "Ctrl+Shift+W",
+                    paletteCommand: "orientation.reorient",
+                    run: function () { reorientNow(); }
                 });
             }
 
@@ -1885,6 +2194,8 @@
             automationGroups: automationGroups,
             validator: validator,
             diagnostics: diagnostics,
+            orientation: orientation,
+            cognitive: cognitive,
             reloadTriggers: reloadTriggers,
             macros: macros,
             editMacro: editMacro,

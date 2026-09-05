@@ -62,6 +62,7 @@
     function createPalette(services) {
         var announce = services.announce || function () {};
         var commands = [];
+        var sources = [];
         var element = null;
         var input = null;
         var list = null;
@@ -93,6 +94,64 @@
             return command.id;
         }
 
+        /*
+         * Universal search.  A11Y-COG-006.
+         *
+         * A source turns a query into command-shaped results, so a player can
+         * find a note, a reminder or something that was said without first
+         * knowing which panel it lives in. Somebody who half-remembers "that
+         * thing about the manifest" should not have to reconstruct *where*
+         * they wrote it before they can look for it -- which is precisely the
+         * recall the feature exists to replace.
+         *
+         * Sources are searched only when there is a query. An empty palette
+         * lists what the client can *do*; dumping every note into it would
+         * bury the commands under the player's own data.
+         *
+         * Results are ordinary commands with a `run`, so nothing downstream --
+         * rendering, keyboard handling, announcement -- needs to know a source
+         * produced them.
+         */
+        function registerSource(source) {
+            if (typeof source !== "function") {
+                throw new Error("A palette search source must be a function.");
+            }
+            sources.push(source);
+            return sources.length;
+        }
+
+        function fromSources(query) {
+            if (!query) {
+                return [];
+            }
+            var found = [];
+            sources.forEach(function (source) {
+                var results;
+                try {
+                    results = source(query) || [];
+                } catch (err) {
+                    // A broken source hides itself rather than emptying the
+                    // palette. Search that returns nothing looks identical to
+                    // search that found nothing.
+                    return;
+                }
+                results.forEach(function (result) {
+                    if (result && result.label && typeof result.run === "function") {
+                        found.push({
+                            id: result.id || ("found:" + found.length),
+                            label: result.label,
+                            description: result.description || "",
+                            group: result.group || "Found",
+                            shortcut: null,
+                            when: function () { return true; },
+                            run: result.run
+                        });
+                    }
+                });
+            });
+            return found;
+        }
+
         function available() {
             return commands.filter(function (command) {
                 try {
@@ -104,7 +163,13 @@
         }
 
         function search(query) {
-            return available()
+            /*
+             * Sources are scored alongside commands rather than appended after
+             * them. A note whose title is an exact match should outrank a
+             * command that matches three scattered letters -- appending would
+             * bury the thing the player was actually looking for.
+             */
+            return available().concat(fromSources(query))
                 .map(function (command) {
                     var best = Math.max(
                         score(query, command.label),
@@ -228,6 +293,24 @@
             }
             opener = document.activeElement;
 
+            /*
+             * Let the caller refresh anything the search sources read.
+             *
+             * Some of what universal search covers -- notes above all -- lives
+             * in IndexedDB, and search must stay synchronous because it runs on
+             * every keystroke. So the shell keeps a snapshot and refreshes it
+             * here. A note saved a minute ago has to be findable; a cache that
+             * only filled at boot would be a search that quietly cannot see
+             * your most recent thought.
+             */
+            if (typeof services.onOpen === "function") {
+                try {
+                    services.onOpen();
+                } catch (err) {
+                    // Never let a stale cache stop the palette from opening.
+                }
+            }
+
             element = document.createElement("div");
             element.className = "aetos-palette-overlay";
 
@@ -308,6 +391,7 @@
 
         return {
             register: register,
+            registerSource: registerSource,
             open: open,
             close: close,
             toggle: toggle,

@@ -92,7 +92,7 @@ class TestCategoriesComeFromTheGame(TestCase):
         """
         for module in ("aetos.js", "events/review.js", "history.js"):
             source = _read(module)
-            for guess in ('/tell/', '/says/', '/whispers/', '"shout"'):
+            for guess in ("/tell/", "/says/", "/whispers/", '"shout"'):
                 self.assertNotIn(guess, source, "%s guesses at categories" % module)
 
 
@@ -324,3 +324,21 @@ class TestHistoryWidget(TestCase):
         start = SHELL.index('pipeline.observe("presentation", function () {')
         window = SHELL[start : start + 300]
         self.assertIn("historyRefreshers", window)
+
+    def test_the_scrolling_rows_region_is_keyboard_reachable(self):
+        """
+        Arrow keys scroll whatever has focus, so a scrolling region outside the
+        tab order cannot be scrolled by keyboard at all: the player can see
+        there is more and has no way to reach it.
+
+        Third instance of this defect in the client, and the third caught by
+        axe rather than by anyone reading the code -- it is invisible to
+        whoever tests with a mouse wheel. A focusable region also needs a name,
+        or it is announced as an unlabelled group.
+
+        """
+        start = HISTORY.index('rows.className = "aetos-history__rows"')
+        end = HISTORY.index("aetos-history__pager", start)
+        window = HISTORY[start:end]
+        self.assertIn('rows.setAttribute("tabindex", "0")', window)
+        self.assertIn('"aria-label", "Event history"', window)

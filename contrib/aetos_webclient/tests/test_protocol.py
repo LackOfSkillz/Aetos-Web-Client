@@ -274,9 +274,7 @@ class TestTheStoreKnowsEverySyncSection(TestCase):
             set: Section names the client store accepts.
 
         """
-        source = (
-            Path(AETOS_STATIC_DIR) / "aetos" / "js" / "store.js"
-        ).read_text(encoding="utf-8")
+        source = (Path(AETOS_STATIC_DIR) / "aetos" / "js" / "store.js").read_text(encoding="utf-8")
         block = source[source.index("var SECTIONS = [") : source.index("];")]
         return set(re.findall(r'"(\w+)"', block))
 
@@ -315,8 +313,7 @@ class TestTheStoreKnowsEverySyncSection(TestCase):
         self.assertEqual(
             missing,
             set(),
-            "build_sync sends %s but store.js discards them -- silently"
-            % sorted(missing),
+            "build_sync sends %s but store.js discards them -- silently" % sorted(missing),
         )
 
     def test_the_store_declares_no_section_the_server_never_sends(self):

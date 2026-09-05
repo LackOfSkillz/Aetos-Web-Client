@@ -234,9 +234,7 @@ class TestTheDatabaseSchemaTracksItsNamespaces(TestCase):
             str: Contents.
 
         """
-        return (
-            Path(AETOS_STATIC_DIR) / "aetos" / "js" / "storage.js"
-        ).read_text(encoding="utf-8")
+        return (Path(AETOS_STATIC_DIR) / "aetos" / "js" / "storage.js").read_text(encoding="utf-8")
 
     def test_the_version_matches_the_namespace_count(self):
         """
@@ -252,10 +250,52 @@ class TestTheDatabaseSchemaTracksItsNamespaces(TestCase):
 
         self.assertEqual(
             (len(namespaces), version),
-            (16, 2),
+            (17, 3),
             "the namespace list changed without a DB_VERSION bump -- existing "
             "players would get a database with no store for the new namespace",
         )
+
+    def test_an_open_connection_stands_aside_for_an_upgrade(self):
+        """
+        The other half of the version-bump hazard, found while adding
+        `reminders` in A5.
+
+        IndexedDB will not run an upgrade while any connection is still open on
+        the old version. A player with Aetos open in two tabs, who reloads one
+        after a release that added a namespace, gets a tab whose open never
+        completes -- so every local read hangs forever. No notes, no macros, no
+        aliases, no error and no message. It is indistinguishable from the
+        client having lost their data.
+
+        `onblocked` alone does not fix it: that rescues the tab doing the
+        upgrading, while the tab holding the old connection is what has to
+        yield.
+
+        """
+        source = self._storage_source()
+        self.assertIn("db.onversionchange = function () {", source)
+        start = source.index("db.onversionchange")
+        window = source[start : source.index("function tx(ns, mode)", start)]
+        self.assertIn("db.close();", window)
+
+    def test_a_blocked_open_is_distinguishable_from_refused_storage(self):
+        """
+        Both land on the memory backend, but they have completely different
+        fixes -- "close the other tab" versus "you are in private browsing" --
+        and a player told the wrong one goes looking in the wrong place.
+
+        """
+        source = self._storage_source()
+        start = source.index("request.onblocked")
+        window = source[start : source.index("});", start)]
+        self.assertIn("backend.blocked = true", window)
+        self.assertIn("isBlocked", source)
+
+    def test_the_privacy_panel_says_which_it_is(self):
+        settings = (Path(AETOS_STATIC_DIR) / "aetos" / "js" / "settings.js").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("Close the other tab and reload this one", settings)
 
     def test_the_upgrade_creates_only_missing_stores(self):
         """

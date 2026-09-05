@@ -19,6 +19,15 @@ from evennia.contrib.base_systems.aetos_webclient import constants, manifest
 class TestManifestDefaults(TestCase):
     """A pristine game with no Aetos settings at all."""
 
+    #: Cleared explicitly rather than assumed absent.
+    #:
+    #: These tests assert what a game that has configured *nothing* receives.
+    #: Read from the ambient settings, they instead assert something about
+    #: whichever game dir the suite happens to run in -- and they failed the
+    #: moment the lab game enabled a provider, which is precisely the
+    #: configuration a maintainer is most likely to have.
+    PRISTINE = {"AETOS_PROVIDERS": {}, "AETOS_FEATURES": {}}
+
     def test_declares_the_protocol_version(self):
         self.assertEqual(manifest.build_manifest()["protocol"], constants.PROTOCOL_VERSION)
 
@@ -28,7 +37,8 @@ class TestManifestDefaults(TestCase):
         nothing, so no widget appears for data that does not exist.
 
         """
-        features = manifest.build_manifest()["features"]
+        with override_settings(**self.PRISTINE):
+            features = manifest.build_manifest()["features"]
         self.assertTrue(features)
         self.assertFalse(any(features.values()))
 

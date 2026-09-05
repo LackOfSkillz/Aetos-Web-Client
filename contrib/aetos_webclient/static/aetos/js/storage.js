@@ -40,8 +40,9 @@
      * loses nothing.
      *
      * 1 -> 2: added `display_rules` (E2).
+     * 2 -> 3: added `reminders` (A5).
      */
-    var DB_VERSION = 2;
+    var DB_VERSION = 3;
 
     // Namespaces from blueprint section 13. Fixed here so that export, import,
     // the privacy panel and the clear operations can never drift apart.
@@ -58,6 +59,7 @@
         "map_notes",
         "map_pois",
         "display_rules",
+        "reminders",
         "themes",
         "keybindings",
         "preferences",
@@ -120,6 +122,25 @@
      * IndexedDB backend
      * ------------------------------------------------------------------ */
     function IndexedDbBackend(db) {
+        /*
+         * Stand aside when another tab needs to upgrade the schema.
+         *
+         * IndexedDB will not run an upgrade while any connection is still open
+         * on the old version. Without this handler, a player with Aetos open in
+         * two tabs who reloads one of them after a version that added a
+         * namespace gets a new tab whose open never completes -- so *every*
+         * local read hangs: no notes, no macros, no aliases, no error, no
+         * message. It looks exactly like the client having lost their data.
+         *
+         * Found the hard way while adding the `reminders` namespace in A5. The
+         * `blocked` fallback below is not enough on its own: it rescues the
+         * tab doing the upgrading, while the tab holding the old connection is
+         * what has to yield.
+         */
+        db.onversionchange = function () {
+            db.close();
+        };
+
         function tx(ns, mode) {
             return db.transaction([ns], mode).objectStore(ns);
         }
@@ -187,7 +208,20 @@
             // Private browsing and hardened settings can refuse or block the
             // open. Fall back rather than leaving the client broken.
             request.onerror = function () { resolve(MemoryBackend()); };
-            request.onblocked = function () { resolve(MemoryBackend()); };
+            /*
+             * Blocked means another tab still holds the old schema open.
+             *
+             * The memory fallback keeps this tab working, but it is working
+             * *without persistence* -- so it is flagged rather than swallowed.
+             * A player who writes a note into a client that quietly forgot how
+             * to save it has been failed twice: once by losing the note, and
+             * once by not being told.
+             */
+            request.onblocked = function () {
+                var backend = MemoryBackend();
+                backend.blocked = true;
+                resolve(backend);
+            };
         });
     }
 
@@ -282,6 +316,19 @@
             return withBackend(function (b) { return b.persistent; });
         }
 
+        /*
+         * Distinguishes "another tab is holding the old schema open" from
+         * "this browser refuses to store anything".
+         *
+         * Both end up on the memory backend, but they have completely
+         * different fixes: one is "close the other tab and reload", the other
+         * is "you are in private browsing". Telling a player the wrong one
+         * sends them looking in the wrong place.
+         */
+        function isBlocked() {
+            return withBackend(function (b) { return b.blocked === true; });
+        }
+
         /* --- Boot preferences ----------------------------------------- */
 
         // Only for values needed before the database opens. Everything else
@@ -315,6 +362,7 @@
             counts: counts,
             clearAll: clearAll,
             isPersistent: isPersistent,
+            isBlocked: isBlocked,
             getBootPreference: getBootPreference,
             setBootPreference: setBootPreference
         };

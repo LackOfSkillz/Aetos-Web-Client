@@ -633,6 +633,7 @@
             map_notes: "Map notes",
             map_pois: "Map points of interest",
             display_rules: "Display rules",
+            reminders: "Reminders and tasks",
             themes: "Themes",
             keybindings: "Keybindings",
             preferences: "Preferences",
@@ -641,16 +642,39 @@
 
         function openPrivacy() {
             storage.counts().then(function (counts) {
-                storage.isPersistent().then(function (persistent) {
+                var blocked = storage.isBlocked
+                    ? storage.isBlocked()
+                    : Promise.resolve(false);
+                Promise.all([storage.isPersistent(), blocked]).then(function (state) {
+                    var persistent = state[0];
+                    var isBlocked = state[1];
                     var body = document.createElement("div");
 
                     var explanation = document.createElement("p");
                     explanation.className = "aetos-dialog__description";
-                    explanation.textContent = persistent
-                        ? "Everything below is stored in this browser only. " +
-                          "It is never sent to the game server."
-                        : "This browser is not storing data (private mode or " +
-                          "blocked storage), so nothing here will survive the session.";
+                    /*
+                     * Three cases, not two.
+                     *
+                     * "Blocked by another tab" and "this browser refuses to
+                     * store anything" both land on the memory backend, but
+                     * they have completely different fixes -- and a player
+                     * told the wrong one goes looking in the wrong place.
+                     */
+                    if (persistent) {
+                        explanation.textContent =
+                            "Everything below is stored in this browser only. " +
+                            "It is never sent to the game server.";
+                    } else if (isBlocked) {
+                        explanation.textContent =
+                            "Aetos is open in another tab using an older version of " +
+                            "its local database, so this tab cannot save anything. " +
+                            "Close the other tab and reload this one -- nothing has " +
+                            "been lost.";
+                    } else {
+                        explanation.textContent =
+                            "This browser is not storing data (private mode or " +
+                            "blocked storage), so nothing here will survive the session.";
+                    }
                     body.appendChild(explanation);
 
                     var table = document.createElement("ul");
@@ -798,6 +822,178 @@
             picker.click();
         }
 
+        /* --- Reminders and tasks (A5) ------------------------------------ */
+
+        /*
+         * The player's own list.
+         *
+         * Every entry here was typed by them. Aetos does not add to this list,
+         * does not reorder it by what it thinks is urgent, and does not mark
+         * anything done on their behalf -- a memory aid that edits itself is a
+         * memory aid you cannot trust, and the person reaching for one is the
+         * last person who should have to audit it.
+         */
+        function openReminders() {
+            var cognitive = services.cognitive;
+            if (!cognitive || !dialog) {
+                return null;
+            }
+
+            var body = document.createElement("div");
+
+            var explanation = document.createElement("p");
+            explanation.className = "aetos-dialog__description";
+            explanation.textContent =
+                "Notes to yourself, kept in this browser. Aetos never adds one, " +
+                "and never sends them anywhere.";
+            body.appendChild(explanation);
+
+            var list = document.createElement("ul");
+            list.className = "aetos-privacy__list";
+            list.setAttribute("tabindex", "0");
+            list.setAttribute("aria-label", "Reminders and tasks");
+
+            var items = cognitive.all();
+            if (!items.length) {
+                var empty = document.createElement("p");
+                empty.className = "aetos-dialog__description";
+                empty.textContent = "Nothing saved yet.";
+                body.appendChild(empty);
+            }
+
+            items.forEach(function (item) {
+                var row = document.createElement("li");
+                row.className = "aetos-privacy__row";
+
+                var toggle = document.createElement("button");
+                toggle.type = "button";
+                toggle.className = "aetos-list__button";
+                toggle.textContent = item.text;
+                // Done state as a pressed button rather than a strikethrough,
+                // which is invisible to a screen reader and easy to miss.
+                toggle.setAttribute("aria-pressed", item.completed ? "true" : "false");
+                toggle.addEventListener("click", function () {
+                    cognitive.complete(item.id, !item.completed).then(function () {
+                        announce(item.completed ? "Reopened." : "Done.");
+                        openReminders();
+                    });
+                });
+                row.appendChild(toggle);
+
+                var where = document.createElement("span");
+                where.className = "aetos-privacy__count";
+                where.textContent = item.trigger === "here" && item.locationName
+                    ? "at " + item.locationName
+                    : item.trigger;
+                row.appendChild(where);
+
+                var drop = document.createElement("button");
+                drop.type = "button";
+                drop.className = "aetos-list__button";
+                drop.textContent = "Delete";
+                // Named, because "Delete" repeated down a list is
+                // indistinguishable when tabbed through out of context.
+                drop.setAttribute("aria-label", "Delete: " + item.text);
+                drop.addEventListener("click", function () {
+                    cognitive.remove(item.id).then(function () {
+                        announce("Deleted.");
+                        openReminders();
+                    });
+                });
+                row.appendChild(drop);
+
+                list.appendChild(row);
+            });
+            body.appendChild(list);
+
+            dialog.open({
+                title: "Reminders and tasks",
+                content: body,
+                submitLabel: "Close",
+                fields: [],
+                onSubmit: function () {}
+            });
+            return items;
+        }
+
+        function editReminder(room) {
+            var cognitive = services.cognitive;
+            if (!cognitive || !dialog) {
+                return null;
+            }
+            dialog.open({
+                title: "New reminder",
+                description:
+                    "Choose when it should come back to you: 'pinned' keeps it in " +
+                    "view, 'here' brings it up when you next enter this room, and " +
+                    "'next-session' holds it until you next connect.",
+                fields: [
+                    { name: "text", label: "Remind me", value: "" },
+                    { name: "trigger", label: "When (pinned, here, next-session)",
+                      value: "pinned" },
+                    { name: "kind", label: "Kind (reminder or task)", value: "reminder" }
+                ],
+                onSubmit: function (values) {
+                    var here = values.trigger === "here" ? (room || {}) : {};
+                    report(cognitive.save({
+                        text: values.text,
+                        trigger: values.trigger,
+                        kind: values.kind,
+                        locationId: here.id || null,
+                        locationName: here.name || null
+                    }), "Reminder");
+                }
+            });
+            return true;
+        }
+
+        /* --- Reorient Me (A5) -------------------------------------------- */
+
+        /*
+         * The same facts the announcer speaks, on screen.
+         *
+         * Shown as well as spoken because "where am I" is not only a screen
+         * reader question -- somebody who looked away for two minutes wants to
+         * read it, and a summary that exists only as speech is unavailable to
+         * anyone who has scrolled past it.
+         */
+        function openOrientation() {
+            var orientation = services.orientation;
+            if (!orientation || !dialog) {
+                return null;
+            }
+            var summary = orientation.reorient();
+
+            var body = document.createElement("div");
+            if (!summary.sections.length) {
+                var empty = document.createElement("p");
+                empty.className = "aetos-dialog__description";
+                empty.textContent = "Nothing is known yet.";
+                body.appendChild(empty);
+            }
+            summary.sections.forEach(function (section) {
+                var heading = document.createElement("h3");
+                heading.className = "aetos-dialog__subheading";
+                heading.textContent = section.title;
+                body.appendChild(heading);
+
+                var text = document.createElement("p");
+                text.className = "aetos-dialog__description";
+                // Same joiner as the spoken summary, so the two cannot drift.
+                text.textContent = section.lines.join("; ");
+                body.appendChild(text);
+            });
+
+            dialog.open({
+                title: "Where am I",
+                content: body,
+                submitLabel: "Close",
+                fields: [],
+                onSubmit: function () {}
+            });
+            return summary;
+        }
+
         return {
             editAlias: editAlias,
             editTrigger: editTrigger,
@@ -809,6 +1005,9 @@
             editGroup: editGroup,
             editDisplayRule: editDisplayRule,
             openPrivacy: openPrivacy,
+            openReminders: openReminders,
+            editReminder: editReminder,
+            openOrientation: openOrientation,
             exportProfile: exportProfile,
             importProfile: importProfile
         };

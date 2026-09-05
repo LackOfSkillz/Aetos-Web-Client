@@ -11,6 +11,196 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### A5 — Cognitive and orientation layer
+
+741 tests. Addendum A.36–A.51. [`notes/a5-cognitive-orientation.md`](notes/a5-cognitive-orientation.md)
+
+**Added**
+
+- **Reorient Me** (Ctrl+Shift+W). Reads back location, exits, who is present,
+  character state, target and the last few commands sent — spoken *and* shown.
+- **How I Got Here** and **Walk Back**. The trail is built from authoritative
+  room changes, never from typed movement: a player who walked into a wall has
+  not moved. Walking back sends ordinary movement commands through the ordinary
+  queue and stops wherever the game stops it, or wherever a step has no
+  unambiguous reverse.
+- **Reminders and tasks**, stored in the browser. Pin one, attach one to a
+  room, or hold one for the next session. A room reminder surfaces once per
+  visit, and the mark clears on leaving.
+- **Session resume**, labelled "Last known" until a sync arrives.
+- **Universal search**: the palette now searches notes, reminders and what has
+  been said, scored alongside its own commands. A history hit jumps in Review
+  Mode, so the line is reachable even when a display rule has hidden it.
+- **Focus Mode** (A.47) and a palette toggle for **Quiet Mode** (A.48), kept
+  separate because a calmer screen and fewer interruptions are different needs.
+- `reminders` storage namespace; `DB_VERSION` 2 → 3.
+
+**Hard rules encoded**
+
+- `A11Y-COG-002` — **no intention inference.** Aetos reports that you sent
+  `look at Renn`; it never reports that you were investigating Renn. A client
+  that guessed would be confidently wrong exactly when somebody was relying on
+  it, and that costs the trust as well as the time.
+- `A11Y-COG-005` — reminders are only ever created on request. Aetos never
+  invents one and never builds a checklist out of your behaviour.
+- Neither comfort mode can be set by the game.
+
+**Fixed**
+
+- **A schema upgrade could hang the entire client.** IndexedDB will not upgrade
+  while a connection is open on the old version, and Aetos never listened for
+  `versionchange` — so a player with two tabs open, reloading one after a
+  release that added a namespace, got a tab where every local read hung
+  forever, with no error. Indistinguishable from having lost their data. Fixed
+  by closing on `versionchange`; the privacy panel now also distinguishes
+  "blocked by another tab" from "this browser refuses to store anything",
+  because those have completely different fixes.
+- The reorientation summary joined a section's lines with a space, so it spoke
+  as one unparseable run-on phrase.
+- Ctrl+Shift+W spoke the summary while the palette entry spoke *and* showed it,
+  so a sighted player pressing the shortcut saw nothing happen.
+- `scrollable-region-focusable` in the history widget — a scrolling region a
+  keyboard user could not scroll. Pre-existing; third instance of this defect in
+  the client and the third caught by axe rather than by reading the code.
+- Two tests asserted facts about the *deployment* rather than about the code,
+  and so passed only in a game dir that had not installed Aetos.
+
+### E5 — Diagnostic reporting
+
+688 tests. Addendum C.17. [`notes/e5-diagnostics.md`](notes/e5-diagnostics.md)
+
+**Added**
+
+- A bug report a maintainer can act on: versions, browser, features, manifest
+  capabilities, widgets, connection state, recent event **types**, and recorded
+  errors.
+- Optional `AETOS_DIAGNOSTICS` setting, letting a game include provider class
+  names — its own internals, so its own decision. Off by default.
+
+**Excluded by construction**
+
+- The report is assembled from a fixed list of sources, none of which is the
+  local data store, so there is no path by which a note reaches it.
+- Accessibility preferences are excluded deliberately: a report saying
+  `screenReader: true` would disclose a disability to whoever reads the issue,
+  and nobody should have to choose between reporting a bug and keeping that to
+  themselves.
+- Nothing is sent. `issueUrl()` returns a URL and does not open it.
+
+### E4 — Unified validator
+
+667 tests. [`notes/e4-unified-validator.md`](notes/e4-unified-validator.md)
+
+**Added**
+
+- One validator across triggers, aliases, timers, scripts, display rules and
+  macros. Six would give six different answers to the same question, and a
+  player told once that a pattern is dangerous should not have to discover it
+  again in a different dialog.
+- Findings report counts and messages only — never patterns or commands — so
+  they are safe to include in a diagnostic report.
+
+### E3 — Automation groups
+
+637 tests. [`notes/e3-automation-groups.md`](notes/e3-automation-groups.md)
+
+**Added**
+
+- One switch for a set of related automation. A rule runs only when both it and
+  its group are enabled; turning a group on never re-enables a rule the player
+  switched off themselves.
+- The group list states how many rules each group currently suppresses, because
+  "I turned it off" and "my group turned it off" have completely different
+  fixes and a rule that silently does nothing is indistinguishable from a rule
+  that is broken.
+
+### E2 — Non-destructive presentation rules
+
+615 tests. [`notes/e2-presentation-rules.md`](notes/e2-presentation-rules.md)
+
+**Added**
+
+- Highlight, substitute, filter and collapse rules. Presentation only: they
+  produce metadata describing how a line should look and cannot touch the
+  record, the store, or what a trigger saw.
+- `display_rules` storage namespace; `DB_VERSION` 1 → 2.
+
+**Gate proven live**
+
+- A filtered line is not drawn, and is still logged, still seen by automation,
+  and still searchable in history.
+
+### M17 — Rich chat, event history and Review Mode
+
+593 tests. Absorbs A4. [`notes/m17-history-review.md`](notes/m17-history-review.md)
+
+**Added**
+
+- A filterable event history reading the canonical log, so a line hidden by a
+  display rule is still reachable.
+- **Review Mode**: pause announcements and read back, with jump-to-previous and
+  jump-to-next by category. Leaving summarises what arrived rather than
+  replaying it.
+- **Announcement flood control**: during a burst, a screen reader gets a
+  summary rather than fifty individual interruptions — except for categories
+  that are never aggregated, such as tells.
+
+### E1 — Capture and replay
+
+560 tests. [`notes/e1-capture-replay.md`](notes/e1-capture-replay.md)
+
+**Added**
+
+- Session capture to JSONL and replay through `pipeline.ingest` — the same seam
+  the websocket uses. There is deliberately no second path: a harness that
+  exercises different code from production tests the harness.
+
+**Gate proven live**
+
+- A captured sequence reproduced an identical state snapshot with no server
+  running.
+
+### E0 — Event pipeline contract
+
+534 tests. **Blocked M17, and did.** [`notes/e0-event-pipeline.md`](notes/e0-event-pipeline.md)
+
+**Added**
+
+- A fixed, frozen stage order — validate, normalize, state, log, automation,
+  presentation, announce — with only `state` and `log` permitted to write.
+- A canonical log every later feature reads from, bounded, handing out copies.
+
+**Gate proven live**
+
+- Against a deliberately hostile presenter that tried to mutate the event.
+
+### A3 — Accessible map completion
+
+508 tests. Retrofits M9. [`notes/a3-accessible-map.md`](notes/a3-accessible-map.md)
+
+**Fixed**
+
+- The search box rebuilt the whole widget on every keystroke and then called
+  `focus()`. Restructured to a stable skeleton — `A11Y-FOCUS-005`.
+
+### A2 — Current State View and semantic values
+
+486 tests. Retrofits M8 and M16. [`notes/a2-current-state-view.md`](notes/a2-current-state-view.md)
+
+**Added**
+
+- One widget answering *what is true right now*, degrading section by section
+  so a missing widget means less to say rather than an error.
+
+### A1 — Widget accessibility contract
+
+484 tests. Retrofits M6 and M7. [`notes/a1-widget-contract.md`](notes/a1-widget-contract.md)
+
+**Added**
+
+- Every widget declares an accessibility contract; registration refuses one
+  that does not. Three refusal cases verified live.
+
 ### Addendum A — accessibility becomes architectural
 
 **Added**
