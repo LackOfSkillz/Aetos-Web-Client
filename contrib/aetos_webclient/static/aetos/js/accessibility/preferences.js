@@ -83,6 +83,21 @@
             conflictWarnings: true
         },
 
+        /*
+         * Pointer and motor access.  A.57.
+         *
+         * Its own group rather than tacked onto `keyboard`, because a swipe is
+         * not a keystroke and the distinction matters to whoever reads this
+         * next.
+         *
+         * Every gesture duplicates a palette command, so switching them off
+         * costs nothing but the shortcut -- which is exactly why it is safe to
+         * offer, and why the default can be on.
+         */
+        pointer: {
+            gestures: true
+        },
+
         cognitive: {
             reorientEnabled: true,
             orientationChecklist: "manual",

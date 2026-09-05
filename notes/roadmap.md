@@ -107,7 +107,7 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [ ] M17  Rich chat + event history
 [x] M18  Audio + multimedia + captions  (absorbs A6)
 [x] M19  Themes + contrast validation (+ High Contrast ships in core)
-[~] M20  Mobile + responsive UI  (layout done; PWA + gestures remain)
+[x] M20  Mobile + responsive UI + PWA + gestures
 [ ] M21  Developer inspector + visual designer
 [ ] M22  Widget SDK
 [ ] M23  Server-described advanced UI manifest
@@ -514,8 +514,9 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] M19  Themes + contrast validation                  -- 830 py
 [x] A7   AAC architecture + simplified workspace       -- 885 py
          (A.94 human AAC review outstanding -- questions.md 3)
-[ ] M20  PWA + touch gestures                          <-- NEXT
-[ ] M21  Developer inspector
+[x] M20  PWA + touch gestures                          -- 940 py
+         (service worker unverified live -- lab-hazard-003)
+[ ] M21  Developer inspector                           <-- NEXT
 [ ] M22  Widget SDK  (documents the A.28 contract)
 [ ] M23  Server-described manifest  (+ A.76 importance_hint)
 [ ] M24  Reconnect hardening
@@ -1110,7 +1111,7 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [x] M18  Audio + multimedia + captions
 [x] M19  Themes + contrast validation
 [x] A7   AAC architecture + simplified workspace
-[ ] M20  PWA + touch gestures
+[x] M20  PWA + touch gestures
 [ ] E6   Mapper metadata + widget SDK hardening   (with M22, M23)
 [ ] M21..M29
 [ ] A8   Assistive-technology validation

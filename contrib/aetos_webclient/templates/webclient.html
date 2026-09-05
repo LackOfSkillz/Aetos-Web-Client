@@ -20,6 +20,22 @@ unmodified from Evennia's own static files, and the Portal is not involved.
 {% endcomment %}
 
 {% block styles %}
+    {% comment %}
+    The web app manifest, and the theme colour a browser paints its own chrome
+    with before any CSS runs.
+
+    Both point at URLs a game only has if it added Aetos's optional urls.py. A
+    missing manifest is a 404 the browser ignores silently and nothing else --
+    which is the intended behaviour, since the PWA is optional and a game that
+    did not opt in should get no part of it rather than a broken part.
+
+    The colour is stated literally rather than read from a token: it is consumed
+    before the stylesheet loads, so a variable would be undefined at the one
+    moment it matters. It matches --aetos-bg, and a test asserts they agree.
+    {% endcomment %}
+    <link rel="manifest" href="aetos-manifest.json" />
+    <meta name="theme-color" content="#14171c" />
+
     <link rel="stylesheet" type="text/css" media="screen" href={% aetos_static "aetos/css/ansi.css" %} />
     <link rel="stylesheet" type="text/css" media="screen" href={% aetos_static "aetos/css/aetos.css" %} />
     <link rel="stylesheet" type="text/css" media="screen" href={% aetos_static "aetos/css/accessibility.css" %} />
@@ -68,6 +84,8 @@ unmodified from Evennia's own static files, and the Portal is not involved.
     <script src={% aetos_static "aetos/js/character.js" %} type="text/javascript" charset="utf-8"></script>
     <script src={% aetos_static "aetos/js/state_view.js" %} type="text/javascript" charset="utf-8"></script>
     <script src={% aetos_static "aetos/js/history.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/pwa.js" %} type="text/javascript" charset="utf-8"></script>
+    <script src={% aetos_static "aetos/js/gestures.js" %} type="text/javascript" charset="utf-8"></script>
     <script src={% aetos_static "aetos/js/aac/concepts.js" %} type="text/javascript" charset="utf-8"></script>
     <script src={% aetos_static "aetos/js/aac/symbols.js" %} type="text/javascript" charset="utf-8"></script>
     <script src={% aetos_static "aetos/js/aac/board.js" %} type="text/javascript" charset="utf-8"></script>

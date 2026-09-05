@@ -11,6 +11,55 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### M20 — PWA shell and touch gestures
+
+940 tests. Addendum A.57. [`notes/m20-pwa-gestures.md`](notes/m20-pwa-gestures.md)
+
+**Added**
+
+- A service worker that caches the client's own static files and **nothing
+  else** — not the transcript, not a sync payload, not a tell. Enforced
+  structurally: the fetch handler declines anything that is not a same-origin GET
+  under two known asset prefixes, so there is no branch that could cache a
+  response from the game.
+- An optional `urls.py` a game includes to make the client installable. Optional
+  by construction — without it there is no PWA rather than a broken one.
+- Four touch gestures, each duplicating a palette command and none of them the
+  only way to do anything (A.57). Single pointer only; passive handlers so a
+  gesture can never block a scroll; thresholds set for a tremor rather than a
+  steady hand.
+- The privacy panel's "clear all data" now clears the cache too.
+
+**Deliberately not done**
+
+- **No offline mode.** A MUD is a live connection. The worker's value is that a
+  tunnel gets Aetos's reconnecting state instead of the browser's dinosaur — and
+  "works offline" is exactly the claim a PWA invites and would be false.
+- **No silent updates.** A new version waits and says nothing has changed yet.
+  Reloading under somebody mid-fight or mid-sentence on the communication board
+  would be a data-loss bug wearing a feature's clothes.
+- **No push notifications or background sync.** Both need a server-side
+  per-player subscription record, which blueprint 2.3 forbids.
+
+**Fixed — a defect that had been there since A0**
+
+- `Ctrl+K` named `palette.toggle` as the command it accelerates, and no such
+  command was ever registered. The A.23 rule was checked by asserting the string
+  `paletteCommand:` was present, which is spelling rather than substance. M20's
+  gesture guard found it within a minute of first running, because that one
+  checks the reference *resolves* against the live palette. Now a static test
+  requires every shortcut and gesture reference to resolve.
+- `gestures.js` accepted a `palette` service it never used; the wiring tripwire
+  caught it.
+
+**Not verified**
+
+- The service worker has never been seen to register: the lab browser refuses
+  all service workers, proven by serving the identical file from a second path.
+  Endpoints, headers and version substitution are verified; the lifecycle is not.
+  Scheduled for A8 — see
+  [lab-hazard-003](notes/lab-hazard-003-no-service-workers.md).
+
 ### A7 follow-up — symbol packs, and a correction
 
 895 tests. Prompted by Gary pointing out that free AAC symbol libraries exist.

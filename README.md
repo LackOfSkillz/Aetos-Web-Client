@@ -440,7 +440,7 @@ is served from your own host.
 ## What is built
 
 Roughly 10,900 lines of Python, 17,300 of JavaScript and 2,200 of CSS, with
-**885 Python tests** passing, plus hand-written browser checks and an axe-core
+**940 Python tests** passing, plus hand-written browser checks and an axe-core
 audit clean across every view — including the high-contrast and
 minimal-stimulation presets.
 
@@ -458,6 +458,8 @@ minimal-stimulation presets.
 | **In-client help** | `F1`, searchable, gated on your automation policy |
 | **Layout and workspaces** | Keyboard-operable editing, named arrangements |
 | **Responsive** | Phone, tablet, desktop and wide, measured from the container |
+| **Installable** | A PWA shell that caches the client and nothing you say or hear |
+| **Touch gestures** | Four swipes, each one a shortcut for a palette command and never the only way |
 
 ### Appears when your game exposes it
 
@@ -554,7 +556,8 @@ Colour never carries meaning alone. `innerHTML` is never used.
 | ~~M18~~ | ~~Audio, multimedia and captions~~ — **done** |
 | ~~M19~~ | ~~Themes, with contrast validation~~ — **done** |
 | ~~A7~~ | ~~AAC architecture and simplified workspace~~ — **done**; the AAC *claim* awaits human review (A.94) |
-| **M20** | **PWA shell and touch gestures — next** *(responsive layout done)* |
+| ~~M20~~ | ~~PWA shell and touch gestures~~ — **done**; the service worker is unverified in a real browser ([lab-hazard-003](notes/lab-hazard-003-no-service-workers.md)) |
+| **M21** | **Developer inspector — next** |
 | M21–M29 | Inspector, widget SDK, server-described manifest, and hardening |
 | **D0–D6** | **`AETOS_BINDINGS` and `evennia aetos discover` — the easy button above** |
 | E6 | Weighted map routing and widget SDK hardening |

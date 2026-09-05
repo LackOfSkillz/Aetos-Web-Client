@@ -386,7 +386,10 @@ class TestReachability(TestCase):
         pressed it saw nothing happen at all.
 
         """
-        self.assertEqual(SHELL.count("reorientNow();"), 2)
+        # Three callers now: the palette entry, the keyboard shortcut and the
+        # swipe. All three going through one function is the point -- an
+        # earlier draft had the shortcut speak without showing anything.
+        self.assertEqual(SHELL.count("reorientNow();"), 3)
         self.assertIn("function reorientNow()", SHELL)
 
     def test_the_summary_is_shown_as_well_as_spoken(self):

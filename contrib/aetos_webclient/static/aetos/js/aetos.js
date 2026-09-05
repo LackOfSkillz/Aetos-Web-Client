@@ -629,6 +629,49 @@
         }
 
         /*
+         * Progressive web app shell.  M20.
+         *
+         * Optional twice over: the game must have added Aetos's URLs for the
+         * worker to exist, and the browser must support one. Both absences are
+         * silent, because a player loses nothing they would notice -- the
+         * client works identically and simply reloads from the network.
+         */
+        var pwa = window.AetosPwa
+            ? window.AetosPwa.create({
+                announce: function (message, options) {
+                    announcer.announce(message, options);
+                }
+            })
+            : null;
+
+        if (pwa) {
+            pwa.start();
+        }
+
+        /*
+         * Touch gestures.  M20, A.57.
+         *
+         * Every one is a shortcut for a palette command, never the only way to
+         * do something. A gesture cannot be discovered, listed, rebound or
+         * announced, so a feature reachable only by swipe does not exist for
+         * anyone using a screen reader, a switch device, or a desktop.
+         */
+        var gestures = window.AetosGestures
+            ? window.AetosGestures.create({
+                /*
+                 * No palette here, deliberately. Whether a command exists is
+                 * checked at registration in the shell, where the palette
+                 * already is; passing it in as well would be a second route to
+                 * the same fact, and the wiring tripwire caught exactly that.
+                 */
+                preferences: accessibility ? accessibility.preferences : null,
+                announce: function (message, options) {
+                    announcer.announce(message, options);
+                }
+            })
+            : null;
+
+        /*
          * Picture communication.  A7.
          *
          * An AAC *architecture*, not reviewed AAC support -- A.94 requires a
@@ -1868,6 +1911,7 @@
                 orientation: orientation,
                 themes: themes,
                 symbols: symbolProvider,
+                pwa: pwa,
                 reloadTriggers: reloadTriggers,
                 gameName: gameName,
                 announce: function (message) { announcer.announce(message); }
@@ -2179,6 +2223,37 @@
                     function () { settings.editTheme(null); });
             }
 
+            /*
+             * Opening the palette, as a palette command.
+             *
+             * Circular-looking and genuinely needed. Ctrl+K has named
+             * `palette.toggle` as the command it accelerates since A0, and no
+             * such command existed -- so the shortcut pointed at nothing and
+             * the rule "every shortcut names its palette command" was satisfied
+             * in spelling only. M20's gesture guard found it, because that one
+             * checks the command *resolves* rather than that a string is
+             * present.
+             *
+             * It earns its place beyond tidiness: on a touch device there is no
+             * Ctrl+K, so the up-swipe needs a real command to duplicate.
+             */
+            if (palette) {
+                addCommand("palette.toggle", "Close the command palette", "Session",
+                    "Also opens it, from a swipe or a shortcut.",
+                    function () { palette.toggle(); });
+            }
+
+            if (pwa) {
+                addCommand("app.install", "Install Aetos", "Session",
+                    "Add this client to your device, so it opens like an app.",
+                    function () { pwa.install(); },
+                    function () { return pwa.canInstall(); });
+                addCommand("app.update", "Apply the waiting update", "Session",
+                    "Reload to use the new version. Nothing changes until you do.",
+                    function () { pwa.applyUpdate(); },
+                    function () { return pwa.updateAvailable(); });
+            }
+
             /* Session */
             if (commandQueue) {
                 addCommand("queue.cancel", "Stop queued commands", "Session",
@@ -2257,6 +2332,53 @@
                     });
                 });
             }
+        }
+
+        /*
+         * The gestures themselves.
+         *
+         * Deliberately few. A phone-sized screen has room for a handful of
+         * learnable movements, and a client with twelve of them has none --
+         * they stop being shortcuts and become a language to memorise.
+         *
+         * Registered only where the command they duplicate exists, so a game
+         * that forbids something never has a gesture for it.
+         */
+        if (gestures && palette) {
+            function addGesture(direction, label, command, run, when) {
+                if (!palette.commands().some(function (c) { return c.id === command; })) {
+                    return false;
+                }
+                gestures.register({
+                    direction: direction,
+                    label: label,
+                    paletteCommand: command,
+                    run: run,
+                    when: when
+                });
+                return true;
+            }
+
+            addGesture("up", "Command palette", "palette.toggle",
+                function () { palette.toggle(); });
+
+            if (review) {
+                addGesture("right", "Review mode", "review.toggle",
+                    function () { review.toggle(); });
+            }
+            if (orientation) {
+                addGesture("left", "Where am I", "orientation.reorient",
+                    function () { reorientNow(); });
+            }
+            if (commandQueue) {
+                // Down for stop: the one gesture somebody reaches for in a
+                // hurry, and the direction a hand falls naturally.
+                addGesture("down", "Stop queued commands", "queue.cancel",
+                    function () { commandQueue.cancel(); },
+                    function () { return commandQueue.isRunning(); });
+            }
+
+            gestures.listen(document);
         }
 
         /*
@@ -2395,6 +2517,8 @@
             themes: themes,
             symbols: symbolProvider,
             aac: aacBoard,
+            pwa: pwa,
+            gestures: gestures,
             reloadTriggers: reloadTriggers,
             macros: macros,
             editMacro: editMacro,

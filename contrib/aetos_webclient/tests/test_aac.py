@@ -724,8 +724,15 @@ class TestSymbolPackMappings(TestCase):
 
         for path in self._mappings_dir().glob("*.json"):
             mapping = json.loads(path.read_text(encoding="utf-8"))
-            for field in ("set", "name", "license", "attribution", "source",
-                          "path_template", "concepts"):
+            for field in (
+                "set",
+                "name",
+                "license",
+                "attribution",
+                "source",
+                "path_template",
+                "concepts",
+            ):
                 self.assertIn(field, mapping, "%s lacks %r" % (path.name, field))
             self.assertTrue(mapping["attribution"].strip())
 
@@ -741,8 +748,9 @@ class TestSymbolPackMappings(TestCase):
         for path in self._mappings_dir().glob("*.json"):
             mapping = json.loads(path.read_text(encoding="utf-8"))
             unknown = set(mapping["concepts"]) - known
-            self.assertEqual(unknown, set(), "%s maps unknown concepts %s"
-                             % (path.name, sorted(unknown)))
+            self.assertEqual(
+                unknown, set(), "%s maps unknown concepts %s" % (path.name, sorted(unknown))
+            )
 
     def test_the_mulberry_coverage_gap_is_documented_not_hidden(self):
         """
@@ -763,8 +771,11 @@ class TestSymbolPackMappings(TestCase):
         comment = " ".join(mapping.get("_comment", []))
         self.assertIn("COVERAGE IS PARTIAL", comment)
         for absent in ("yes", "no", "stop", "please"):
-            self.assertNotIn(absent, mapping["concepts"],
-                             "mulberry.json claims a %r symbol that does not exist" % absent)
+            self.assertNotIn(
+                absent,
+                mapping["concepts"],
+                "mulberry.json claims a %r symbol that does not exist" % absent,
+            )
 
 
 class TestPackImport(TestCase):

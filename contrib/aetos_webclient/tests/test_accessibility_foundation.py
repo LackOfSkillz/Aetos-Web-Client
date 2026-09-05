@@ -392,14 +392,48 @@ class TestNoFeatureHidesBehindAShortcut(TestCase):
         self.assertIn("must name the palette command it", SHORTCUTS)
 
     def test_every_registered_shortcut_names_one(self):
+        """
+        Counted against `shortcuts.register` blocks specifically.
+
+        The earlier version compared registrations with every `paletteCommand:`
+        anywhere in the shell, which broke at M20 when touch gestures started
+        declaring one too -- so it failed while both rules were being honoured.
+        The invariant was right; the way it was measured was not.
+
+        """
         source = SHELL
         registrations = source.count("shortcuts.register({")
         self.assertGreater(registrations, 0)
+
+        named = 0
+        position = 0
+        for _ in range(registrations):
+            position = source.index("shortcuts.register({", position) + 1
+            block = source[position : source.index("});", position)]
+            if "paletteCommand:" in block:
+                named += 1
         self.assertEqual(
             registrations,
-            source.count("paletteCommand:"),
+            named,
             "a shortcut was registered without naming its palette command",
         )
+
+    def test_every_registered_gesture_names_one_too(self):
+        """
+        M20 applies the same rule to touch gestures (A.57), for the same
+        reason: a gesture is invisible, and one with no visible equivalent is a
+        feature that does not exist for anyone using a screen reader, a switch
+        device or a desktop.
+
+        Every gesture goes through `addGesture`, which refuses to register one
+        whose palette command the palette does not actually have.
+
+        """
+        self.assertIn("function addGesture(direction", SHELL)
+        body = SHELL[SHELL.index("function addGesture(direction") :]
+        body = body[: body.index("gestures.listen(document)")]
+        self.assertIn("palette.commands().some", body)
+        self.assertIn("paletteCommand: command", body)
 
     def test_shortcuts_can_be_viewed_rebound_disabled_and_restored(self):
         for capability in (
@@ -574,3 +608,67 @@ class TestFocusIndicatorAndTargets(TestCase):
         block = A11Y_CSS[A11Y_CSS.index(".aetos-visually-hidden {") :]
         self.assertNotIn("display: none", block[:400])
         self.assertIn("clip-path", block[:400])
+
+
+class TestShortcutReferencesResolve(TestCase):
+    """
+    A shortcut may not name a palette command that does not exist.
+
+    The original rule (A.23) was checked by asserting a `paletteCommand:` key
+    was present, which is spelling rather than substance: `palette.toggle` was
+    named by Ctrl+K from A0 onwards and no such command was ever registered. It
+    took M20's gesture guard -- which checks against the live palette -- to find
+    it, a year later.
+
+    The point of the rule is that a player can find the feature in the palette
+    and learn its shortcut there. A dangling reference defeats that completely
+    while looking compliant.
+
+    """
+
+    def _registered_command_ids(self):
+        """
+        Every id passed to `addCommand`.
+
+        Returns:
+            set: Command ids the shell registers.
+
+        """
+        return set(re.findall(r'addCommand\("([\w.]+)"', SHELL))
+
+    def _referenced_command_ids(self):
+        """
+        Every id named by a shortcut or a gesture.
+
+        Returns:
+            set: Command ids something claims to accelerate.
+
+        """
+        return set(re.findall(r'paletteCommand: "([\w.]+)"', SHELL))
+
+    def test_every_shortcut_reference_resolves(self):
+        registered = self._registered_command_ids()
+        referenced = self._referenced_command_ids()
+        self.assertTrue(referenced, "no shortcut names a palette command")
+        dangling = referenced - registered
+        self.assertEqual(
+            dangling,
+            set(),
+            "shortcut(s) name palette commands that are never registered: %s" % sorted(dangling),
+        )
+
+    def test_every_gesture_reference_resolves(self):
+        """
+        Checked statically here and again at runtime by `addGesture`, which
+        refuses to register a gesture whose command the palette lacks.
+
+        """
+        registered = self._registered_command_ids()
+        gestures = set(re.findall(r'addGesture\("\w+", "[^"]+", "([\w.]+)"', SHELL))
+        self.assertTrue(gestures, "no gestures are registered")
+        dangling = gestures - registered
+        self.assertEqual(
+            dangling,
+            set(),
+            "gesture(s) name palette commands that are never registered: %s" % sorted(dangling),
+        )

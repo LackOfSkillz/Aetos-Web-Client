@@ -741,14 +741,30 @@
                                             "This deletes " + total + " stored item" +
                                             (total === 1 ? "" : "s") +
                                             " -- layouts, macros, notes, relationship " +
-                                            "tags and the rest. It cannot be undone. " +
-                                            "Your game account is not affected, and " +
-                                            "nothing belonging to other software is " +
-                                            "touched.",
+                                            "tags and the rest, plus any cached " +
+                                            "copy of the client itself. " +
+                                            "It cannot be undone. " +
+                                            "Your game account is not affected, " +
+                                            "and nothing belonging to other " +
+                                            "software is touched.",
                                         submitLabel: "Delete everything",
                                         fields: [],
                                         onSubmit: function () {
-                                            storage.clearAll().then(function () {
+                                            /*
+                                             * The service worker's cache goes
+                                             * too. A cache the panel does not
+                                             * clear is data a player was told
+                                             * they had deleted -- which is a
+                                             * worse failure than not offering
+                                             * to delete it at all.
+                                             */
+                                            var caches = services.pwa
+                                                ? services.pwa.clearCaches()
+                                                : Promise.resolve(0);
+                                            Promise.all([
+                                                storage.clearAll(),
+                                                caches
+                                            ]).then(function () {
                                                 announce("All Aetos data cleared.");
                                             });
                                         }
