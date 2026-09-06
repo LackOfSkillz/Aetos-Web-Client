@@ -54,7 +54,15 @@ from evennia.contrib.base_systems.aetos_webclient.discovery.roots import (  # no
     ScanRootError,
     approved_files,
 )
-from evennia.contrib.base_systems.aetos_webclient.discovery.schema import (  # noqa: F401
+# The grammar lives in `bindings`, not here.
+#
+# D0 defined it in this package because that is where it was being written, and
+# D1 moved it: the resolver is runtime code and discovery is a development tool,
+# so the live client depending on this package would have been backwards. The
+# dependency runs one way now -- discovery imports the binding schema, and
+# nothing in `bindings` imports discovery -- which also means the schema has one
+# definition rather than one on each side that can drift.
+from evennia.contrib.base_systems.aetos_webclient.bindings.schema import (  # noqa: F401
     BINDING_SLOTS,
     EXPRESSION_PATTERN,
     REJECTED_EXPRESSIONS,

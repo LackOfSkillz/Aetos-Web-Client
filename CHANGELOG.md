@@ -11,6 +11,47 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Added — a resource bar from settings alone, with no Python (D1)
+
+`AETOS_BINDINGS` declares *where* a value lives, and Aetos fetches it:
+
+```python
+AETOS_BINDINGS = {
+    "resources": {
+        "health": {"label": "Health", "value": "db.hp", "maximum": "db.hp_max"},
+    },
+}
+```
+
+No provider class, no import path, no file. Proved live against the lab game's
+real database with its resources provider removed.
+
+A binding is a **path, not an expression**: `db.name`, or `db.name.child` for a
+key inside a stored dict, and nothing else. The second level is a *mapping
+lookup* rather than `getattr`, which is what makes it safe by construction — a
+dict lookup on a dict cannot run game code, and traversing an arbitrary object
+would run the game's `__getattr__`. A value that has to be computed still wants a
+provider, and the error message says so.
+
+Errors are written for somebody who did not want to write Python. `db.hp()` is
+told it looks like a method call; `db.stats[0]` is told to use `db.stats.hp`;
+`hp` is told that `db.` is where `character.db.hp = 50` puts things. A test
+asserts no message ever contains a regular expression.
+
+**Precedence is custom > binding > default**, and **a binding switches its own
+feature flag on** — though an explicit `AETOS_FEATURES` entry wins in both
+directions, so a game can still turn the widget off on purpose.
+
+`resources` is served this way today; the other four slots validate and are
+suggested by discovery, and follow.
+
+### Changed — the binding grammar moved out of the discovery tool (D1)
+
+D0 defined it in `discovery/`, which is a development-time source scanner.
+Leaving it there would have made the live client import that scanner in order to
+read a setting. The dependency now runs one way, and a test walks the imports to
+keep it that way.
+
 ### Added — `evennia aetos discover` (D0)
 
 Putting a number on screen used to mean writing a provider class. The D-track's

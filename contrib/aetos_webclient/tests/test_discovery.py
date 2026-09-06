@@ -35,11 +35,11 @@ from evennia.contrib.base_systems.aetos_webclient import AETOS_STATIC_DIR
 from evennia.contrib.base_systems.aetos_webclient.discovery import (
     candidates as candidates_module,
 )
+from evennia.contrib.base_systems.aetos_webclient.bindings import schema
 from evennia.contrib.base_systems.aetos_webclient.discovery import (
     report,
     roots,
     runtime_scan,
-    schema,
     static_scan,
 )
 from evennia.contrib.base_systems.aetos_webclient.discovery.candidates import (
@@ -384,69 +384,6 @@ class TestTheScanStaysInsideTheGame(TestCase):
             second = roots.approved_files(gamedir=tmp)
         self.assertEqual(first, second)
         self.assertEqual(first, sorted(first))
-
-
-class TestTheGrammarIsAWhitelist(TestCase):
-    """
-    The security boundary of the whole D-track.
-
-    `AETOS_BINDINGS` is written by the game's own developer, so this is not a
-    defence against a hostile author. It is a defence against the resolver
-    becoming an expression evaluator, which is what happens the first time
-    somebody adds "just method calls" to make one game work.
-
-    """
-
-    def test_the_two_allowed_forms_are_allowed(self):
-        self.assertTrue(schema.is_valid_expression("db.hp"))
-        self.assertTrue(schema.is_valid_expression("db.stats.hp"))
-        self.assertTrue(schema.is_valid_expression("db._private"))
-
-    def test_every_rejected_form_is_rejected(self):
-        """
-        Addendum B.59's list, each with its own entry. A resolver that quietly
-        accepts one of these has reintroduced `eval` with extra steps, and the
-        failure would not show up in any output.
-
-        """
-        for expression, reason in schema.REJECTED_EXPRESSIONS.items():
-            self.assertFalse(
-                schema.is_valid_expression(expression),
-                "%r (%s) was accepted" % (expression, reason),
-            )
-
-    def test_the_pattern_is_anchored_at_both_ends(self):
-        """
-        An unanchored pattern matches the `db.hp` inside `db.hp.__class__` and
-        reports the whole string as valid. That is the mistake this grammar
-        exists to prevent, made in the grammar itself.
-
-        """
-        self.assertFalse(schema.is_valid_expression("db.hp.__class__"))
-        self.assertFalse(schema.is_valid_expression("xdb.hp"))
-        self.assertFalse(schema.is_valid_expression("db.hp.mp.sp"))
-
-    def test_a_non_string_is_refused_rather_than_coerced(self):
-        for value in (5, None, ["db.hp"], {"value": "db.hp"}):
-            self.assertFalse(schema.is_valid_expression(value))
-
-    def test_parsing_an_invalid_expression_raises(self):
-        """
-        Rather than returning a half-parsed result. A caller that ignores the
-        return value of a parse is the caller this exists to stop.
-
-        """
-        with self.assertRaises(ValueError):
-            schema.expression_parts("db.hp()")
-
-    def test_parsing_returns_the_attribute_names(self):
-        self.assertEqual(schema.expression_parts("db.hp"), ("hp",))
-        self.assertEqual(schema.expression_parts("db.stats.hp"), ("stats", "hp"))
-
-    def test_every_slot_the_schema_names_has_fields_declared(self):
-        for slot in schema.BINDING_SLOTS:
-            self.assertIn(slot, schema.BINDING_FIELDS)
-            self.assertTrue(schema.BINDING_FIELDS[slot]["required"])
 
 
 class TestTheRuntimeScanOnlyReads(TestCase):
@@ -828,11 +765,6 @@ class TestTheModelSaysWhatItIs(TestCase):
     def test_the_two_scans_say_why_neither_is_enough_alone(self):
         self.assertIn("brand-new game", _source("__init__.py"))
         self.assertIn("database rows", _source("runtime_scan.py"))
-
-    def test_the_grammar_records_what_is_deliberately_not_expressible(self):
-        source = _source("schema.py")
-        for excluded in ("Method calls", "Indexing", "Arithmetic", "Dunders", "Statements"):
-            self.assertIn(excluded, source)
 
     def test_confidence_is_words_rather_than_a_number(self):
         """

@@ -638,6 +638,10 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (`evennia aetos discover` needs nothing from Evennia;
          the binding grammar shipped accepting `db.__class__`,
          because a dunder is an identifier -- caught by its own test)
+[x] D1   Safe AETOS_BINDINGS foundation
+         (a health bar from a settings block, no class anywhere;
+         the second level is a dict lookup, never getattr, and the
+         security tests use an object that records being touched)
 [ ] M32  Upstream PR
 [ ] M33  Voice input + speech accessibility
 ```

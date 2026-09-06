@@ -143,17 +143,22 @@ class TestTheSettingsExamplesStillWork(TestCase):
         setting appears in this test the moment the code reads it.
 
         """
+        # Recursive.
+        #
+        # This listed the contrib root and then `providers/__init__.py` by hand,
+        # which is a list that goes stale the moment a setting is read from a new
+        # subpackage -- and D1 read `AETOS_BINDINGS` from `bindings/`, where the
+        # guard would not have looked. A test that silently stops covering things
+        # is worse than one that fails, because nobody finds out.
         read_by_code = set()
-        for path in CONTRIB_DIR.glob("*.py"):
+        for path in CONTRIB_DIR.rglob("*.py"):
+            if "tests" in path.parts:
+                # The tests name settings constantly, in `override_settings` and
+                # in assertions about the README itself.
+                continue
             read_by_code.update(
                 re.findall(r'getattr\(settings, "(AETOS_\w+)"', path.read_text(encoding="utf-8"))
             )
-        read_by_code.update(
-            re.findall(
-                r'getattr\(settings, "(AETOS_\w+)"',
-                (CONTRIB_DIR / "providers" / "__init__.py").read_text(encoding="utf-8"),
-            )
-        )
         self.assertTrue(read_by_code)
         for name in sorted(read_by_code):
             self.assertIn("`%s`" % name, README, "%s is not in the README" % name)
@@ -241,47 +246,74 @@ class TestNoSettingIsDocumentedThatNothingReads(TestCase):
     """
     The mirror image of the previous class, and a defect found the same way.
 
-    The README's integration section opened by telling a developer to declare
-    `AETOS_BINDINGS`. Nothing reads it. Following the documentation top to bottom
-    produced a settings file that did nothing, with no error -- M27's startup
-    checks deliberately do not warn about a setting no code consumes, because a
-    check for one would be a promise the code does not keep.
+    At M28 the README's integration section opened by telling a developer to
+    declare `AETOS_BINDINGS`, and nothing read it. Following the documentation
+    top to bottom produced a settings file that did nothing, with no error --
+    M27's startup checks deliberately do not warn about a setting no code
+    consumes, because a check for one would be a promise the code does not keep.
+
+    **D1 built the resolver, so the documentation and the code now agree**, and
+    these tests hold that from the other side: the example must be one the real
+    validator accepts, and the README must no longer say the setting is inert.
+
+    The principle did not change and the assertions inverted. That is what a
+    guard about documentation honesty looks like when the software catches up.
 
     """
 
-    def test_bindings_is_not_offered_as_something_to_configure(self):
+    def test_the_bindings_example_is_one_that_actually_works(self):
         """
-        It may be *mentioned* -- the design exists and hiding it would be its own
-        kind of dishonesty -- but not as a copyable example.
+        This test has now been true in both directions, which is the useful
+        thing about it.
+
+        At M28 it asserted the README must *not* show an `AETOS_BINDINGS`
+        example, because nothing read the setting and a copyable example was a
+        promise the code did not keep. D1 built the resolver, so the same
+        principle now requires the opposite: the setting works, hiding it would
+        be its own dishonesty, and the example has to be one the validator
+        accepts.
+
+        So the example is parsed and run through the real validator rather than
+        eyeballed. A README example that the shipped code would refuse is the
+        worst kind, because it is the first thing anybody copies.
 
         """
-        for block in _python_blocks(README):
-            self.assertNotIn(
-                "AETOS_BINDINGS",
-                block,
-                "the README shows an AETOS_BINDINGS example; nothing reads it",
+        import ast
+
+        from evennia.contrib.base_systems.aetos_webclient import bindings
+
+        examples = [
+            block for block in _python_blocks(README) if "AETOS_BINDINGS" in block
+        ]
+        self.assertTrue(examples, "the README no longer shows how to use AETOS_BINDINGS")
+
+        for block in examples:
+            tree = ast.parse(block)
+            assignment = next(
+                node
+                for node in tree.body
+                if isinstance(node, ast.Assign)
+                and getattr(node.targets[0], "id", None) == "AETOS_BINDINGS"
             )
+            declared = ast.literal_eval(assignment.value)
+            # Raises if the README example would be refused at startup.
+            bindings.validate_bindings(declared, error_class=bindings.AetosBindingError)
 
-    def test_where_it_is_mentioned_it_is_marked_as_doing_nothing(self):
+    def test_it_no_longer_claims_the_setting_does_nothing(self):
         """
-        This checked for the literal phrase "Not yet built", and D0 broke it by
-        making the note more accurate: discovery now exists and the resolver does
-        not, so "not yet built" was itself wrong.
+        The previous version of this test required the README to say plainly
+        that `AETOS_BINDINGS` does nothing. It did, and that was right while it
+        was true.
 
-        Rewritten to assert the *claim* rather than the wording. What must be
-        true is that the paragraph mentioning `AETOS_BINDINGS` says plainly that
-        setting it does nothing -- which survives whatever the paragraph is
-        called next time, and is the thing a developer would be misled by.
+        Stale documentation that undersells is still stale. A developer reading
+        "setting it does nothing at all" would write a provider class they no
+        longer need.
 
         """
-        self.assertIn("AETOS_BINDINGS", README)
         start = README.index("AETOS_BINDINGS")
-        paragraph = README[max(0, start - 400) : start + 400]
-        self.assertIn(
-            "does nothing",
-            paragraph,
-            "the README mentions AETOS_BINDINGS without saying it does nothing",
-        )
+        paragraph = README[max(0, start - 600) : start + 600]
+        self.assertNotIn("does nothing", paragraph)
+        self.assertNotIn("Not yet built", paragraph)
 
     def test_the_command_the_readme_documents_exists(self):
         """
@@ -298,19 +330,21 @@ class TestNoSettingIsDocumentedThatNothingReads(TestCase):
         commands = list(CONTRIB_DIR.glob("management/commands/*.py"))
         self.assertIn("aetos.py", [path.name for path in commands])
 
-    def test_the_readme_does_not_promise_that_bindings_do_anything(self):
+    def test_the_preview_warning_is_gone_now_that_it_would_be_wrong(self):
         """
-        Discovery exists; the resolver does not. So the command prints a settings
-        block that nothing reads yet, and both the README and the command's own
-        output have to say so -- otherwise a developer pastes it, sees no change,
-        and has been handed the exact defect this project keeps finding, except
-        generated for them.
+        D0 shipped discovery before the resolver, so its output carried a
+        paragraph saying that pasting the block would change nothing. That was
+        the honest thing to print at the time and is a lie now.
+
+        The flag that produced it is deleted rather than set to True: a constant
+        with one possible value is a note about history wearing a switch's
+        clothes.
 
         """
         from evennia.contrib.base_systems.aetos_webclient.discovery import report
 
-        self.assertFalse(report.BINDINGS_ARE_LIVE)
-        self.assertIn("nothing reads AETOS_BINDINGS yet", report.PREVIEW)
+        self.assertFalse(hasattr(report, "BINDINGS_ARE_LIVE"))
+        self.assertNotIn("nothing reads AETOS_BINDINGS yet", report.HEADER)
 
 
 class TestTheGeneratedReferenceMatchesItsSource(TestCase):

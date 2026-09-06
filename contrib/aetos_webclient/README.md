@@ -161,6 +161,7 @@ appear.
 | `AETOS_FEATURES` | Which structured subsystems your game exposes | below |
 | `AETOS_AUTOMATION` | What the client is permitted to offer players | below |
 | `AETOS_UI` | Names, order and announcement thresholds for your resources and panels, from settings alone | below |
+| `AETOS_BINDINGS` | Where a value lives, so a resource needs no provider class | [Bindings](#bindings----a-resource-bar-with-no-python-at-all) |
 | `AETOS_DIAGNOSTICS` | Whether the developer inspector and capture tools are available | below |
 | `AETOS_CSP` | Extra sources for the client page's Content-Security-Policy | [Security](#security) |
 
@@ -246,24 +247,52 @@ themselves have to come from somewhere Aetos cannot see.
 
 Aetos never scans or guesses your game model during play.
 
-> **Half built: discovery works, bindings do not yet.** `AETOS_BINDINGS` is a
-> planned way to declare *where* a value lives rather than writing code to fetch
-> it. **Nothing reads it today, and setting it does nothing at all.**
->
-> What does work is the development-time helper that suggests them:
->
-> ```
-> evennia aetos discover
-> ```
->
-> It reads your typeclass source -- parsed, never imported, so running it cannot
-> have side effects -- and the attributes of characters that already exist, and
-> prints a suggested `AETOS_BINDINGS` block with the evidence for each line. It
-> changes nothing and never writes to your settings.
->
-> Until the resolver lands, that output is a preview: it shows you what Aetos can
-> find in your game, and a provider is still the way to put a value on screen.
-> The command says so in its own output, so nobody pastes it and waits.
+### Bindings -- a resource bar with no Python at all
+
+If your game already keeps the value on the character, you do not need a provider
+class. Declare where it lives:
+
+```python
+AETOS_BINDINGS = {
+    "resources": {
+        "health": {"label": "Health", "value": "db.hp", "maximum": "db.hp_max"},
+    },
+}
+```
+
+That is the whole integration. No class, no import path, no file.
+
+A binding is a **path, not an expression**. Aetos reads `db.name`, or
+`db.name.child` for a key inside a dict you stored in an attribute, and nothing
+else -- no method calls, no indexing, no arithmetic. If a value has to be
+*computed*, that is what a provider is for. The restriction is deliberate: a
+setting that could compute would be a small programming language living in
+settings.py, and there would be no way back from the first "just this one
+exception".
+
+**A binding switches its own feature flag on.** You do not also have to set
+`AETOS_FEATURES = {"resources": True}` -- declaring the binding said that. If you
+set the flag explicitly it wins, in both directions, so `False` still turns the
+widget off.
+
+**Precedence is custom > binding > default.** A provider class you wrote always
+wins over a binding for the same slot, so migrating between them is never
+ambiguous.
+
+Today `resources` is served this way; the other slots accept bindings, are
+checked at startup, and are served by providers until the declarative suite
+lands.
+
+#### Finding what to bind
+
+```
+evennia aetos discover
+```
+
+reads your typeclass source -- parsed, never imported, so running it cannot have
+side effects -- and the attributes of characters that already exist, then prints
+a suggested `AETOS_BINDINGS` block with the evidence for every line. It changes
+nothing and never writes to your settings; you paste what you want.
 
 ### Providers -- how to expose your game's data
 

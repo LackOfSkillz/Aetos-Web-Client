@@ -130,12 +130,37 @@ def get_providers():
             % (sorted(unknown), sorted(PROVIDER_SLOTS))
         )
 
+    """
+    PRECEDENCE: custom > binding > default.  (D1)
+
+    A game that wrote a provider class keeps it, whatever else it declared. A
+    binding fills a slot no class has claimed. The stock default fills the rest.
+
+    Stated in this order, in one place, because the alternative is a developer
+    migrating from a class to a declaration and getting both -- or worse, getting
+    the binding silently instead of the class they are still editing. The
+    resolution order is also the order somebody would guess: the more specific
+    thing wins.
+
+    Imported inside the function: `bindings` imports this package for its
+    provider base classes, and importing it back at module level would be a
+    cycle.
+    """
+    from evennia.contrib.base_systems.aetos_webclient import bindings
+
+    bound = bindings.bound_slots()
+
     resolved = {}
     for slot, default_class in DEFAULT_PROVIDERS.items():
         if slot in configured:
             resolved[slot] = _resolve_slot(slot, configured[slot])
-        else:
-            resolved[slot] = default_class()
+            continue
+        if slot in bound:
+            declarative = bindings.provider_for(slot)
+            if declarative is not None:
+                resolved[slot] = declarative
+                continue
+        resolved[slot] = default_class()
     return resolved
 
 

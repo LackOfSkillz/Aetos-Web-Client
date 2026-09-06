@@ -20,28 +20,16 @@ is noise, and noise is what gets pasted without reading.
 
 """
 
-from evennia.contrib.base_systems.aetos_webclient.discovery.schema import (
+from evennia.contrib.base_systems.aetos_webclient.bindings.schema import (
     is_valid_expression,
 )
 
-#: Whether anything reads `AETOS_BINDINGS` yet.
-#:
-#: False through D0, because the resolver is D1. This matters more than it looks:
-#: without it, discovery hands a developer a settings block, they paste it, and
-#: nothing happens -- which is precisely the "control that appears to work and
-#: changes nothing" defect this project keeps finding, except that this time the
-#: project would have generated it for them.
-#:
-#: D1 sets this True and the preview paragraph disappears. A constant rather than
-#: an import check, so that the day the resolver lands there is one obvious thing
-#: to flip.
-BINDINGS_ARE_LIVE = False
-
-PREVIEW = """\
-# NOTE: nothing reads AETOS_BINDINGS yet. Pasting this will not change your
-# game -- the resolver that turns these into live values is still to come. Run
-# this now to see what Aetos can find in your game; until the resolver lands,
-# a provider class is the way to put a value on screen."""
+# D0 carried a `BINDINGS_ARE_LIVE = False` flag here, and a paragraph warning
+# that pasting the output would not change anything, because the resolver did not
+# exist yet. D1 built it, so both are gone rather than left as a constant that is
+# never false: a flag with one possible value is a note about history wearing a
+# switch's clothes, and the note belongs in `notes/d1-binding-resolver.md`, where
+# it is.
 
 HEADER = """\
 # Suggested by `evennia aetos discover`. Nothing has been changed for you --
@@ -105,9 +93,6 @@ def render(candidate_set, problems=(), include_all=False):
         lines.append(NOTHING_FOUND)
     else:
         lines.append(HEADER)
-        if not BINDINGS_ARE_LIVE:
-            lines.append("#")
-            lines.append(PREVIEW)
         lines.append("")
         lines.append("AETOS_BINDINGS = {")
         lines.append('    "resources": {')

@@ -128,10 +128,34 @@ def get_features():
     Raises:
         AetosManifestError: If `AETOS_FEATURES` is malformed.
 
+    Notes:
+        **A binding implies its capability.**  (D1)
+
+        Declaring `AETOS_BINDINGS["resources"]` and then having to remember
+        `AETOS_FEATURES = {"resources": True}` as well is exactly the kind of
+        second step that makes a zero-code feature feel like it does not work.
+        The developer has already said what they want, twice would be a chore
+        and once is enough, so a bound slot switches its own flag on.
+
+        **An explicit setting always wins, in both directions.** The derivation
+        fills in a flag the game did not state; it never overrides one it did.
+        A game that declared bindings and then set `"resources": False` is
+        turning the widget off on purpose -- mid-migration, or behind a launch
+        date -- and a helpful override would be Aetos arguing with it.
+
     """
-    return _validate_policy(
-        getattr(settings, "AETOS_FEATURES", None), DEFAULT_FEATURES, "AETOS_FEATURES"
-    )
+    configured = getattr(settings, "AETOS_FEATURES", None)
+    stated = set(configured) if isinstance(configured, dict) else set()
+
+    features = _validate_policy(configured, DEFAULT_FEATURES, "AETOS_FEATURES")
+
+    from evennia.contrib.base_systems.aetos_webclient import bindings
+
+    for slot in bindings.bound_slots():
+        if slot in features and slot not in stated:
+            features[slot] = True
+
+    return features
 
 
 def build_manifest(character=None):
