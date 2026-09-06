@@ -11,6 +11,46 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Added — bindings for equipment, effects, target and actions (D2)
+
+The declarative path now covers all five slots, so a game can expose equipment
+slots, temporary effects, a current target and context actions from settings
+alone:
+
+```python
+AETOS_BINDINGS = {
+    "equipment": {"weapon": {"label": "Weapon", "value": "db.gear.weapon"}},
+    "effects": {"poison": {"label": "Poisoned", "value": "db.poison",
+                           "remaining": "db.poison_left", "kind": "harmful"}},
+    "target": {"name": {"label": "Target", "value": "db.target_name"},
+               "health": {"label": "Health", "value": "db.target_hp",
+                          "maximum": "db.target_max"}},
+    "actions": {"attack": {"label": "Attack", "command": "attack {target}"}},
+}
+```
+
+The gate is that **the client cannot tell which route supplied the data**: each
+payload is built twice, once from a binding and once from a hand-written
+provider, and compared after normalisation. A second code path into the client
+would be a second set of bugs, and the accessibility surface — thresholds,
+announcements, labels — is computed from the normalised shape.
+
+Four rules that look shared and are not: equipment keeps its empty slots while
+resources drop absent ones; an effect is active when its value is truthy, and
+zero is not; `target` has one reserved key, `name`, and no name means no target;
+and an action is an ordinary command with a single `{target}` placeholder —
+offering it never makes it legal.
+
+A binding still cannot declare thresholds, so a resource declared this way is
+never announced. That limit is now stated in the README rather than left to be
+found.
+
+### Removed — an `order` field that would have done nothing (D2)
+
+Dicts keep insertion order, so settings.py order is already screen order.
+Removed while it was still a draft, and generalised: a test now fails on any
+optional field the schema accepts that no provider reads.
+
 ### Added — a resource bar from settings alone, with no Python (D1)
 
 `AETOS_BINDINGS` declares *where* a value lives, and Aetos fetches it:

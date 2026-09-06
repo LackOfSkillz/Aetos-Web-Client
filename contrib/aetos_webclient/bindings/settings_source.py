@@ -74,11 +74,16 @@ def provider_for(slot):
             declarative implementation yet.
 
     Notes:
-        Only `resources` is implemented at D1, which is what its gate asks for:
-        a health bar from nothing but a settings block. The other four slots
-        validate, are reported by discovery, and are served by D2 -- until then
-        `provider_for` returns None for them and the registry falls through to
-        the default, which is the same client a game without bindings gets.
+        D1 served `resources` alone, which was its gate. D2 added the other four,
+        and this function did not change: it asks a table, so a slot is served
+        the moment it has a row and falls through to the stock default until it
+        does. That is the shape that made the second milestone cheap.
+
+        `None` is still a real answer, and deliberately kept as one. A future
+        slot -- `map`, say -- would be declarable and unserved for exactly as
+        long as it took to write its provider, and during that time a game gets
+        the same client it would have had anyway rather than something
+        half-built.
 
         Imported inside the function because `providers` imports this module to
         decide precedence, and importing it back at module level would be a

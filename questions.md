@@ -31,35 +31,29 @@ because the next person will believe it.
 
 ---
 
-## 2. Does voice (M33) ship before or after the upstream PR (M32)?
+## 2. ANSWERED -- voice ships after the upstream PR
 
-**Status:** genuinely undecided, and it now affects scheduling.
+**Gary, 2026-09-06:** *"Voice as a follow-up, after the PR."*
 
-The blueprint orders M33 *after* M32, but the PR description in section 76 lists
-voice control as part of what Aetos offers. Both cannot be true of the first
-submission.
+The blueprint's original ordering stands, and three things follow from it:
 
-Two coherent answers:
+- **The PR description must not claim voice control.** Blueprint section 76
+  lists it as part of what Aetos offers, and the first submission will not have
+  it. That sentence comes out of the PR text, and the README's "Still to come"
+  list keeps naming voice until it is built.
+- **A8 validates the interface that actually ships**, which is what makes a
+  human tester's pass worth their time. Validating an interface about to gain a
+  whole new input mode would have been validating something short-lived.
+- **M33 stays last**, after M32, exactly as the roadmap has it.
 
-- **Voice before the PR.** The submission matches its own description and voice
-  is reviewed with everything else. Costs a later, larger first PR.
-- **Voice as a follow-up.** Smaller PR, easier review. The PR description must
-  then not claim voice.
-
-This got sharper with Addendum A. Voice is a new **input mode**, and A8 is the
-assistive-technology validation stage. Validating an interface at A8 that is
-about to gain an entire new input mode means validating something short-lived.
-
-**What I need:** a decision, ideally before A8.
-
-**Meanwhile:** the roadmap records both readings and the new constraint. Nothing
-downstream is blocked yet.
+Nothing outstanding here.
 
 ---
 
-## 3. A8 needs two people I cannot supply
+## 3. A8 -- get it ready before the tester is asked
 
-**Status:** hard dependency on the release, recorded rather than worked around.
+**Status:** answered 2026-09-06. No longer a dependency on people -- a
+readiness bar I have to clear first. See the end of this entry.
 
 Addendum A.85 and A.101 both say automated testing cannot substitute for these,
 and I agree — nothing I can run replaces either.
@@ -71,9 +65,26 @@ and I agree — nothing I can run replaces either.
   concept organisation and symbol assumptions before the project claims AAC
   support at all (A.94).
 
-**What I need:** to know whether these people exist and are willing, because
-A.100 means the project cannot claim braille or AAC compatibility without them —
-and I would rather plan around their absence early than discover it at release.
+**Gary's answer, 2026-09-06:** *"Lets test everything we can and get it as ready
+for testing as we are able to. I want it to be ready for a human tester as much
+as we can before I ask her to test."*
+
+So this is **not blocked on people any more** -- it is blocked on readiness, and
+that is mine. The instruction changes what A8 means: a human tester's time is the
+scarcest thing this project will ever spend, and it must not be spent finding
+defects a machine could have found first.
+
+That makes **A8 readiness a work item rather than a waiting state.** Before she is
+asked:
+
+- everything in `docs/a8-tester-protocol.md` that can be automated, is;
+- the automated gates run at every viewport, text size and mode they should --
+  UI1 found the axe gate had been measuring a single viewport for its whole life,
+  and a serious violation was sitting behind that;
+- every defect already visible on the assistive-technology surface is fixed, so
+  what the protocol turns up is what only a person could have found;
+- I walk the protocol end to end myself first, so no step in it is wrong,
+  ambiguous or impossible before somebody follows it.
 
 **Update (A7 is now built, so the AAC review has a concrete subject).** The
 architecture exists and is deliberately not described anywhere as "AAC support".

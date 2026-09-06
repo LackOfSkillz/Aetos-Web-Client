@@ -279,9 +279,54 @@ widget off.
 wins over a binding for the same slot, so migrating between them is never
 ambiguous.
 
-Today `resources` is served this way; the other slots accept bindings, are
-checked at startup, and are served by providers until the declarative suite
-lands.
+#### The other four slots
+
+`equipment`, `effects`, `target` and `actions` are declared the same way.
+
+```python
+AETOS_BINDINGS = {
+    "equipment": {
+        "weapon": {"label": "Weapon", "value": "db.gear.weapon"},
+        "head": {"label": "Head", "value": "db.gear.head"},
+    },
+    "effects": {
+        "poison": {"label": "Poisoned", "value": "db.poison",
+                   "remaining": "db.poison_left", "kind": "harmful"},
+    },
+    "target": {
+        "name": {"label": "Target", "value": "db.target_name"},
+        "health": {"label": "Health", "value": "db.target_hp",
+                   "maximum": "db.target_max"},
+    },
+    "actions": {
+        "attack": {"label": "Attack", "command": "attack {target}"},
+    },
+}
+```
+
+Each has one rule worth knowing:
+
+- **Equipment keeps its empty slots.** "Nothing on your head" is information a
+  player needs. (A resource that will not resolve is *dropped*, because that
+  means the game never had the number — a bar reading 0 would say something
+  false.)
+- **An effect is shown when its value is truthy**, so `True` and a stack count
+  both work. Zero is not active: a countdown that reached 0 has expired.
+- **`target` has one reserved key, `name`.** It supplies the target's identity;
+  every other entry becomes one of the target's resources, which go through the
+  same normaliser as your own — so the two bars cannot disagree about
+  thresholds or rounding. No name, no target.
+- **An action is a label and an ordinary command**, with `{target}` replaced by
+  the name of the entity whose menu was opened. Offering an action does not make
+  it legal: the command travels the ordinary command path and your server decides,
+  exactly as if the player had typed it.
+
+#### What a binding cannot do
+
+**Declare thresholds.** A resource with no thresholds is never announced, so a
+game that wants spoken announcements at meaningful crossings still needs
+`AETOS_UI` or a provider. That is a real limit of the zero-code path rather than
+an oversight.
 
 #### Finding what to bind
 

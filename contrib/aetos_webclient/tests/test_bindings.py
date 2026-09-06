@@ -476,16 +476,35 @@ class TestPrecedence(TestCase):
             providers.get_providers()["resources"], bound_providers.BoundResourceProvider
         )
 
-    @override_settings(AETOS_BINDINGS={"effects": {"x": {"label": "X", "value": "db.x"}}})
-    def test_a_slot_without_a_declarative_provider_yet_falls_back(self):
+    @override_settings(
+        AETOS_BINDINGS={"effects": {"x": {"label": "X", "value": "db.x"}}},
+        AETOS_PROVIDERS={},
+    )
+    def test_a_slot_without_a_declarative_provider_falls_back(self):
         """
-        `effects` validates and is suggested by discovery today; D2 serves it.
-        Until then the slot gets the stock default rather than something
-        half-built.
+        A declarable slot with no provider yet gets the stock default rather
+        than something half-built.
+
+        This used `effects` as its example, because at D1 that slot really was
+        declarable and unserved. D2 served all five, so the example had to go --
+        and the *property* did not, because it is what makes adding the next
+        slot safe: it can be declared and validated for as long as it takes to
+        write its provider, and during that window a game gets the client it
+        would have had anyway.
+
+        Demonstrated by removing a row from the table rather than by finding a
+        slot that happens to be missing, so the test cannot be quietly retired
+        again by somebody filling a gap.
 
         """
         self.assertIn("effects", bindings.bound_slots())
-        self.assertIsNone(bindings.provider_for("effects"))
+
+        with mock.patch.dict(bound_providers.PROVIDERS, clear=False) as table:
+            del table["effects"]
+            self.assertIsNone(bindings.provider_for("effects"))
+            resolved = providers.get_providers()["effects"]
+            self.assertNotIsInstance(resolved, bound_providers.BoundEffectProvider)
+            self.assertEqual(resolved.get_effects(_Character(x=1)), [])
 
 
 class TestFeatureDerivation(TestCase):

@@ -58,7 +58,7 @@ BINDING_SLOTS = ("resources", "equipment", "target", "effects", "actions")
 #: wrote `"label": "db.hp"` meant the words -- an odd label, but theirs -- and a
 #: validator that guessed would refuse a legal declaration. A game that wrote
 #: `"value": "hp"` meant the attribute and is told so.
-EXPRESSION_FIELDS = frozenset({"value", "maximum", "minimum"})
+EXPRESSION_FIELDS = frozenset({"value", "maximum", "minimum", "remaining", "duration"})
 
 #: Fields a binding entry may carry, per slot. D0 defined this so the discovery
 #: report only ever suggests something the validator will accept; D1 is what
@@ -66,13 +66,24 @@ EXPRESSION_FIELDS = frozenset({"value", "maximum", "minimum"})
 BINDING_FIELDS = {
     "resources": {
         "required": ("label", "value"),
-        "optional": ("maximum", "minimum", "severity", "order"),
+        "optional": ("maximum", "minimum", "display", "severity"),
     },
-    "equipment": {"required": ("label", "value"), "optional": ("order",)},
-    "target": {"required": ("label", "value"), "optional": ("maximum",)},
-    "effects": {"required": ("label", "value"), "optional": ("order",)},
-    "actions": {"required": ("label", "command"), "optional": ("order",)},
+    "equipment": {"required": ("label", "value"), "optional": ("kind", "category")},
+    "target": {"required": ("label", "value"), "optional": ("maximum", "minimum", "kind")},
+    "effects": {
+        "required": ("label", "value"),
+        "optional": ("kind", "remaining", "duration", "description"),
+    },
+    "actions": {"required": ("label", "command"), "optional": ("kind",)},
 }
+
+# There is no `order` field, and the first draft had one.
+#
+# It would have done nothing. Python dicts keep insertion order, so the order in
+# settings.py is already the order on screen; `order` would have been a second
+# way to say the same thing, and a control that appears to work and changes
+# nothing is the defect this project keeps finding. Removed before it shipped
+# rather than after somebody relied on it.
 
 #: `db.name` or `db.name.child`, and nothing else.
 #:

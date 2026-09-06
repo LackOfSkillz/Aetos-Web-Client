@@ -120,7 +120,10 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [~] M30  Accessibility review  -- WITHDRAWN, see Addendum A below
 [ ] M31  Release candidate
 [ ] M32  Upstream PR
-[ ] M33  Voice input + speech accessibility        <-- NEW in rev 2
+[ ] M33  Voice input + speech accessibility
+         CONFIRMED after M32 (Gary, 2026-09-06). The PR description
+         must therefore not claim voice control -- blueprint s.76
+         lists it, and the first submission will not have it.        <-- NEW in rev 2
 ```
 
 ### Note on M33's position
@@ -625,8 +628,13 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [~] A8   Assistive-technology validation                -- 1249 py
          automated half DONE (axe x12 views, reflow, contrast);
          found a row of controls unreachable at 320px since M4.
-         Human half BLOCKED: braille tester + AAC reviewer
-         (questions.md 3). Scripts ready: docs/a8-tester-protocol.md
+         Human half is NOT blocked on people (Gary, 2026-09-06:
+         "get it as ready for testing as we are able to... before
+         I ask her to test"). It is gated on an A8-readiness pass:
+         automate what the protocol can automate, run every gate at
+         every viewport/scale/mode, fix what is already visible, and
+         walk the protocol myself before anyone follows it.
+         Scripts: docs/a8-tester-protocol.md
 [~] M30  WITHDRAWN -- superseded by the A-track (A.106)
 [~] M31  Release candidate  -- audit done, 1243 py; NOT releasable:
          A8 is the only blocker and it needs people, not code
@@ -642,8 +650,15 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (a health bar from a settings block, no class anywhere;
          the second level is a dict lookup, never getattr, and the
          security tests use an object that records being touched)
+[x] D2   Declarative provider suite
+         (all five slots; equality after the normaliser is the gate,
+         and an `order` field that would have done nothing was cut
+         before it shipped)
 [ ] M32  Upstream PR
 [ ] M33  Voice input + speech accessibility
+         CONFIRMED after M32 (Gary, 2026-09-06). The PR description
+         must therefore not claim voice control -- blueprint s.76
+         lists it, and the first submission will not have it.
 ```
 
 ## Per-milestone gate, from here on
