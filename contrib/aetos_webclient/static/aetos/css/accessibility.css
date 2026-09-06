@@ -148,38 +148,6 @@
  * simply grows.
  * ---------------------------------------------------------------------- */
 
-/*
- * The accessibility mode switch.  A10.
- *
- * This control is the way back from standard mode, so it is the one thing that
- * must not get smaller, quieter or harder to find when the accommodations are
- * off.
- *
- * Two things went wrong writing this, both worth leaving recorded:
- *
- * It first said `min-height: var(--aetos-target)`, which does nothing --
- * `--aetos-target` is deliberately `0px` on a fine pointer and only becomes
- * 44px under `pointer: coarse`.
- *
- * Then it said `min-height: 28px` in `aetos.css`, which also did nothing: the
- * rule below sets 24px at equal specificity from a stylesheet that loads later,
- * so it won. Measured both times rather than assumed, which is the only reason
- * either was noticed.
- *
- * It lives here, above the rule it has to beat, for that reason -- and because
- * this is where somebody looking for target sizes will look.
- */
-.aetos-root .aetos-statusbar__button--mode {
-    min-height: 32px;
-    font-weight: 600;
-}
-
-/* On, and saying so in more than a colour. */
-.aetos-root .aetos-statusbar__button--mode[aria-pressed="true"] {
-    border-color: var(--aetos-accent);
-    box-shadow: inset 0 -3px 0 0 var(--aetos-accent);
-}
-
 .aetos-root button,
 .aetos-root [role="button"],
 .aetos-root a[href] {
@@ -373,20 +341,37 @@
     margin: var(--aetos-space) 0;
 }
 
+/*
+ * A stacked row, not a two-column grid.
+ *
+ * It was `grid-template-columns: auto 1fr` with the explanation spanning both.
+ * That works for a checkbox and falls apart for the range, which inserts its
+ * percentage readout as a third child -- the readout took a grid cell and
+ * pushed the explanation somewhere that read as belonging to the next control.
+ * Seen in a screenshot rather than reasoned about.
+ *
+ * Label, then the control and its value on one line, then the explanation. The
+ * same shape whatever the control is.
+ */
 .aetos-a11y-panel__row {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: baseline;
-    gap: 4px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.aetos-a11y-panel__row .aetos-a11y-panel__checkbox,
+.aetos-a11y-panel__row .aetos-a11y-panel__select,
+.aetos-a11y-panel__row .aetos-a11y-panel__range {
+    align-self: flex-start;
 }
 
 .aetos-a11y-panel__label {
     font-weight: 600;
 }
 
-/* The explanation spans both columns, under the control it explains. */
-.aetos-a11y-panel__row .aetos-a11y-panel__detail {
-    grid-column: 1 / -1;
+/* The value readout sits with the control it belongs to. */
+.aetos-a11y-panel__value {
+    margin-left: 8px;
 }
 
 .aetos-a11y-panel__checkbox {
@@ -409,4 +394,111 @@
     margin: 4px 0 0;
     padding-left: 1.25rem;
     color: var(--aetos-text-dim);
+}
+
+/* ----------------------------------------------------------------------
+ * The mode switch.  A10.
+ *
+ * Top right, on its own, outside the navigation landmark. A track and a thumb
+ * rather than a plain button, because it is a two-state control and looking
+ * like one saves an explanation.
+ *
+ * The state is carried by the thumb's POSITION as well as by colour, so it
+ * survives being unable to tell the two colours apart. `aria-checked` carries
+ * it for everybody else.
+ * ---------------------------------------------------------------------- */
+
+.aetos-modeswitch {
+    display: flex;
+    align-items: center;
+}
+
+.aetos-root .aetos-statusbar__button--mode {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    /*
+     * 32px, not `var(--aetos-target)`.
+     *
+     * Two earlier versions of this floor did nothing at all. The token is
+     * deliberately `0px` on a fine pointer and only becomes 44px under
+     * `pointer: coarse`, so it was a no-op on a mouse; and a later `28px` in
+     * `aetos.css` lost to the 24px rule below, which sits in this file and
+     * therefore wins at equal specificity. Both were caught by measuring the
+     * rendered button -- it read 24px twice while the stylesheet said
+     * otherwise.
+     *
+     * This is the control somebody reaches for when they can no longer read the
+     * screen. It does not get to shrink with everything else.
+     */
+    min-height: 32px;
+    font-weight: 600;
+}
+
+/*
+ * `.aetos-root` on the front of that selector is load-bearing, and was dropped
+ * once while moving this block.
+ *
+ * `.aetos-statusbar__button--mode` is one class -- specificity (0,1,0). The
+ * target-size rule above is `.aetos-root button`, one class and one element --
+ * (0,1,1), which is higher. Being later in the file does not help; the 32px
+ * floor simply loses and the switch goes back to 24px. Third time this floor
+ * has silently done nothing.
+ */
+
+/*
+ * A flex track, not absolute positioning.
+ *
+ * The first version put the thumb at `position: absolute` and moved it with
+ * `left`. It never moved -- not from the rule, and not from an inline
+ * `left: 18px !important` either, so `left` was being ignored outright rather
+ * than losing a cascade. Rather than keep diagnosing a property that three
+ * separate attempts could not make take effect, this uses `margin-left: auto`,
+ * which is ordinary flex layout with nothing to override and nothing to
+ * position against.
+ *
+ * Measured moving 20px, which is the check that mattered and the one the
+ * previous version silently failed.
+ */
+.aetos-modeswitch__track {
+    display: inline-flex;
+    align-items: center;
+    width: 34px;
+    height: 18px;
+    padding: 0 2px;
+    box-sizing: border-box;
+    flex: none;
+    border: 2px solid var(--aetos-border);
+    border-radius: 999px;
+    background: var(--aetos-bg);
+}
+
+.aetos-modeswitch__thumb {
+    display: block;
+    width: 10px;
+    height: 10px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--aetos-text-muted);
+    /* Killed by the reduced-motion rules above, like every other transition. */
+    transition: margin-left 120ms ease, background 120ms ease;
+}
+
+.aetos-root .aetos-statusbar__button--mode[aria-checked="true"] .aetos-modeswitch__track {
+    border-color: var(--aetos-accent);
+}
+
+.aetos-root .aetos-statusbar__button--mode[aria-checked="true"] .aetos-modeswitch__thumb {
+    margin-left: auto;
+    background: var(--aetos-accent);
+}
+
+/*
+ * Windows High Contrast throws away background and border colours, so the
+ * thumb's position is all that is left. `currentColor` keeps it visible there.
+ */
+@media (forced-colors: active) {
+    .aetos-modeswitch__thumb {
+        background: currentColor;
+    }
 }

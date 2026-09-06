@@ -21,17 +21,63 @@ me", that is a result, and the honest thing it produces is a smaller claim.
 The client runs at whatever address the game gives you. Nothing needs
 installing.
 
-Two things worth knowing:
+Three things worth knowing:
 
 - **Everything is stored in your browser.** The game is never told what you
   turned on, and closing the tab loses nothing but a session.
-- **The Accessibility button in the bar at the top** opens the options panel;
-  `Ctrl+Shift+A` does the same. Turning it off hides the options and changes no
-  setting.
+- **There are two modes**, and a switch at the top right labelled *Accessible
+  mode* moves between them. `Ctrl+Shift+A` does the same from anywhere.
+  - **Standard mode** is the client as it comes.
+  - **Accessible mode** applies the accommodations you have chosen.
+  - Switching back to standard **stops them applying and erases nothing**, so
+    you can look and come back with one keystroke.
+- **The Options button beside the switch** opens the settings. It works in both
+  modes: standard mode offers text size, sound, gestures and orientation help,
+  and accessible mode adds contrast, motion, announcements and layout to that
+  list.
 
 Please record what you *tried to do* and what happened, not what you think we
 want to hear. A blunt "I gave up after two minutes" is more useful than a
 completed script.
+
+---
+
+## 0. Both modes, and the way back
+
+**Do this section first, in every technology you are testing.** It is the newest
+part of the client, the least tested, and the part most likely to strand
+somebody.
+
+The design bet is that the switch is safe to try because nothing is erased. That
+is a claim about how it *feels* to somebody who cannot read the screen, and only
+you can tell us whether it holds.
+
+```text
+ 1  Find the mode switch without being told where it is. How long?
+ 2  Is it obvious that it is a switch rather than a button?
+ 3  What does your screen reader announce when you focus it? When you flip it?
+ 4  Turn accessible mode on. Set two or three things you actually want.
+ 5  Turn it off. What were you told? Was it enough to know what changed?
+ 6  WITHOUT looking anything up: get back to accessible mode.
+ 7  Did everything you chose come back?
+ 8  Now do 4-6 again with the text size at its largest.
+ 9  And again with high contrast on.
+10  Open the Options in STANDARD mode. Is it clear why the list is shorter?
+11  Change the text size in standard mode. Does it stick after a reload?
+```
+
+**The questions that decide whether this design is right:**
+
+- At step 6, did you ever feel stuck? For how long?
+- Would you have found the way back if nobody had told you `Ctrl+Shift+A`?
+- Does "standard mode" feel like a reasonable place to be, or like something
+  broken?
+- Is "your settings are kept" believable from the interface, or did you have to
+  test it to trust it?
+- Would you rather the switch asked you to confirm before turning things off?
+
+**Everything below should be run in BOTH modes** unless it says otherwise. Where
+a task behaves differently in the two, that difference is the finding.
 
 ---
 
@@ -83,6 +129,7 @@ Work through these as a player would, in order. For each, record: **did it work*
 **Then, the questions that matter more than the list:**
 
 - Which of those took more keystrokes than it was worth?
+- Did any of them work in one mode and not the other?
 - Did focus ever end up somewhere you did not expect?
 - Was anything read out that you did not want, repeatedly?
 - Was anything *not* read out that you needed?
@@ -116,6 +163,8 @@ does not substitute for this, so please do not feel the need to work around not
 having a display — tell us and we will wait.
 
 Please note your display and its cell count.
+
+Run the list once in each mode.
 
 ```text
 1  Read a room description on the display.
@@ -192,9 +241,28 @@ is a complete and welcome result.
 
 ---
 
-## 7. Keyboard-only, mouse unplugged (A.88)
+## 7. Text size (A11Y-VIS-001, and a specific complaint)
 
-Physically unplug it, or turn it off. Then do tasks 1–14 above.
+Its own section because it is the thing people ask for most and the thing
+browser zoom does worst.
+
+```text
+1  Make the text bigger without opening any settings. (There are palette
+   commands for it -- did you find them?)
+2  Take it to its largest. Is anything cut off, overlapped or unreachable?
+3  At that size, can you still find and use the mode switch?
+4  Narrow the window to about a phone's width and repeat 2 and 3.
+5  Does the size survive switching modes? A reload?
+6  Compare with your browser's own zoom. Which do you prefer, and why?
+```
+
+We think browser zoom is a poor substitute because it scales the page rather
+than the client. Tell us if that is wrong.
+
+## 8. Keyboard-only, mouse unplugged (A.88)
+
+Physically unplug it, or turn it off. Then do tasks 1–14 above, **in both
+modes**.
 
 This has been reasoned about and never demonstrated — synthetic keystrokes in our
 test harness do not reach the page reliably, so nobody has actually driven this
@@ -207,8 +275,12 @@ client without a pointer. You would be the first.
 One line per task is plenty:
 
 ```text
-task | worked? | keystrokes | what surprised you
+task | mode | worked? | keystrokes | what surprised you
 ```
+
+The mode column matters: a task that works in one and not the other is the most
+useful kind of report we can get, because it means the two interfaces have
+drifted apart somewhere we did not look.
 
 And at the end, three sentences: what was worst, what was better than expected,
 and whether you would use it.

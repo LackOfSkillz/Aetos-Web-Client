@@ -74,9 +74,43 @@
         var schema = window.AetosAccessibilityPreferences || {};
         var host = null;
         var toggleButton = null;
+        var optionsButton = null;
+
+        /*
+         * Whether the options are on screen.
+         *
+         * Deliberately NOT a stored preference. The mode is a lasting choice
+         * about which interface you are in; having the settings open is a thing
+         * you are doing this minute. Persisting it would mean the panel came
+         * back every session for somebody who opened it once.
+         */
+        var optionsShown = false;
+
+        function isAccessible() {
+            return preferences.value("shell.mode") === "accessible";
+        }
 
         function isOpen() {
-            return preferences.value("shell.mode") === "accessible";
+            return optionsShown;
+        }
+
+        /*
+         * The options this mode can actually apply.
+         *
+         * Standard mode is not empty -- text size, sound, gestures and
+         * orientation help all apply there, because none of them is reverted by
+         * the switch. Showing the full list in standard mode would offer
+         * controls that do nothing; hiding the panel entirely would take text
+         * size away from the people most likely to need it.
+         */
+        function entriesForMode() {
+            var all = schema.GOVERNED || [];
+            if (isAccessible()) {
+                return all;
+            }
+            return all.filter(function (entry) {
+                return !entry.revertsInStandardMode;
+            });
         }
 
         /*
@@ -187,7 +221,7 @@
         }
 
         function buildControls(container) {
-            (schema.GOVERNED || []).forEach(function (entry, index) {
+            entriesForMode().forEach(function (entry, index) {
                 var id = "aetos-a11y-opt-" + index;
                 if (entry.kind === "boolean") {
                     container.appendChild(booleanControl(entry, id));
@@ -229,18 +263,37 @@
             }
             host.textContent = "";
             host.hidden = !isOpen();
+            if (optionsButton) {
+                // Shown in both modes: standard mode still has text size.
+                optionsButton.hidden = false;
+                optionsButton.setAttribute("aria-expanded", isOpen() ? "true" : "false");
+            }
             if (toggleButton) {
                 /*
-                 * `aria-pressed`, not `aria-expanded`. It switches which
-                 * interface you are in; revealing the panel is a consequence of
-                 * that rather than the point of it. A disclosure that also
-                 * changed the contrast of the page would be lying about what it
-                 * does.
+                 * `aria-checked` on a `switch`, not `aria-pressed` on a button
+                 * and not `aria-expanded` on a disclosure.
+                 *
+                 * It is a two-state control: a switch announces "on" and "off",
+                 * which is what this is. `aria-pressed` would say "pressed",
+                 * which describes the act rather than the state, and
+                 * `aria-expanded` would claim it merely reveals a panel -- while
+                 * it is in fact changing the contrast and type size of the whole
+                 * client.
                  */
-                toggleButton.setAttribute("aria-pressed", isOpen() ? "true" : "false");
+                /*
+                 * `isAccessible()`, not `isOpen()`.
+                 *
+                 * They were the same function until the options were split out
+                 * of the mode, and this line kept the old one -- so the switch
+                 * would have reported whether the settings panel was open
+                 * rather than which mode you were in. It reads correctly only
+                 * when both happen to agree, which is exactly how a defect like
+                 * this survives a quick look.
+                 */
+                toggleButton.setAttribute("aria-checked", isAccessible() ? "true" : "false");
                 toggleButton.setAttribute(
                     "title",
-                    isOpen()
+                    isAccessible()
                         ? "Accessible mode is on. Ctrl+Shift+A switches back."
                         : "Switch to accessible mode. Ctrl+Shift+A."
                 );
@@ -251,15 +304,20 @@
 
             var heading = document.createElement("h2");
             heading.className = "aetos-a11y-panel__heading";
-            heading.textContent = "Accessibility options";
+            heading.textContent = isAccessible()
+                ? "Accessible mode options"
+                : "Display options";
 
             var intro = document.createElement("p");
             intro.className = "aetos-a11y-panel__detail";
-            intro.textContent =
-                "Choose what you want. Each of these is separate -- there is no "
-                + "bundle to accept or refuse. Switching back to standard mode "
-                + "stops them applying and keeps every choice, so you can look "
-                + "and come back.";
+            intro.textContent = isAccessible()
+                ? "Choose what you want. Each of these is separate -- there is no "
+                    + "bundle to accept or refuse. Switching back to standard mode "
+                    + "stops them applying and keeps every choice, so you can look "
+                    + "and come back."
+                : "These apply in standard mode too. Turning on accessible mode "
+                    + "adds contrast, motion, announcement and layout options to "
+                    + "this list.";
 
             host.appendChild(heading);
             host.appendChild(intro);
@@ -292,8 +350,8 @@
          *   3. Nothing is erased, so the way back is one keystroke rather than
          *      a rebuild.
          */
-        function toggle() {
-            var next = !isOpen();
+        function setMode(wanted) {
+            var next = wanted === undefined ? !isAccessible() : !!wanted;
             var lost = preferences.activeAccommodations
                 ? preferences.activeAccommodations()
                 : [];
@@ -303,7 +361,8 @@
             if (next) {
                 announce(lost.length
                     ? "Accessible mode. " + lost.join(", ") + " back on."
-                    : "Accessible mode. Choose the options you want.");
+                    : "Accessible mode. The Options button beside the switch "
+                        + "chooses what it applies.");
             } else {
                 /*
                  * Say what stopped and how to undo it, in that order. Somebody
@@ -318,10 +377,66 @@
                     { priority: "important" });
             }
 
-            if (next && focusManager && focusManager.focusFirst) {
-                focusManager.focusFirst(host);
-            }
+            /*
+             * Switching the mode does not open the settings.
+             *
+             * It used to, and that made the switch read as "show me a panel of
+             * options" rather than as a mode control -- which is exactly how it
+             * was described back to me. Turning a mode on and configuring it are
+             * two things, and the switch does the first.
+             */
             return next;
+        }
+
+        /*
+         * Change the text size by a step, or reset it.
+         *
+         * Works in both modes, because `visual.scale` is not reverted by the
+         * switch. Clamped to the schema's own range so a repeated keystroke
+         * cannot walk it somewhere unreadable, and announced with the resulting
+         * percentage rather than "larger" -- somebody adjusting this cannot
+         * necessarily see the result.
+         *
+         * Args:
+         *     delta (number|null): The step, or null to reset to the default.
+         */
+        function adjustTextSize(delta) {
+            var bounds = (schema.RANGES && schema.RANGES["visual.scale"]) || [0.75, 2.5];
+            var next = 1;
+            if (delta !== null && delta !== undefined) {
+                next = (parseFloat(preferences.value("visual.scale")) || 1) + delta;
+                next = Math.min(bounds[1], Math.max(bounds[0], next));
+                next = Math.round(next * 100) / 100;
+            }
+            set("visual.scale", next);
+            render();
+            announce("Text size " + Math.round(next * 100) + " percent.");
+            return next;
+        }
+
+        /*
+         * Show or hide the options.
+         *
+         * Only meaningful in accessible mode, and the button that calls it is
+         * hidden in standard mode. Guarded anyway, because the palette command
+         * can reach it from anywhere.
+         */
+        function toggleOptions() {
+            // Does NOT switch the mode. Standard mode has options of its own,
+            // and quietly changing somebody's interface because they asked to
+            // see the settings would be the same conflation the switch itself
+            // just had removed.
+            optionsShown = !optionsShown;
+            render();
+            if (optionsShown) {
+                announce("Accessibility options shown.");
+                if (focusManager && focusManager.focusFirst) {
+                    focusManager.focusFirst(host);
+                }
+            } else {
+                announce("Accessibility options hidden. Nothing was changed.");
+            }
+            return optionsShown;
         }
 
         function attach(container, button) {
@@ -336,8 +451,13 @@
 
             toggleButton = button || null;
             if (toggleButton) {
-                toggleButton.setAttribute("aria-controls", PANEL_ID);
-                toggleButton.addEventListener("click", function () { toggle(); });
+                toggleButton.addEventListener("click", function () { setMode(); });
+            }
+
+            optionsButton = document.getElementById("aetos-accessibility-options");
+            if (optionsButton) {
+                optionsButton.setAttribute("aria-controls", PANEL_ID);
+                optionsButton.addEventListener("click", function () { toggleOptions(); });
             }
 
             // Re-render when anything else changes a preference this panel
@@ -350,7 +470,13 @@
 
         return {
             attach: attach,
-            toggle: toggle,
+            // `toggle` switches the MODE, which is what the shortcut and the
+            // switch both mean by it.
+            toggle: setMode,
+            setMode: setMode,
+            toggleOptions: toggleOptions,
+            adjustTextSize: adjustTextSize,
+            isAccessible: isAccessible,
             isOpen: isOpen,
             render: render
         };

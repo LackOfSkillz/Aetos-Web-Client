@@ -221,7 +221,11 @@
      * safely if its **default is the standard experience** -- so that reverting
      * removes an accommodation rather than imposing one.
      *
-     * Three here fail that test and are marked `false`:
+     * Four here are marked `false`. `visual.scale` is the odd one and the most
+     * important: being able to set the size of text is not an accommodation
+     * somebody opts into, it is a basic property of a text interface, so it is
+     * offered in *both* modes and survives the switch. The other three fail the
+     * test above:
      *
      *   `pointer.gestures` defaults to ON, so somebody with a tremor turns them
      *   OFF. Reverting would switch gestures back on for the person who most
@@ -247,10 +251,25 @@
         },
         {
             path: "visual.scale",
-            revertsInStandardMode: true,
+            /*
+             * NOT reverted, and offered in both modes.
+             *
+             * Gary: "one of the worst things is having to read tiny text with no
+             * way to just adjust the text size. having to zoom the browser is
+             * janky" -- and "that option should be in both modes".
+             *
+             * He is right, and the first version had this wrong. Being able to
+             * set the size of text is not an accommodation you opt into; it is
+             * a basic property of a text interface, and taking it away because
+             * somebody chose the standard client would be taking away the thing
+             * they most likely needed. Browser zoom is the fallback everybody
+             * already has and it reflows the whole page rather than the client.
+             */
+            revertsInStandardMode: false,
             kind: "range",
             label: "Text size",
-            detail: "Scales the whole interface, not only the text."
+            detail: "Scales the whole interface, not only the text. Available in "
+                + "both modes, and kept when you switch."
         },
         {
             path: "visual.motion",

@@ -391,30 +391,53 @@ and reduced-motion support are always present.
 - Game events never move focus. Dialogs trap focus and return it where they
   found it.
 
-### Two modes, and one control that switches them
+### Two modes, and two control panels
 
-The status bar has an **Accessibility** button (also `Ctrl+Shift+A`). It switches
-between the standard interface and an accessible one, rather than trying to be
-both at once.
+At the top right there is a switch labelled **Accessible mode** (also
+`Ctrl+Shift+A` from anywhere). It moves between two interfaces rather than trying
+to be both at once.
 
 **Standard mode is the client as it comes.** Nothing is compromised to
 accommodate anybody, because the accommodations are not applied.
 
-**Accessible mode applies what the player chose**, from the panel the button
-reveals. Every option is separate; there is no bundle to accept or refuse.
+**Accessible mode applies what the player chose.** Every option is separate;
+there is no bundle to accept or refuse.
 
 **Switching back to standard stops them applying and erases nothing.** That is
-what makes the switch safe to try: the way back is one keystroke and it restores
-the interface somebody built rather than an empty one. Three options are never
-reverted by the mode, because their *off* state is the accommodation — muting
-sound, turning gestures off, and orientation help.
+what makes the switch safe to try: the way back is one keystroke, and it restores
+the interface somebody built rather than an empty one. Leaving says so out loud,
+names what stopped, and gives the keystroke.
+
+Beside the switch is an **Options** button, and it works in both modes:
+
+| | Standard mode | Accessible mode |
+|---|---|---|
+| Text size | ✔ | ✔ |
+| Sound and mute | ✔ | ✔ |
+| Touch gestures | ✔ | ✔ |
+| Orientation help | ✔ | ✔ |
+| Contrast, motion, visual detail | | ✔ |
+| Announcement verbosity | | ✔ |
+| Quiet and focus modes | | ✔ |
+| Picture and word board | | ✔ |
+
+**Text size is in both, deliberately.** Being able to set the size of text is not
+an accommodation somebody opts into; it is a basic property of a text interface,
+and browser zoom scales the page rather than the client. It survives the mode
+switch, and `Larger text` / `Smaller text` are palette commands so nobody has to
+open a settings panel they cannot read.
+
+The four options in the left column are never reverted by the mode, because
+their *off* state is the accommodation: reverting mute would start playing sound
+at somebody, and reverting gestures would switch them back on for the person who
+turned them off.
 
 **None of this reaches the baseline.** Keyboard operation, focus management,
 landmarks, accessible names, the announcer and colour never carrying meaning
 alone are unconditional in both modes. A client that is only operable by keyboard
 when a box is ticked is not an accessible client with a toggle; it is an
-inaccessible client with an apology. The panel lists them, so somebody deciding
-whether to switch can see what was never off.
+inaccessible client with an apology. The panel lists them under "Always on", so
+somebody deciding whether to switch can see what was never off.
 
 ### What a player can turn on for themselves
 

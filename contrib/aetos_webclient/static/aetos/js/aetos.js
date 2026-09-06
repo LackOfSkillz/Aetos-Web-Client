@@ -1875,6 +1875,7 @@
                     sendCommand: function (text) { return sendCommand(text); }
                 });
                 registry.register(aacBoard);
+
             }
 
             if (window.AetosStateView) {
@@ -1935,6 +1936,31 @@
                     : null
             });
 
+            /*
+             * The word board follows its own preference.  A10.
+             *
+             * `aac.enabled` existed from A7 and **was read by nothing** -- the
+             * checkbox offering it changed a stored value and no behaviour,
+             * which is the "control that appears to work and changes nothing"
+             * defect this project keeps finding. Caught by looking at the
+             * screen: the board was still there in standard mode, where the
+             * mode says it should not be.
+             *
+             * Registered HERE rather than beside the widget, because `layout`
+             * does not exist yet at that point. `var` hoisting would have made
+             * the guard false at priming time and the subscription would simply
+             * never have been made -- the M21 shape, where a defensive check
+             * turns a loud failure into a silent nothing.
+             *
+             * Driven from the *effective* preferences, so standard mode hides
+             * it and accessible mode brings it back.
+             */
+            if (aacBoard && accessibility && accessibility.preferences) {
+                accessibility.preferences.subscribe(function (current) {
+                    applyBoardVisibility(current);
+                });
+            }
+
             var mainRegion = workspaceEl.querySelector('[data-aetos-region="main"]');
             if (mainRegion && consoleSection) {
                 mainRegion.appendChild(consoleSection);
@@ -1979,7 +2005,37 @@
                 registry.available(store ? store.get("manifest") : {}).forEach(function (def) {
                     layout.add(def.id);
                 });
+            }).then(function () {
+                // Now that the widgets exist, the preference can reach them.
+                applyBoardVisibility(null);
             });
+        }
+
+        /*
+         * Apply `aac.enabled` to the word board's widget.
+         *
+         * Called from the preference subscription *and* once after the widgets
+         * are mounted, because the subscription primes before any widget
+         * exists: `layout.setVisible` on an unmounted widget returns false and
+         * does nothing, so at boot the board kept whatever the saved layout
+         * said. Measured -- the board was on screen in standard mode with the
+         * preference off.
+         *
+         * Args:
+         *     current (object): The effective preferences.
+         */
+        function applyBoardVisibility(current) {
+            if (!aacBoard || !layout) {
+                return;
+            }
+            var effective = current
+                || (accessibility && accessibility.preferences
+                    ? accessibility.preferences.effective()
+                    : null);
+            layout.setVisible(
+                aacBoard.id,
+                !!(effective && effective.aac && effective.aac.enabled)
+            );
         }
 
         /* --- Command submission --------------------------------------- */
@@ -2398,9 +2454,38 @@
 
             /* Accessibility */
             if (accessibilityPanel) {
-                addCommand("accessibility.panel", "Accessibility options", "Accessibility",
-                    "Show or hide the accessibility options.",
-                    function () { accessibilityPanel.toggle(); }, null, "Ctrl+Shift+A");
+                /*
+                 * Two commands, because they are two things. The mode is the
+                 * one with the shortcut, because it is the one somebody needs
+                 * when they can no longer read the screen.
+                 */
+                addCommand("accessibility.mode", "Accessible mode on or off", "Accessibility",
+                    "Switch between the standard interface and the accessible one. "
+                        + "Nothing you chose is erased either way.",
+                    function () { accessibilityPanel.setMode(); }, null, "Ctrl+Shift+A");
+                addCommand("accessibility.options", "Display and accessibility options",
+                    "Accessibility",
+                    "Text size and sound in either mode; contrast, motion and "
+                        + "announcements as well in accessible mode.",
+                    function () { accessibilityPanel.toggleOptions(); });
+
+                /*
+                 * Text size directly, without opening anything.
+                 *
+                 * Gary: "having to zoom the browser is janky". Somebody who
+                 * cannot read the screen should not have to read a settings
+                 * panel first, so the two commands that fix it are searchable on
+                 * their own -- and the palette itself scales with them.
+                 */
+                addCommand("text.larger", "Larger text", "Accessibility",
+                    "Increase the size of everything in the client.",
+                    function () { accessibilityPanel.adjustTextSize(0.15); });
+                addCommand("text.smaller", "Smaller text", "Accessibility",
+                    "Decrease the size of everything in the client.",
+                    function () { accessibilityPanel.adjustTextSize(-0.15); });
+                addCommand("text.reset", "Reset text size", "Accessibility",
+                    "Back to the default size.",
+                    function () { accessibilityPanel.adjustTextSize(null); });
             }
 
             /* Layout */
@@ -2874,16 +2959,16 @@
 
             if (accessibilityPanel) {
                 shortcuts.register({
-                    id: "accessibility.panel",
-                    label: "Accessibility options",
-                    description: "Show or hide the accessibility options.",
+                    id: "accessibility.mode",
+                    label: "Accessible mode",
+                    description: "Switch between the standard interface and the accessible one.",
                     // Ctrl+Shift+A. Not a bare character: single letters are
                     // what NVDA and JAWS use for structural navigation, and
                     // taking one would break reading the client to reach a
                     // panel about reading the client.
                     defaultBinding: "Ctrl+Shift+A",
-                    paletteCommand: "accessibility.panel",
-                    run: function () { accessibilityPanel.toggle(); }
+                    paletteCommand: "accessibility.mode",
+                    run: function () { accessibilityPanel.setMode(); }
                 });
             }
             if (review) {

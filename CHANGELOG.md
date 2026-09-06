@@ -11,7 +11,30 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
-### A10 — Two modes: standard and accessible
+### A10 — Two modes, two control panels, and a switch at the top right
+
+1284 tests. axe clean in standard mode, accessible mode with the panel open, and
+accessible mode at high contrast with the text at 180%.
+[`notes/a10-two-modes.md`](notes/a10-two-modes.md)
+
+**The switch does one thing.** It was a button that also opened a panel of
+options, so it read as an options button — because that is what it was. Now a
+`role="switch"` at the top right, outside the navigation landmark, with a visible
+track and thumb whose **position** carries the state. Beside it, an **Options**
+button. Switching the mode does not open the options; opening the options does
+not change the mode.
+
+**Two control panels.** Standard mode offers text size, sound, gestures and
+orientation help. Accessible mode adds contrast, motion, visual detail,
+announcement verbosity, quiet and focus modes, and the picture and word board.
+
+**Text size is in both modes and survives the switch.** Being able to set the
+size of text is not an accommodation somebody opts into; it is a basic property
+of a text interface, and browser zoom scales the page rather than the client.
+`Larger text`, `Smaller text` and `Reset text size` are palette commands, so
+nobody has to read a settings panel in order to fix the size of the text.
+
+### A10 (first version) — the mode itself
 
 1265 tests. axe clean in standard mode, accessible mode, and accessible mode at
 high contrast. [`notes/a10-two-modes.md`](notes/a10-two-modes.md)

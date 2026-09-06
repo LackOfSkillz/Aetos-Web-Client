@@ -901,15 +901,20 @@
                         "There is no bundle to accept or refuse. Each one is separate, and "
                             + "all of them are also in Settings if that is where you looked "
                             + "first.",
-                        "The button switches between two modes. Standard mode is the client "
-                            + "as it comes; accessible mode applies what you chose. Switching "
-                            + "back to standard stops them applying and keeps every one of "
-                            + "them, so you can look at the standard interface and come "
-                            + "straight back with the same keystroke.",
-                        "Three of the options are never switched off by the mode, because "
-                            + "their off state is the accommodation: muting sound, turning "
-                            + "gestures off, and orientation help. Standard mode leaves those "
-                            + "exactly as you set them."
+                        "The switch at the top right moves between two modes. Standard "
+                            + "mode is the client as it comes; accessible mode applies what "
+                            + "you chose. Switching back to standard stops them applying and "
+                            + "keeps every one of them, so you can look at the standard "
+                            + "interface and come straight back with the same keystroke.",
+                        "The Options button beside it opens the settings, and works in both "
+                            + "modes. Standard mode offers text size, sound, gestures and "
+                            + "orientation help; accessible mode adds contrast, motion, "
+                            + "announcements and layout to that list.",
+                        "Text size is in both on purpose. Being able to make the text bigger "
+                            + "is not something you should have to switch modes for, and it "
+                            + "stays where you put it when you do. Larger text and Smaller "
+                            + "text are also in the command palette, so you never have to "
+                            + "read a settings panel to fix the size of the text."
                     ],
                     keys: [
                         ["Ctrl+Shift+A", "Show or hide the accessibility options"]

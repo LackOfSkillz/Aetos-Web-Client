@@ -159,31 +159,57 @@ it is where a player wants to be nearly every time.
       <button id="aetos-edit-layout" class="aetos-statusbar__button" type="button"
               aria-pressed="false">Edit Layout</button>
       <button id="aetos-open-help" class="aetos-statusbar__button" type="button">Help</button>
-      {% comment %}
-      A9, then A10. The one control that has to be findable without already
-      knowing the client -- and, since A10 made it a mode switch, the one control
-      that has to remain findable *after* somebody has switched the
-      accommodations off.
+    </nav>
 
-      In the status bar rather than in Settings, because the whole point is
-      discovery: the options behind it have worked since the A-track built them
-      and are all in Settings already, where almost nobody finds them.
+    {% comment %}
+    The mode switch. A9, then A10.
 
-      It says "Accessibility" and not an icon. An icon here would be a symbol
-      somebody has to recognise before they can ask for help reading symbols.
+    OUTSIDE THE NAVIGATION LANDMARK, and last, so it sits at the top right on
+    its own. It is not navigation -- it does not take you anywhere, it changes
+    which interface you are in -- and grouping it with Edit Layout and Help made
+    it read as a third button rather than as the control it is.
 
-      `aria-pressed`, not `aria-expanded`: it switches which interface you are
-      in, and the panel appearing is a consequence rather than the point.
+    A SWITCH, NOT A BUTTON. `role="switch"` with `aria-checked` announces "on"
+    and "off", which is what this does; `aria-pressed` would announce "pressed",
+    which describes the act rather than the state. The visible track and thumb
+    say the same thing to somebody who can see it, and the thumb's *position* --
+    not its colour -- is what carries the state.
 
-      Its appearance is deliberately not governed by the mode -- same place,
-      same words, same target size in both. See `.aetos-statusbar__button--mode`
-      in aetos.css, which is the way back for somebody who has just made the
-      text small again.
-      {% endcomment %}
+    THE ONE CONTROL THAT MUST STAY FINDABLE. Since A10 it is the way back from
+    standard mode, so its size, position and wording are deliberately not
+    governed by the mode: identical whichever one you are in. The floor lives in
+    `accessibility.css`, above the target-size rule it has to beat.
+
+    It says words rather than showing an icon. An icon here would be a symbol
+    somebody has to recognise before they can ask for help reading symbols.
+    {% endcomment %}
+    <div class="aetos-modeswitch">
       <button id="aetos-accessibility-toggle"
               class="aetos-statusbar__button aetos-statusbar__button--mode"
-              type="button" aria-pressed="false">Accessibility</button>
-    </nav>
+              type="button" role="switch" aria-checked="false">
+        <span class="aetos-modeswitch__label">Accessible mode</span>
+        <span class="aetos-modeswitch__track" aria-hidden="true">
+          <span class="aetos-modeswitch__thumb"></span>
+        </span>
+      </button>
+      {% comment %}
+      The options are a separate button, and only appear once accessible mode is
+      on.
+
+      They were behind the switch itself until it was pointed out that flipping
+      the switch presented a panel of options rather than switching a mode --
+      which is what it looked like, because it was. A control that does two
+      things is read as whichever one you notice first.
+
+      So the switch switches, and this asks for the settings. Hidden in standard
+      mode because there is nothing there to configure: the accommodations are
+      not applied, and offering to adjust them would be offering to adjust
+      something that is off.
+      {% endcomment %}
+      <button id="aetos-accessibility-options"
+              class="aetos-statusbar__button"
+              type="button" aria-expanded="false" hidden>Options</button>
+    </div>
   </header>
 
   {% comment %}
