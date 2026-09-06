@@ -630,6 +630,10 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [~] M30  WITHDRAWN -- superseded by the A-track (A.106)
 [~] M31  Release candidate  -- audit done, 1243 py; NOT releasable:
          A8 is the only blocker and it needs people, not code
+[x] UI1  One frame, one scrollbar (Gary's change order)
+         (composer into the console frame; the scroll maze had four
+         causes and only one was scrollbars -- the breakpoints were
+         in pixels, and pixels do not know the text got bigger)
 [ ] M32  Upstream PR
 [ ] M33  Voice input + speech accessibility
 ```

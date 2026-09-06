@@ -92,6 +92,19 @@
                 root.style.removeProperty("--aetos-scale");
             }
 
+            /*
+             * Changing the text size changes how much fits, so the layout has to
+             * be reconsidered -- and nothing else will ask it to. The responsive
+             * manager watches the root element's *size*, and this changes only
+             * what is inside it, so the ResizeObserver never fires and the
+             * client kept three columns at 180% text with five characters in
+             * each. Found by turning the text up and looking.
+             */
+            if (window.Aetos && window.Aetos.responsive
+                    && window.Aetos.responsive.measure) {
+                window.Aetos.responsive.measure();
+            }
+
             var cognitive = (current && current.cognitive) || {};
             root.setAttribute("data-aetos-quiet", cognitive.quietMode ? "true" : "false");
             /*

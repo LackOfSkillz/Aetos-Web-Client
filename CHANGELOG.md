@@ -11,6 +11,76 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Changed — the composer moved into the console frame (UI1)
+
+Gary: *"first move the text input and send button into the actual text output
+frame"*. It was a `<footer>` at the bottom of the whole client, the full height
+of the workspace away from the text it answers. It is now the bottom edge of the
+console's own frame, so the transcript and the reply to it are one object.
+
+### Fixed — larger text produced a maze of nested scrollbars (UI1)
+
+Gary, with a screenshot at a larger text size and most of the scrollbars circled:
+*"I upped the text size and its creating a scroll bar maze from hell"*. Four
+separate causes, and only the first is scrollbars:
+
+- **Nested scroll containers.** A region scrolled, every panel body inside it
+  scrolled, and lists inside those scrolled again. The inner two were defensive:
+  panels already grow to their content. Now one scroll per column.
+- **A resized panel got a fixed `height`**, which clips as soon as content
+  outgrows it. Now a `minHeight` — a floor rather than a lid.
+- **Seven `font-size` declarations were in `px`** and so ignored the text-size
+  setting entirely. Turning the text up grew the game output and left every panel
+  title, status-bar button and dialog label at its original size. Now guarded
+  generally: no stylesheet may pin a `font-size` in pixels.
+- **The responsive breakpoints were in pixels**, and pixels do not know the text
+  got bigger. At 250% text an 800px client still called itself "desktop" and kept
+  three columns of a few characters each. Breakpoints are now measured against
+  the width expressed in the client's own rendered text, so 150% folds to two
+  columns and 250% to one. Browser zoom comes out right for free.
+
+Changing the text size also now asks the layout to re-measure. Nothing else would
+have: the responsive manager watches the root element's *size*, and the text
+scale changes only what is inside it.
+
+### Fixed — help examples could only be scrolled with a mouse (UI1)
+
+Found by running the axe gate at 800x600 instead of 1280x800:
+`scrollable-region-focusable`, serious. An example long enough to overflow its
+column is a horizontal scroll region, and it had no `tabindex`.
+
+The content is right to scroll — several examples are column-aligned tables, and
+wrapping them would destroy the alignment, which is the two-dimensional-layout
+exception WCAG 1.4.10 makes. So every example is now focusable, with
+`role="group"` and a name. Every one rather than the overflowing ones: whether an
+example overflows depends on window width and text size and changes under both.
+
+Help's focus trap collected `button, input, [tabindex='-1']` — the three kinds of
+element it happened to contain — so an example after the last button would have
+been skipped, Tab wrapping straight past it. Widened to include `[tabindex='0']`.
+
+### Fixed — the accessibility gate had only ever measured one viewport (UI1)
+
+Every rule about overflow, reflow and target size depends on how much room there
+is, so a clean axe run is only ever clean *for the viewport it ran at*.
+`qa-axe.js` now records the viewport and rendered text size in its results and
+names the four views to run. Clean at all four: 1280x800, 800x600, 390x844, and
+1280x800 at 200% text.
+
+### Changed — one frame instead of a page of boxes (UI1)
+
+Gary: *"our ui needs to be slick, clean and beautiful to look at"*. Every widget
+was a bordered, filled card, including the console — so the transcript had the
+same visual weight as the sound widget. The console slab is now the only framed
+object; side panels sit on the background separated by hairlines, the status bar
+is a row with a rule under it, and scrollbars are thin and in the client's own
+palette. No colour token changed.
+
+Both `prefers-contrast: more` and the client's high-contrast setting put the
+surfaces, borders and full-width scrollbars back. Unframed panels are a
+decoration decision and the wrong one for anybody who needs an edge to find an
+edge.
+
 ### Fixed — the client had lost ANSI colour on every line
 
 The worst thing the M29 plain-text work produced, found by Gary in a screenshot.

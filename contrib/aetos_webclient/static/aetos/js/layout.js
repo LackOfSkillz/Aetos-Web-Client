@@ -158,7 +158,20 @@
                 return false;
             }
             if (size.height) {
-                entry.panel.style.height = size.height + "px";
+                /*
+                 * `minHeight`, not `height`.
+                 *
+                 * A fixed height is a lid: the moment the content is taller than
+                 * it -- because the player turned the text size up, or the game
+                 * sent a longer description -- the panel clips and grows its own
+                 * scrollbar inside a column that already has one. That is the
+                 * "scroll bar maze" Gary reported.
+                 *
+                 * As a floor it still does what the control is for. Growing a
+                 * panel gives it more room; the panel simply never gives back
+                 * less room than its content needs.
+                 */
+                entry.panel.style.minHeight = size.height + "px";
             }
             if (size.width) {
                 entry.panel.style.width = size.width + "px";

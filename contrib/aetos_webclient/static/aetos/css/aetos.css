@@ -113,8 +113,9 @@ body {
     flex-wrap: wrap;
     align-items: center;
     gap: var(--aetos-space);
-    padding: var(--aetos-space);
-    background: var(--aetos-panel);
+    padding: calc(var(--aetos-space) * 0.75) calc(var(--aetos-space) * 1.5);
+    /* No surface of its own. A hairline is enough to end the row, and a second
+       raised slab above the console made the client read as stacked boxes. */
     border-bottom: 1px solid var(--aetos-border);
 }
 
@@ -188,24 +189,64 @@ body {
 .aetos-region--aside { grid-area: aside; }
 .aetos-region--bottom { grid-area: bottom; }
 
+/*
+ * THE ONE FRAME.
+ *
+ * Gary: *"our ui needs to be slick, clean and beautiful to look at"*.
+ *
+ * Every widget used to be a bordered, filled card, including the console -- so
+ * the transcript, which is what a MUD client is *for*, had exactly the same
+ * visual weight as the sound widget. Boxes inside boxes inside a bordered
+ * status bar is why it read as a debug dashboard.
+ *
+ * Now the console slab is the only framed object on the page. Side panels are
+ * set directly on the background and separated from each other by a hairline;
+ * the status bar is a row with a rule under it. Hierarchy is carried by the
+ * frame rather than by borders on everything equally.
+ *
+ * This is a decision about *decoration*, and it is reversed wherever the boxes
+ * are doing real work -- see the high-contrast rules further down, where the
+ * surface and the border come back. Somebody who needs edges to find the edges
+ * gets edges.
+ */
 .aetos-widget {
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
     min-height: 0;
-    background: var(--aetos-panel);
-    border: 1px solid var(--aetos-border);
-    border-radius: var(--aetos-radius);
 }
 
+.aetos-widget--console {
+    background: var(--aetos-panel);
+    border: 1px solid var(--aetos-border);
+    border-radius: 6px;
+    /* The frame must clip, or the composer's corners square off the bottom of
+       the slab and the whole point of it being one object is lost. */
+    overflow: hidden;
+}
+
+/* Panels are unframed and separated by a rule, not by a box each. The rule goes
+   on the second and later panels so a column does not open with a stray line. */
+.aetos-region > .aetos-widget--panel + .aetos-widget--panel {
+    border-top: 1px solid var(--aetos-border);
+    padding-top: calc(var(--aetos-space) * 1.5);
+}
+
+/*
+ * The console and the composer share one frame, and it is the only frame on the
+ * page. Everything else -- the side panels, the status bar, the hotbar -- is
+ * unframed, because the transcript is what the client is *for* and the rest is
+ * instrumentation. Boxing all of it equally is what made this read as a
+ * dashboard of widgets rather than as something you read.
+ */
 .aetos-console {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
-    padding: var(--aetos-space);
+    padding: var(--aetos-space) calc(var(--aetos-space) * 1.5);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-    line-height: 1.45;
+    line-height: 1.5;
 }
 
 .aetos-console:focus-visible {
@@ -217,14 +258,30 @@ body {
     padding: 1px 0;
 }
 
-/* Input bar ----------------------------------------------------------- */
+/* Composer ------------------------------------------------------------
+ *
+ * The bottom edge of the console slab, not a bar under the client. It carries
+ * no background of its own: the hairline above it is the whole separation, so
+ * the transcript and the reply to it look like one surface.
+ */
 
-.aetos-inputbar {
+.aetos-composer {
     display: flex;
-    gap: var(--aetos-space);
-    padding: var(--aetos-space);
-    background: var(--aetos-panel);
+    align-items: center;
+    gap: calc(var(--aetos-space) * 0.75);
+    padding: calc(var(--aetos-space) * 0.75) calc(var(--aetos-space) * 1.5);
     border-top: 1px solid var(--aetos-border);
+}
+
+/* The prompt. One glyph, in the accent, marking where you type -- the oldest
+   convention this subject has. Hidden from assistive technology, which has the
+   field's label instead. */
+.aetos-composer__prompt {
+    flex: 0 0 auto;
+    color: var(--aetos-accent);
+    font-size: 1.1em;
+    line-height: 1;
+    user-select: none;
 }
 
 .aetos-input {
@@ -237,6 +294,106 @@ body {
     border-radius: var(--aetos-radius);
     font-family: inherit;
     font-size: inherit;
+    line-height: 1.5;
+}
+
+/*
+ * SCROLLBARS.
+ *
+ * There are fewer of them now, and the ones that remain were drawn in the
+ * browser's default light grey -- three bright vertical bars down a dark client,
+ * which is a large part of why Gary's screenshot read as a maze even where the
+ * scrolling was legitimate.
+ *
+ * Thin, in the client's own palette, and stated twice: `scrollbar-width` and
+ * `scrollbar-color` are the standard properties (Firefox 64, Chrome 121), and
+ * the `::-webkit-scrollbar` block covers the older Chrome and Safari inside the
+ * declared support floor. Neither raises that floor -- a browser that
+ * understands neither gets its own scrollbars, which is exactly today's
+ * behaviour.
+ */
+/* `scrollbar-color` inherits; `scrollbar-width` does not, so the descendant
+   selector is not redundant. */
+.aetos-root,
+.aetos-root * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--aetos-border) transparent;
+}
+
+.aetos-root ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.aetos-root ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.aetos-root ::-webkit-scrollbar-thumb {
+    background: var(--aetos-border);
+    border: 3px solid transparent;
+    border-radius: 6px;
+    /* Painted inside the border box, which is what leaves the 3px gap either
+       side rather than a bar hard against the content. */
+    background-clip: content-box;
+}
+
+.aetos-root ::-webkit-scrollbar-thumb:hover {
+    background: var(--aetos-text-muted);
+    background-clip: content-box;
+}
+
+/*
+ * A scrollbar is how somebody knows there is more, so it must stay findable when
+ * more contrast has been asked for. Thin and low-contrast is a decoration
+ * choice, and this is where it is given back.
+ */
+@media (prefers-contrast: more) {
+    .aetos-root,
+    .aetos-root * {
+        scrollbar-width: auto;
+        scrollbar-color: var(--aetos-text-muted) var(--aetos-panel);
+    }
+
+    .aetos-root ::-webkit-scrollbar-thumb {
+        background: var(--aetos-text-muted);
+        border: none;
+        background-clip: border-box;
+    }
+}
+
+:root[data-aetos-contrast="high"] .aetos-root,
+:root[data-aetos-contrast="high"] .aetos-root * {
+    scrollbar-width: auto;
+    scrollbar-color: var(--aetos-text-muted) var(--aetos-panel);
+}
+
+/* Inside the composer the field is the surface rather than a control on one.
+   Elsewhere -- dialogs, the map search, history filters -- `.aetos-input` keeps
+   its border, because there it genuinely is one control among several. */
+.aetos-composer .aetos-input {
+    background: transparent;
+    border-color: transparent;
+    padding-left: 0;
+}
+
+/*
+ * A field with no edges is a field somebody has to already know is there. Asked
+ * for more contrast, the composer's box comes back -- the same trade the panels
+ * make above, for the same reason.
+ */
+@media (prefers-contrast: more) {
+    .aetos-composer .aetos-input {
+        background: var(--aetos-bg);
+        border-color: var(--aetos-border);
+        padding-left: 8px;
+    }
+}
+
+:root[data-aetos-contrast="high"] .aetos-composer .aetos-input {
+    background: var(--aetos-bg);
+    border-color: var(--aetos-border);
+    padding-left: 8px;
 }
 
 .aetos-input:focus-visible,
@@ -294,12 +451,20 @@ body {
     padding: var(--aetos-space);
 }
 
+/*
+ * A panel title is the client speaking, not the game. Small caps, wide tracking
+ * and the muted colour keep it legible as a label while leaving the loud end of
+ * the page to the transcript -- which is the only thing here the player did not
+ * ask to see twice.
+ */
 .aetos-widget__title {
-    margin: 0 0 6px 0;
-    font-size: 12px;
+    margin: 0 0 8px 0;
+    /* `em`, not `px`: the text-size setting scales `.aetos-root`, and a panel
+       title in `px` stays small while everything it labels grows. */
+    font-size: 0.85em;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     color: var(--aetos-text-muted);
 }
 
@@ -386,14 +551,41 @@ body {
         "main"
         "aside"
         "bottom";
+    /*
+     * When the stack genuinely does not fit -- a short window, or large text, or
+     * both -- the workspace scrolls as one. The alternative is what it did
+     * before: shrink every region until each of them needs a scrollbar of its
+     * own, none of which shows you where you are.
+     *
+     * WCAG 1.4.10 asks that content reflow without scrolling in *two*
+     * directions. One vertical scrollbar on the page is the reflow working;
+     * three nested ones are the failure it is about.
+     */
+    overflow-y: auto;
 }
 
 .aetos-root[data-aetos-size="phone"] .aetos-region--sidebar,
 .aetos-root[data-aetos-size="phone"] .aetos-region--aside {
     width: auto;
-    /* Each strip is capped and scrolls internally, so adding a widget never
-       steals height from the console. */
-    max-height: 18vh;
+    /*
+     * Each strip is capped and scrolls internally, so adding a widget never
+     * steals height from the console.
+     *
+     * The floor is in `em` because `vh` does not know the text got bigger: at
+     * 250% type an 18vh strip is shorter than one line, so every panel in it was
+     * clipped through the middle of its own letters. Whole ems, so what is shown
+     * is whole lines -- a strip that shows one line looks deliberate, and one
+     * that shows one and a half looks broken.
+     *
+     * The `min-height` is the half that matters. A strip scrolls its own
+     * contents, and an element that scrolls has a min-content height of zero, so
+     * a grid short of space squeezed these to whatever was left -- 52px, and a
+     * row of panels cut through the middle of their first line. With a floor
+     * they hold their size and the workspace scrolls instead (below), which is
+     * one honest scrollbar rather than three lying ones.
+     */
+    max-height: max(18vh, 4em);
+    min-height: 4em;
 }
 
 /* Compact panels when stacked: a phone cannot afford a title line plus
@@ -404,7 +596,7 @@ body {
 
 .aetos-root[data-aetos-size="phone"] .aetos-widget__title {
     margin-bottom: 2px;
-    font-size: 10px;
+    font-size: 0.78em;
 }
 
 /*
@@ -432,7 +624,9 @@ body {
 }
 
 .aetos-root[data-aetos-size="phone"] .aetos-widget--panel {
-    flex: 0 0 min(78%, 260px);
+    /* At 250% text a 260px card is eight characters wide. The `em` floor keeps a
+       card wide enough to read a label in, whatever size the text is. */
+    flex: 0 0 min(78%, max(260px, 13em));
     scroll-snap-align: start;
     overflow-y: auto;
 }
@@ -461,7 +655,8 @@ body {
  * an unreadably long line of game text. A 200-character line is worse to read
  * than a 100-character one, so the console is capped and centred.
  */
-.aetos-root[data-aetos-size="wide"] .aetos-console {
+.aetos-root[data-aetos-size="wide"] .aetos-console,
+.aetos-root[data-aetos-size="wide"] .aetos-composer {
     max-width: 120ch;
     margin: 0 auto;
     width: 100%;
@@ -474,7 +669,11 @@ body {
  */
 .aetos-root[data-aetos-short="true"] .aetos-region--sidebar,
 .aetos-root[data-aetos-short="true"] .aetos-region--aside {
-    max-height: 22vh;
+    /* `vh` alone does not know the text got bigger. At 200% scale a 22vh column
+       became a two-line peephole with a scrollbar in it. The `em` floor grows
+       with the type; the `min()` stops it growing past a third of a short
+       window, which would take the space back off the console. */
+    max-height: min(max(22vh, 8em), 34vh);
 }
 
 .aetos-root[data-aetos-short="true"] .aetos-widget__title {
@@ -520,6 +719,47 @@ body {
     }
 }
 
+/*
+ * The unframed panels are a decoration decision, and it is the wrong one for
+ * anybody who needs an edge to tell where one thing stops and the next starts.
+ * Asked for more contrast -- by the operating system, or by the client's own
+ * high-contrast setting -- every panel gets its surface and its border back.
+ *
+ * Not merely "also fine": for these two audiences the boxed layout is the better
+ * one, and this is the rule that says so rather than leaving them with a
+ * prettier client they cannot parse.
+ */
+@media (prefers-contrast: more) {
+    /*
+     * Panels only. The status bar is deliberately not here: M20 found a whole
+     * row of controls off the end of a phone screen because its layout was
+     * conditional on a media query, and `test_reflow` now guards against any
+     * rule for it inside one. It does not need the surface anyway -- it is a
+     * single row with a rule under it, and `--aetos-border` lightens under this
+     * same query, so the rule strengthens on its own.
+     */
+    .aetos-widget--panel {
+        background: var(--aetos-panel);
+        border: 1px solid var(--aetos-border);
+        border-radius: var(--aetos-radius);
+    }
+
+    .aetos-region > .aetos-widget--panel + .aetos-widget--panel {
+        padding-top: var(--aetos-space);
+    }
+}
+
+:root[data-aetos-contrast="high"] .aetos-widget--panel {
+    background: var(--aetos-panel);
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+}
+
+:root[data-aetos-contrast="high"] .aetos-region
+    > .aetos-widget--panel + .aetos-widget--panel {
+    padding-top: var(--aetos-space);
+}
+
 /* Regions, panels and Edit Layout ------------------------------------- */
 
 .aetos-region {
@@ -555,7 +795,7 @@ body {
     border: 1px solid var(--aetos-border);
     border-radius: var(--aetos-radius);
     font-family: inherit;
-    font-size: 12px;
+    font-size: 0.85em;
     cursor: pointer;
 }
 
@@ -607,15 +847,29 @@ body {
     display: none !important;
 }
 
-/* Panel bodies scroll rather than clip. A builder can write a room description
-   of any length; truncating it silently loses game content. */
+/*
+ * ONE SCROLL PER COLUMN.
+ *
+ * Panel bodies used to scroll (`overflow-y: auto`) inside panels that clipped
+ * (`overflow: hidden`) inside regions that also scrolled. Gary, having turned
+ * the text size up: *"its creating a scroll bar maze from hell"*.
+ *
+ * The nesting was defensive rather than needed. Panels are `flex: 0 0 auto`, so
+ * they already grow to their content; the inner scrollbars only ever appeared
+ * once something *else* -- a saved pixel height, a `max-height` -- had squeezed
+ * the panel below its content, and the answer to that is to stop squeezing it.
+ *
+ * So the body no longer scrolls and the panel no longer clips. A panel is as
+ * tall as what is in it, and the region it sits in is the single scroll
+ * container for that column. Nothing is truncated, which was the original worry,
+ * and larger text now pushes the column longer instead of producing a nest of
+ * little windows.
+ *
+ * `min-height: 0` stays: it is what lets the body shrink inside the flex column
+ * instead of forcing the panel taller than the space it has.
+ */
 .aetos-widget__body {
-    overflow-y: auto;
     min-height: 0;
-}
-
-.aetos-widget--panel {
-    overflow: hidden;
 }
 
 /* Widget palette (Edit Layout mode) ------------------------------------ */
@@ -913,6 +1167,15 @@ body {
     line-height: 1.5;
 }
 
+/* An example is a focus stop because it is a scroll region (see help.js), so it
+   needs to look like one when it is focused. Without this the caret lands
+   somewhere invisible and the arrow keys start moving something the player
+   cannot see. */
+.aetos-help__example:focus-visible {
+    outline: 2px solid var(--aetos-focus);
+    outline-offset: 2px;
+}
+
 .aetos-help__keys {
     display: grid;
     grid-template-columns: auto 1fr;
@@ -983,7 +1246,7 @@ body {
 
 .aetos-map__subheading {
     margin: 8px 0 4px 0;
-    font-size: 11px;
+    font-size: 0.8em;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -1082,7 +1345,7 @@ body {
 
 .aetos-note__subject {
     margin: 0 0 2px 0;
-    font-size: 13px;
+    font-size: 0.95em;
     color: var(--aetos-accent);
 }
 
@@ -1127,7 +1390,7 @@ body {
 
 .aetos-dialog__title {
     margin: 0 0 4px 0;
-    font-size: 15px;
+    font-size: 1.15em;
 }
 
 .aetos-dialog__description {
@@ -1143,7 +1406,7 @@ body {
 .aetos-dialog__label {
     display: block;
     margin-bottom: 3px;
-    font-size: 12px;
+    font-size: 0.85em;
     color: var(--aetos-text-muted);
 }
 
