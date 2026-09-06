@@ -11,6 +11,32 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Added — `evennia aetos discover` (D0)
+
+Putting a number on screen used to mean writing a provider class. The D-track's
+answer is `AETOS_BINDINGS`, a declaration in settings, and discovery writes the
+first draft of it by reading the game: the typeclass source, parsed with `ast`
+and never imported, and the attributes of characters that already exist. It
+prints a settings block with the evidence for each line beside it, and changes
+nothing.
+
+The open question was whether the command could exist at all
+(`questions.md` 4). It can, and needs nothing from Evennia: the launcher passes
+unrecognised operations to Django's management-command dispatch, and Aetos is
+already an installed app.
+
+D0 is a spike. It settles the entry point, the package boundary, the candidate
+model and the security model, and proves the two scans. The resolver is D1.
+
+### Fixed — the binding grammar accepted `db.__class__` (D0)
+
+Caught by its own test on the first run, which is the point of writing the
+rejection list from Addendum B.59 before the pattern. A dunder *is* an
+identifier — it starts with an underscore and continues with word characters —
+so an identifier whitelist admits every one of them, and `db.__class__` is the
+first step of every attribute-traversal escape there is. Each segment now
+carries `(?!__)`.
+
 ### Changed — the composer moved into the console frame (UI1)
 
 Gary: *"first move the text input and send button into the actual text output

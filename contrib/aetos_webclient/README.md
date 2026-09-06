@@ -246,13 +246,24 @@ themselves have to come from somewhere Aetos cannot see.
 
 Aetos never scans or guesses your game model during play.
 
-> **Not yet built: bindings and discovery.** A future release is planned to add
-> `AETOS_BINDINGS`, declaring *where* a value lives rather than writing code to
-> fetch it, and a development-time helper that inspects a game and suggests
-> them. Neither exists today: nothing reads `AETOS_BINDINGS`, and setting it
-> does nothing at all. The design is in the project repository's Addendum B.
-> It is mentioned here only so that nobody plans around a setting that is not
-> there.
+> **Half built: discovery works, bindings do not yet.** `AETOS_BINDINGS` is a
+> planned way to declare *where* a value lives rather than writing code to fetch
+> it. **Nothing reads it today, and setting it does nothing at all.**
+>
+> What does work is the development-time helper that suggests them:
+>
+> ```
+> evennia aetos discover
+> ```
+>
+> It reads your typeclass source -- parsed, never imported, so running it cannot
+> have side effects -- and the attributes of characters that already exist, and
+> prints a suggested `AETOS_BINDINGS` block with the evidence for each line. It
+> changes nothing and never writes to your settings.
+>
+> Until the resolver lands, that output is a preview: it shows you what Aetos can
+> find in your game, and a provider is still the way to put a value on screen.
+> The command says so in its own output, so nobody pastes it and waits.
 
 ### Providers -- how to expose your game's data
 

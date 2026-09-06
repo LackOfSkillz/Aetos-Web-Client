@@ -262,23 +262,55 @@ class TestNoSettingIsDocumentedThatNothingReads(TestCase):
                 "the README shows an AETOS_BINDINGS example; nothing reads it",
             )
 
-    def test_where_it_is_mentioned_it_is_marked_as_absent(self):
+    def test_where_it_is_mentioned_it_is_marked_as_doing_nothing(self):
+        """
+        This checked for the literal phrase "Not yet built", and D0 broke it by
+        making the note more accurate: discovery now exists and the resolver does
+        not, so "not yet built" was itself wrong.
+
+        Rewritten to assert the *claim* rather than the wording. What must be
+        true is that the paragraph mentioning `AETOS_BINDINGS` says plainly that
+        setting it does nothing -- which survives whatever the paragraph is
+        called next time, and is the thing a developer would be misled by.
+
+        """
         self.assertIn("AETOS_BINDINGS", README)
-        marker = "Not yet built"
-        self.assertIn(marker, README)
-        # In the same paragraph, not somewhere else in the file.
-        start = README.index(marker)
-        self.assertIn("AETOS_BINDINGS", README[start : README.index("\n\n", start)])
+        start = README.index("AETOS_BINDINGS")
+        paragraph = README[max(0, start - 400) : start + 400]
+        self.assertIn(
+            "does nothing",
+            paragraph,
+            "the README mentions AETOS_BINDINGS without saying it does nothing",
+        )
 
-    def test_no_command_is_documented_that_does_not_exist(self):
+    def test_the_command_the_readme_documents_exists(self):
         """
-        `evennia aetos discover` was in the README as a working command. There is
-        no management command in this contrib at all.
+        The M28 version of this test asserted the opposite: `evennia aetos
+        discover` was in the README as a working command, and there was no
+        management command in this contrib at all.
+
+        D0 built it, so the assertion inverts and its *purpose* does not. What is
+        guarded either way is that the README may not document a command that
+        does not exist -- and since the file's location is the whole registration
+        mechanism, the location is what gets checked.
 
         """
-        self.assertFalse(list(CONTRIB_DIR.glob("management/**/*.py")))
-        for block in re.findall(r"```\n(.*?)```", README, flags=re.S):
-            self.assertNotIn("evennia aetos", block)
+        commands = list(CONTRIB_DIR.glob("management/commands/*.py"))
+        self.assertIn("aetos.py", [path.name for path in commands])
+
+    def test_the_readme_does_not_promise_that_bindings_do_anything(self):
+        """
+        Discovery exists; the resolver does not. So the command prints a settings
+        block that nothing reads yet, and both the README and the command's own
+        output have to say so -- otherwise a developer pastes it, sees no change,
+        and has been handed the exact defect this project keeps finding, except
+        generated for them.
+
+        """
+        from evennia.contrib.base_systems.aetos_webclient.discovery import report
+
+        self.assertFalse(report.BINDINGS_ARE_LIVE)
+        self.assertIn("nothing reads AETOS_BINDINGS yet", report.PREVIEW)
 
 
 class TestTheGeneratedReferenceMatchesItsSource(TestCase):

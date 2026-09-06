@@ -634,6 +634,10 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (composer into the console frame; the scroll maze had four
          causes and only one was scrollbars -- the breakpoints were
          in pixels, and pixels do not know the text got bigger)
+[x] D0   Discovery architecture spike
+         (`evennia aetos discover` needs nothing from Evennia;
+         the binding grammar shipped accepting `db.__class__`,
+         because a dunder is an identifier -- caught by its own test)
 [ ] M32  Upstream PR
 [ ] M33  Voice input + speech accessibility
 ```

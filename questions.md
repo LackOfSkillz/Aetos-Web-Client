@@ -141,21 +141,26 @@ a test asserts it, so making the claim means deleting a test that says why not.
 
 ---
 
-## 4. Is `evennia aetos discover` actually achievable? *(D0 will answer this)*
+## 4. ANSWERED -- `evennia aetos discover` works, and needs nothing from Evennia
 
-**Status:** not blocking; flagged so it is not a surprise later.
+**Answered by D0, 2026-09-06.** The README's promise stands as written.
 
-Addendum B.34 asks for one canonical command. Evennia's launcher may not support
-contrib-supplied subcommands, in which case the entry point becomes something
-less tidy — a management command, or `evennia shell` plus an import.
+Evennia's launcher handles a fixed list of operations itself and passes
+everything else to Django's management-command dispatch with the command line
+intact. So a management command named `aetos` in an installed app *is*
+`evennia aetos` — and Aetos is already an installed app, because it must be for
+its templates and static files to load. No settings entry, no launcher patch, no
+change upstream.
 
-I am not asking you to solve this; D0's whole job is to determine the cleanest
-supported mechanism. I am flagging it because the README now shows
-`evennia aetos discover` as the easy button, and if D0 finds it impossible, that
-promise needs rewording rather than quietly dropping.
+Proved with a probe command before anything was designed around it.
 
-**Meanwhile:** the README marks the binding layer as *(planned, D-track)*, so it
-does not claim the command works today.
+One trap recorded in `management/commands/aetos.py` for whoever reads the
+launcher next: `run_custom_commands` is a real hook, but its docstring names
+`CUSTOM_EVENNIA_LAUNCHER_COMMANDS` while its code reads
+`EXTRA_LAUNCHER_COMMANDS`. Following the documentation gets you nothing, and it
+fails silently. Not the route taken.
+
+Nothing outstanding here. See `notes/d0-discovery-spike.md`.
 
 ---
 
