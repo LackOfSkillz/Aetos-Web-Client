@@ -11,6 +11,33 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Fixed — the client had lost ANSI colour on every line
+
+The worst thing the M29 plain-text work produced, found by Gary in a screenshot.
+
+The console chose between "draw the sanitised markup" and "draw the substituted
+plain text" by comparing `displayText` with the original. That comparison was
+only meaningful while the two started out as the same string. Once `displayText`
+became the **plain** rendering, they differed on every line carrying any markup
+— so the console treated every coloured line as substituted and drew it as text.
+**Colour was gone from the whole client**, and no test noticed, because every one
+of them asserts on text and the text was right.
+
+The giveaway in the screenshot was not the missing colour but the words:
+`needhelp`, `buildtutorial`, `LimboWelcome`. `<br>` contributes no text, so the
+plain rendering welded together the words on either side of every line break.
+
+Both fixed: `present()` now *states* whether a rule rewrote the line instead of
+the console inferring it, and the plain rendering replaces `<br>` with a newline
+before taking the text.
+
+### Added — a Settings button
+
+Aetos never had one. Privacy, themes, automation groups, reminders, symbol packs
+and diagnostics were each reachable only by knowing to press `Ctrl+K` and what to
+search for — the same discovery problem A9 answered, one layer up. The button
+opens the palette with the search filled in; a consolidated dashboard is next.
+
 ### Fixed — the history panel was still showing raw markup
 
 The M29 fix derived a plain rendering and stored it on the canonical event. The

@@ -159,6 +159,18 @@ it is where a player wants to be nearly every time.
       <button id="aetos-edit-layout" class="aetos-statusbar__button" type="button"
               aria-pressed="false">Edit Layout</button>
       <button id="aetos-open-help" class="aetos-statusbar__button" type="button">Help</button>
+      {% comment %}
+      Settings had no button at all until now -- every panel behind it (privacy,
+      themes, automation groups, reminders, symbol packs, diagnostics) was
+      reachable only by knowing to press Ctrl+K and what to search for.
+
+      That is the same discovery problem A9 was built to answer, one layer over.
+      It opens the command palette with "settings" already typed, rather than
+      introducing a second list of destinations to build, style, keyboard-enable
+      and keep in step with the one that already exists.
+      {% endcomment %}
+      <button id="aetos-open-settings" class="aetos-statusbar__button"
+              type="button">Settings</button>
     </nav>
 
     {% comment %}

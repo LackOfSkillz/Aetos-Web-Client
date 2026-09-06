@@ -199,6 +199,22 @@
             var text = String(source || "").slice(0, MAX_INPUT_LENGTH);
             var result = {
                 displayText: text,
+                /*
+                 * Whether a rule actually rewrote the text.
+                 *
+                 * The console used to infer this by comparing `displayText`
+                 * with the original, which worked only while the two were the
+                 * same string to begin with. Since `displayText` became the
+                 * *plain* rendering, they differ on every line that carries any
+                 * markup -- so the console took every coloured line as
+                 * "substituted" and drew it as plain text. **The client lost
+                 * ANSI colour entirely**, on every line, for a whole milestone,
+                 * and no test noticed because they all assert on text.
+                 *
+                 * Stated as a fact rather than inferred from a comparison that
+                 * happened to hold.
+                 */
+                substituted: false,
                 spans: [],
                 hiddenInView: false,
                 collapsed: false,
@@ -242,6 +258,7 @@
                 case "substitute":
                     var replaced = result.displayText.replace(
                         expression, rule.replacement);
+                    result.substituted = replaced !== result.displayText;
                     if (replaced.length !== result.displayText.length) {
                         // Offsets computed against the old text no longer mean
                         // anything. Dropping them is correct; adjusting them is

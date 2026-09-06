@@ -400,9 +400,18 @@
                 // reader or a colour-blind player.
                 line.appendChild(renderHighlighted(
                     display.displayText, display.spans));
-            } else if (display.displayText !== undefined &&
-                    display.displayText !== content) {
-                // Substituted. Plain text, for the same reason.
+            } else if (display.substituted && display.displayText !== undefined) {
+                /*
+                 * A rule rewrote the words, so what is drawn is the rewrite --
+                 * as plain text, because the offsets and the replacement were
+                 * both computed against plain text.
+                 *
+                 * Gated on `substituted` rather than on `displayText !==
+                 * content`. That comparison was true for every line containing
+                 * any markup at all once `displayText` became the plain
+                 * rendering, which is how the client came to draw all of its
+                 * output without colour.
+                 */
                 line.textContent = display.displayText;
             } else {
                 // Server content is rebuilt from an allowlist. innerHTML is
@@ -706,6 +715,24 @@
                     if (text.indexOf("<") !== -1) {
                         var holder = document.createElement("div");
                         holder.appendChild(sanitizeHtml(text));
+                        /*
+                         * A `<br>` contributes no text, so `textContent` alone
+                         * welds the words on either side of it together:
+                         * "need<br>help" reads "needhelp", and a room
+                         * description becomes one run-on paragraph. Gary spotted
+                         * it in a screenshot of the login banner.
+                         *
+                         * Replaced with a newline rather than a space, because
+                         * the break carried structure -- the history panel and
+                         * a braille display both want the line to end there.
+                         */
+                        Array.prototype.forEach.call(
+                            holder.querySelectorAll("br"),
+                            function (element) {
+                                element.parentNode.replaceChild(
+                                    document.createTextNode("\n"), element);
+                            }
+                        );
                         plain = holder.textContent;
                     }
                     return {
@@ -3018,6 +3045,30 @@
             helpButton.addEventListener("click", function () { help.open(null); });
         } else if (helpButton) {
             helpButton.hidden = true;
+        }
+
+        /*
+         * Settings.
+         *
+         * Aetos has no single settings screen -- it has seven panels (privacy,
+         * themes, automation groups, reminders, symbol packs, diagnostics, and
+         * the editors), each its own palette command. Until now none of them had
+         * a button, so all of it was reachable only by knowing to press Ctrl+K
+         * and what to search for.
+         *
+         * This opens the palette with the search already filled in, rather than
+         * building a second list of destinations that would then have to be
+         * styled, keyboard-enabled and kept in step with the first. Hidden if
+         * there is no palette, because a button that does nothing is worse than
+         * an absent one.
+         */
+        var settingsButton = document.getElementById("aetos-open-settings");
+        if (settingsButton && palette) {
+            settingsButton.addEventListener("click", function () {
+                palette.open("settings");
+            });
+        } else if (settingsButton) {
+            settingsButton.hidden = true;
         }
 
         /*

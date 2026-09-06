@@ -287,7 +287,18 @@
             return true;
         }
 
-        function open() {
+        /*
+         * Open the palette, optionally with a search already typed.
+         *
+         * The query argument exists so a button elsewhere in the client can
+         * point at a *part* of the palette -- "Settings" opens it showing the
+         * things you can configure -- without a second list to build, style,
+         * keyboard-enable and keep in step with this one.
+         *
+         * Args:
+         *     query (string, optional): Text to search for on opening.
+         */
+        function open(query) {
             if (element) {
                 return false;
             }
@@ -361,8 +372,16 @@
                 }
             });
 
+            if (query) {
+                input.value = String(query);
+            }
             refresh();
             input.focus();
+            // Selected rather than left after the text, so the next keystroke
+            // replaces the suggestion instead of extending it into nonsense.
+            if (query) {
+                input.select();
+            }
             return true;
         }
 

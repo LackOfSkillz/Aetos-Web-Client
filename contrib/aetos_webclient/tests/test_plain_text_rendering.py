@@ -51,6 +51,28 @@ HISTORY = (JS_DIR / "history.js").read_text(encoding="utf-8")
 REVIEW = (JS_DIR / "events" / "review.js").read_text(encoding="utf-8")
 
 
+def _slice(source, start, end):
+    """
+    The source between two landmarks.
+
+    Character-count windows were used here first, and three of them broke the
+    moment the code inside them gained an explanatory comment -- the assertion
+    was still true and the window no longer reached it. A landmark cannot drift
+    that way.
+
+    Args:
+        source (str): Source to slice.
+        start (str): Landmark to start at.
+        end (str): Landmark to stop before.
+
+    Returns:
+        str: The slice between them.
+
+    """
+    begin = source.index(start)
+    return source[begin : source.index(end, begin)]
+
+
 class TestTheEventCarriesBothForms(TestCase):
     """
     One record, two renderings of it -- not two records.
@@ -128,7 +150,7 @@ class TestItIsDerivedOnceAndOnlyWhenNeeded(TestCase):
     """
 
     def test_the_shell_derives_it_at_normalize(self):
-        body = SHELL[SHELL.index("normalize: function (validated)") :][:900]
+        body = _slice(SHELL, "normalize: function (validated)", "applyState:")
         self.assertIn("sanitizeHtml(text)", body)
         self.assertIn("holder.textContent", body)
         self.assertIn("plainText: plain", body)
@@ -140,7 +162,7 @@ class TestItIsDerivedOnceAndOnlyWhenNeeded(TestCase):
         contain no markup at all.
 
         """
-        body = SHELL[SHELL.index("normalize: function (validated)") :][:900]
+        body = _slice(SHELL, "normalize: function (validated)", "applyState:")
         self.assertIn('text.indexOf("<") !== -1', body)
 
     def test_triggers_use_the_shared_derivation(self):
@@ -160,7 +182,7 @@ class TestEveryPlaceThatShowsTextAsTextUsesIt(TestCase):
     """
 
     def test_display_rules_match_what_the_player_can_see(self):
-        body = RULES[RULES.index("function present(event, activeGroups)") :][:1400]
+        body = _slice(RULES, "function present(event, activeGroups)", "rules.forEach")
         self.assertIn("event.plainText === undefined", body)
         self.assertNotIn(
             'var text = String(event.originalText || "")',
@@ -210,7 +232,7 @@ class TestTheConsoleStillShowsColour(TestCase):
         self.assertIn("consoleWidget.append(event.originalText, null, presentation)", SHELL)
 
     def test_and_still_sanitises_it_rather_than_printing_it(self):
-        body = SHELL[SHELL.index("function append(content, className, presentation)") :][:1800]
+        body = _slice(SHELL, "function append(content, className, presentation)", "pending.push(line);")
         self.assertIn("line.appendChild(sanitizeHtml(content))", body)
 
     def test_the_substituted_and_highlighted_branches_are_plain_by_design(self):
@@ -221,6 +243,84 @@ class TestTheConsoleStillShowsColour(TestCase):
         of the code.
 
         """
-        body = SHELL[SHELL.index("function append(content, className, presentation)") :][:1800]
+        body = _slice(SHELL, "function append(content, className, presentation)", "pending.push(line);")
         self.assertIn("line.textContent = display.displayText", body)
         self.assertIn("renderHighlighted(", body)
+
+
+class TestTheConsoleStillDrawsColour(TestCase):
+    """
+    The worst defect this work produced, and it was mine.
+
+    The console chose between "draw the sanitised markup" and "draw the
+    substituted plain text" by comparing `displayText` with the original. That
+    comparison was only ever meaningful while the two started out as the same
+    string. Once `displayText` became the *plain* rendering, they differed on
+    every line carrying any markup at all -- so the console treated every
+    coloured line as substituted and drew it as text.
+
+    **The client lost ANSI colour entirely, on every line, for a whole
+    milestone.** No test noticed, because every one of them asserts on text and
+    the text was right. Gary found it in a screenshot, where the giveaway was
+    not the missing colour but the words: "need" and "help" welded together
+    where a `<br>` used to be.
+
+    """
+
+    def test_a_substitution_is_stated_rather_than_inferred(self):
+        self.assertIn("substituted: false", RULES)
+        self.assertIn("result.substituted = replaced !== result.displayText;", RULES)
+
+    def test_the_console_asks_whether_a_rule_rewrote_the_line(self):
+        body = _slice(SHELL, "function append(content, className, presentation)", "pending.push(line);")
+        self.assertIn("display.substituted && display.displayText !== undefined", body)
+
+    def test_it_no_longer_compares_the_two_texts(self):
+        """
+        The comparison is the defect. Keeping it anywhere in this branch would
+        let it come back the next time somebody edits around it.
+
+        """
+        body = _slice(SHELL, "function append(content, className, presentation)", "pending.push(line);")
+        self.assertNotIn("display.displayText !== content", body)
+
+    def test_an_untouched_line_still_goes_through_the_sanitiser(self):
+        """
+        Which is what preserves the colour: the markup is rebuilt from the
+        allowlist rather than printed.
+
+        """
+        body = _slice(SHELL, "function append(content, className, presentation)", "pending.push(line);")
+        self.assertIn("line.appendChild(sanitizeHtml(content))", body)
+
+
+class TestThePlainRenderingKeepsLineBreaks(TestCase):
+    """
+    `<br>` contributes no text, so `textContent` alone welds the words on either
+    side of it together. A room description became one run-on paragraph, and
+    "if you need<br>help" read as "needhelp".
+
+    """
+
+    def test_breaks_become_newlines_before_the_text_is_taken(self):
+        body = _slice(SHELL, "normalize: function (validated)", "applyState:")
+        self.assertIn('querySelectorAll("br")', body)
+        self.assertIn('createTextNode("\\n")', body)
+
+    def test_the_replacement_happens_before_textcontent_is_read(self):
+        """
+        Order is the whole fix: reading first and replacing after would change
+        nothing.
+
+        """
+        body = _slice(SHELL, "normalize: function (validated)", "applyState:")
+        self.assertLess(body.index('querySelectorAll("br")'), body.index("plain = holder.textContent"))
+
+    def test_a_newline_rather_than_a_space(self):
+        """
+        The break carried structure. The history panel and a braille display
+        both want the line to end there, not to run on with a space in it.
+
+        """
+        body = _slice(SHELL, "normalize: function (validated)", "applyState:")
+        self.assertNotIn('createTextNode(" ")', body)
