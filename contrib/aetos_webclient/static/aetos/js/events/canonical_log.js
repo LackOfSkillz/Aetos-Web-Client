@@ -117,6 +117,26 @@
             return events.map(function (event) { return copy(event); });
         }
 
+        /*
+         * A reader gets a copy, so holding one cannot mutate the record.
+         *
+         * The field list is explicit and that is deliberate -- but it is also
+         * a place a new field can be silently dropped, and `plainText` was:
+         * `append` stored it and this stripped it, so every reader got an event
+         * without one and fell back to the markup. The history panel went on
+         * showing `<span class="color-012">` for a whole milestone after the
+         * defect was supposedly fixed, and the tests passed because they
+         * checked the write path and the helpers rather than what a reader
+         * actually receives.
+         *
+         * Found by looking at a screenshot.
+         *
+         * Args:
+         *     event (object): The stored event.
+         *
+         * Returns:
+         *     object: A copy safe to hand out.
+         */
         function copy(event) {
             return {
                 id: event.id,
@@ -125,6 +145,7 @@
                 category: event.category,
                 priority: event.priority,
                 originalText: event.originalText,
+                plainText: event.plainText,
                 source: event.source,
                 structuredData: event.structuredData
             };

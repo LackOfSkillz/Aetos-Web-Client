@@ -77,6 +77,39 @@ class TestTheEventCarriesBothForms(TestCase):
         window = LOG[LOG.index("plainText: entry.plainText === undefined") :][:200]
         self.assertIn('entry.originalText || ""', window)
 
+    def test_a_reader_actually_receives_it(self):
+        """
+        The gap that made the original fix not work.
+
+        `append` stored `plainText` and `copy` -- the function every reader goes
+        through, because the log hands out copies rather than its own records --
+        had an explicit field list that did not include it. So every consumer
+        got an event without one and fell back to the markup, and the history
+        panel went on showing `<span class="color-012">` for a whole milestone
+        after this was called fixed.
+
+        The M29 tests checked the write path and the helper functions. Nothing
+        checked what a reader ends up holding, which is the only thing that
+        matters. Found by looking at a screenshot.
+
+        """
+        block = LOG[LOG.index("function copy(event)") :]
+        block = block[: block.index("\n        }")]
+        self.assertIn("plainText: event.plainText", block)
+
+    def test_every_field_append_stores_survives_the_copy(self):
+        """
+        Generalised, because the specific bug will not recur and the shape will.
+        Any field the record carries and the copy drops is invisible to every
+        reader.
+
+        """
+        stored = set(re.findall(r"^\s{16}(\w+):", LOG[LOG.index("function append(entry)") :][:1800], re.M))
+        copied = set(re.findall(r"^\s{16}(\w+):", LOG[LOG.index("function copy(event)") :][:900], re.M))
+        self.assertTrue(stored, "could not read the stored fields")
+        missing = stored - copied
+        self.assertEqual(missing, set(), "copy() drops fields append() stores: %s" % missing)
+
     def test_the_pipeline_carries_it_on_both_paths(self):
         """
         Including the path taken when no canonical log is configured, which is

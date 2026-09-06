@@ -11,6 +11,20 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Fixed — the history panel was still showing raw markup
+
+The M29 fix derived a plain rendering and stored it on the canonical event. The
+log hands out **copies** rather than its own records, and `copy()` has an
+explicit field list that did not include `plainText` — so every reader received
+an event without one and fell back to the markup. The history panel went on
+showing `<span class="color-012">` for a whole milestone after this was called
+fixed, and the tests passed because they checked the write path and the helpers
+rather than what a reader ends up holding.
+
+Found by looking at a screenshot. There is now a test on the read path, and a
+second, general one asserting that no field `append()` stores is dropped by
+`copy()` — the specific bug will not recur and the shape will.
+
 ### A10 — Two modes, two control panels, and a switch at the top right
 
 1284 tests. axe clean in standard mode, accessible mode with the panel open, and
