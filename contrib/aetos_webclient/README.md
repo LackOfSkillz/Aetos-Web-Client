@@ -391,6 +391,28 @@ and reduced-motion support are always present.
 - Game events never move focus. Dialogs trap focus and return it where they
   found it.
 
+### The Settings dashboard
+
+A **Settings** button in the status bar opens one place listing everything a
+player can configure: display and accessibility, themes, automation groups,
+reminders, symbol packs, privacy, and profile export/import. Every destination
+existed before; none of them had a way in other than the command palette.
+
+**A second section appears for game developers when you set
+`AETOS_DIAGNOSTICS = True`** — the inspector, the diagnostics report, the
+automation validator and the contrast report. Those describe *your game's*
+configuration rather than the player's client, which is why they are opt-in.
+
+Two things worth being plain about:
+
+- **It is game-wide, not per-account.** Everybody on a game with diagnostics on
+  sees that section. Aetos is not told who is staff; per-account gating needs a
+  field in the manifest and is not built yet.
+- **It grants no authority.** The inspector shows a player their own session and
+  the report names your provider classes. Hiding the section is tidiness, not a
+  security boundary, and the panel says so on screen rather than implying
+  otherwise.
+
 ### Two modes, and two control panels
 
 At the top right there is a switch labelled **Accessible mode** (also

@@ -1719,3 +1719,39 @@ body {
     color: var(--aetos-warning);
     border-bottom: 1px solid var(--aetos-border);
 }
+
+/* Settings dashboard ---------------------------------------------------- */
+
+.aetos-settings__group {
+    margin-bottom: var(--aetos-space);
+}
+
+.aetos-settings__heading {
+    margin: 0 0 4px;
+    font-size: 1rem;
+}
+
+.aetos-settings__detail {
+    margin: 0 0 8px;
+    color: var(--aetos-text-dim);
+    font-size: 0.9em;
+}
+
+/*
+ * The button carries the name and the sentence under it carries the
+ * explanation, so the row stacks rather than sitting side by side -- at a large
+ * text size a two-column row leaves a one-word column and a ragged one.
+ */
+.aetos-settings__row {
+    margin-bottom: 8px;
+}
+
+.aetos-settings__button {
+    display: block;
+    width: 100%;
+    text-align: left;
+}
+
+.aetos-settings__row .aetos-settings__detail {
+    margin: 2px 0 0;
+}

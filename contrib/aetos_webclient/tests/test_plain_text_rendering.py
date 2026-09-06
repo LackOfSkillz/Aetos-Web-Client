@@ -126,8 +126,12 @@ class TestTheEventCarriesBothForms(TestCase):
         reader.
 
         """
-        stored = set(re.findall(r"^\s{16}(\w+):", LOG[LOG.index("function append(entry)") :][:1800], re.M))
-        copied = set(re.findall(r"^\s{16}(\w+):", LOG[LOG.index("function copy(event)") :][:900], re.M))
+        stored = set(
+            re.findall(r"^\s{16}(\w+):", LOG[LOG.index("function append(entry)") :][:1800], re.M)
+        )
+        copied = set(
+            re.findall(r"^\s{16}(\w+):", LOG[LOG.index("function copy(event)") :][:900], re.M)
+        )
         self.assertTrue(stored, "could not read the stored fields")
         missing = stored - copied
         self.assertEqual(missing, set(), "copy() drops fields append() stores: %s" % missing)
@@ -232,7 +236,9 @@ class TestTheConsoleStillShowsColour(TestCase):
         self.assertIn("consoleWidget.append(event.originalText, null, presentation)", SHELL)
 
     def test_and_still_sanitises_it_rather_than_printing_it(self):
-        body = _slice(SHELL, "function append(content, className, presentation)", "pending.push(line);")
+        body = _slice(
+            SHELL, "function append(content, className, presentation)", "pending.push(line);"
+        )
         self.assertIn("line.appendChild(sanitizeHtml(content))", body)
 
     def test_the_substituted_and_highlighted_branches_are_plain_by_design(self):
@@ -243,7 +249,9 @@ class TestTheConsoleStillShowsColour(TestCase):
         of the code.
 
         """
-        body = _slice(SHELL, "function append(content, className, presentation)", "pending.push(line);")
+        body = _slice(
+            SHELL, "function append(content, className, presentation)", "pending.push(line);"
+        )
         self.assertIn("line.textContent = display.displayText", body)
         self.assertIn("renderHighlighted(", body)
 
@@ -272,7 +280,9 @@ class TestTheConsoleStillDrawsColour(TestCase):
         self.assertIn("result.substituted = replaced !== result.displayText;", RULES)
 
     def test_the_console_asks_whether_a_rule_rewrote_the_line(self):
-        body = _slice(SHELL, "function append(content, className, presentation)", "pending.push(line);")
+        body = _slice(
+            SHELL, "function append(content, className, presentation)", "pending.push(line);"
+        )
         self.assertIn("display.substituted && display.displayText !== undefined", body)
 
     def test_it_no_longer_compares_the_two_texts(self):
@@ -281,7 +291,9 @@ class TestTheConsoleStillDrawsColour(TestCase):
         let it come back the next time somebody edits around it.
 
         """
-        body = _slice(SHELL, "function append(content, className, presentation)", "pending.push(line);")
+        body = _slice(
+            SHELL, "function append(content, className, presentation)", "pending.push(line);"
+        )
         self.assertNotIn("display.displayText !== content", body)
 
     def test_an_untouched_line_still_goes_through_the_sanitiser(self):
@@ -290,7 +302,9 @@ class TestTheConsoleStillDrawsColour(TestCase):
         allowlist rather than printed.
 
         """
-        body = _slice(SHELL, "function append(content, className, presentation)", "pending.push(line);")
+        body = _slice(
+            SHELL, "function append(content, className, presentation)", "pending.push(line);"
+        )
         self.assertIn("line.appendChild(sanitizeHtml(content))", body)
 
 
@@ -314,7 +328,9 @@ class TestThePlainRenderingKeepsLineBreaks(TestCase):
 
         """
         body = _slice(SHELL, "normalize: function (validated)", "applyState:")
-        self.assertLess(body.index('querySelectorAll("br")'), body.index("plain = holder.textContent"))
+        self.assertLess(
+            body.index('querySelectorAll("br")'), body.index("plain = holder.textContent")
+        )
 
     def test_a_newline_rather_than_a_space(self):
         """

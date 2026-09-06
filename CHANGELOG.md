@@ -31,6 +31,44 @@ Both fixed: `present()` now *states* whether a rule rewrote the line instead of
 the console inferring it, and the plain rendering replaces `<br>` with a newline
 before taking the text.
 
+### Added — a Settings dashboard, with a player list and a developer list
+
+Gary: *"consolidate the settings into a nice settings dashboard and lets expose
+for admins and deves appropriate settings and for players only a sub set of
+settings appropriate for players"*.
+
+Aetos had **no Settings button at all**. Privacy, themes, automation groups,
+reminders, symbol packs and diagnostics were each a command-palette entry and
+nothing else, so reaching any of them meant knowing to press `Ctrl+K` and knowing
+what to type — the discovery problem A9 answered for accessibility, one layer up.
+
+- **Your client** — eight destinations, all of which change this player's own
+  client and are stored in this browser.
+- **For game developers** — the inspector, diagnostics report, automation
+  validator and contrast report. Shown only when the game sets
+  `AETOS_DIAGNOSTICS`, which reaches the client as a `diagnostics` key in the
+  manifest.
+- **The gate is game-wide, and the panel says so.** It is a switch a developer
+  sets in `settings.py`, not a per-account permission. Per-account gating needs
+  the server to mark the session as staff; when it arrives it feeds the same
+  function and nothing else changes.
+- **It grants no authority**, and is written not to look as though it does.
+  Hiding a section is tidiness; treating it as a security boundary would be the
+  more dangerous mistake, because somebody would eventually rely on it.
+
+Rows that would do nothing are not shown — automation groups only where the game
+permits automation — and the list is built at open time, because the manifest
+arrives after boot.
+
+It reuses `dialog.js` rather than being a fourth overlay implementation, gaining
+its focus trap, Escape handling and focus return. `dialog.js` learned a
+`dismissOnly` mode for it: a list of choices that act immediately has nothing to
+save, and labelling its only button "Cancel" would suggest what you already
+clicked could be undone.
+
+Verified live in both states — one group of eight with diagnostics off, two
+groups of twelve with it on — and axe clean with the dashboard open.
+
 ### Added — a Settings button
 
 Aetos never had one. Privacy, themes, automation groups, reminders, symbol packs

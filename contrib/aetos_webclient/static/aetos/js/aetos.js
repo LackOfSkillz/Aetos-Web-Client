@@ -3062,8 +3062,28 @@
          * there is no palette, because a button that does nothing is worse than
          * an absent one.
          */
+        var settingsDashboard = window.AetosSettingsDashboard
+            ? window.AetosSettingsDashboard.create({
+                dialog: window.AetosDialog,
+                settings: settings,
+                inspector: inspector,
+                accessibilityPanel: accessibilityPanel,
+                manifest: function () { return store ? store.get("manifest") : null; },
+                automationAllowed: automationAllowed,
+                announce: function (message) {
+                    announcer.announce(message, { priority: "normal" });
+                }
+            })
+            : null;
+
         var settingsButton = document.getElementById("aetos-open-settings");
-        if (settingsButton && palette) {
+        if (settingsButton && settingsDashboard) {
+            settingsButton.addEventListener("click", function () {
+                settingsDashboard.open();
+            });
+        } else if (settingsButton && palette) {
+            // No dashboard module: the palette still finds every destination by
+            // name, which is where they all lived before this existed.
             settingsButton.addEventListener("click", function () {
                 palette.open("settings");
             });
@@ -3092,6 +3112,7 @@
             store: store,
             consoleWidget: consoleWidget,
             accessibilityPanel: accessibilityPanel,
+            settingsDashboard: settingsDashboard,
             announcer: announcer,
             storage: storage,
             profile: profile,

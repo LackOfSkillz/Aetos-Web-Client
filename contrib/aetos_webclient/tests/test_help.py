@@ -230,13 +230,28 @@ class TestServicesAreWiredOnce(TestCase):
 
     """
 
-    def test_each_service_is_exported_exactly_once(self):
-        for service in ("settings: settings", "palette: palette", "help: help"):
+    #: How many times each service line may legitimately appear, and where.
+    #:
+    #: A declared number rather than "exactly once", because a service can be
+    #: wired into a module *and* exported -- `settings` now goes to the settings
+    #: dashboard as well as onto `window.Aetos`. Keeping it a number that has to
+    #: be edited deliberately preserves what the guard is for: a global replace
+    #: raises the count without anybody deciding to.
+    EXPECTED = {
+        "settings: settings": (2, "the settings dashboard, and the Aetos export"),
+        "palette: palette": (1, "the Aetos export"),
+        "help: help": (1, "the Aetos export"),
+    }
+
+    def test_each_service_is_wired_the_number_of_times_it_should_be(self):
+        for service, (expected, where) in self.EXPECTED.items():
             self.assertEqual(
                 SHELL.count(service),
-                1,
-                "%r appears %d times in aetos.js; a global replace has "
-                "injected it somewhere it does not belong" % (service, SHELL.count(service)),
+                expected,
+                "%r appears %d times in aetos.js, expected %d (%s). Either a "
+                "global replace has injected it somewhere it does not belong, "
+                "or a new consumer was added and this table needs to say so."
+                % (service, SHELL.count(service), expected, where),
             )
 
     def test_help_is_defined_before_it_is_exported(self):

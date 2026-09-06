@@ -160,10 +160,20 @@
         var cancel = document.createElement("button");
         cancel.type = "button";
         cancel.className = "aetos-list__button";
-        cancel.textContent = "Cancel";
+        /*
+         * "Close" rather than "Cancel" when there is nothing to cancel.
+         *
+         * A dismiss-only dialog presents choices that act immediately -- the
+         * settings dashboard is a list of places to go, not a form. Labelling
+         * its only button "Cancel" would suggest the things already clicked
+         * could be undone by pressing it.
+         */
+        cancel.textContent = options.dismissOnly ? "Close" : "Cancel";
         cancel.addEventListener("click", function () { close(null); });
 
-        controls.appendChild(submit);
+        if (!options.dismissOnly) {
+            controls.appendChild(submit);
+        }
 
         /*
          * Extra actions, such as a destructive one alongside the main choice.
