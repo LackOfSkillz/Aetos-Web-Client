@@ -901,8 +901,15 @@
                         "There is no bundle to accept or refuse. Each one is separate, and "
                             + "all of them are also in Settings if that is where you looked "
                             + "first.",
-                        "Closing that panel does not switch anything off. It puts the options "
-                            + "away; whatever you chose stays exactly as you left it."
+                        "The button switches between two modes. Standard mode is the client "
+                            + "as it comes; accessible mode applies what you chose. Switching "
+                            + "back to standard stops them applying and keeps every one of "
+                            + "them, so you can look at the standard interface and come "
+                            + "straight back with the same keystroke.",
+                        "Three of the options are never switched off by the mode, because "
+                            + "their off state is the accommodation: muting sound, turning "
+                            + "gestures off, and orientation help. Standard mode leaves those "
+                            + "exactly as you set them."
                     ],
                     keys: [
                         ["Ctrl+Shift+A", "Show or hide the accessibility options"]

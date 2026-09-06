@@ -391,10 +391,35 @@ and reduced-motion support are always present.
 - Game events never move focus. Dialogs trap focus and return it where they
   found it.
 
+### Two modes, and one control that switches them
+
+The status bar has an **Accessibility** button (also `Ctrl+Shift+A`). It switches
+between the standard interface and an accessible one, rather than trying to be
+both at once.
+
+**Standard mode is the client as it comes.** Nothing is compromised to
+accommodate anybody, because the accommodations are not applied.
+
+**Accessible mode applies what the player chose**, from the panel the button
+reveals. Every option is separate; there is no bundle to accept or refuse.
+
+**Switching back to standard stops them applying and erases nothing.** That is
+what makes the switch safe to try: the way back is one keystroke and it restores
+the interface somebody built rather than an empty one. Three options are never
+reverted by the mode, because their *off* state is the accommodation — muting
+sound, turning gestures off, and orientation help.
+
+**None of this reaches the baseline.** Keyboard operation, focus management,
+landmarks, accessible names, the announcer and colour never carrying meaning
+alone are unconditional in both modes. A client that is only operable by keyboard
+when a box is ticked is not an accessible client with a toggle; it is an
+inaccessible client with an apology. The panel lists them, so somebody deciding
+whether to switch can see what was never off.
+
 ### What a player can turn on for themselves
 
-None of these needs anything from you, and all of them are stored in the
-player's own browser:
+These are what accessible mode applies. None of them needs anything from you, and
+all of them are stored in the player's own browser:
 
 - A contrast and colour-scheme choice, with every theme validated against WCAG
   contrast ratios before it can be applied -- a theme cannot ship a combination

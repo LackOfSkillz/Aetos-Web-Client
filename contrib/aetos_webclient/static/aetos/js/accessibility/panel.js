@@ -1,31 +1,35 @@
 /*
- * Aetos accessibility panel.  A9.
+ * Aetos accessibility mode and its options.  A9, then A10.
  *
- * One visible control that reveals the accessibility options, and a picker
- * behind it.
+ * One visible control that switches between the standard interface and the
+ * accessible one, and the picker that belongs to the second.
  *
- * WHY THIS EXISTS. The preferences it shows are not new -- every one of them
- * has worked since the A-track built it, and every one is in Settings. The
- * problem is that they are spread across five groups of a panel reached from
- * the command palette, and **almost nobody will ever find them**. A player who
- * needs three of them has to know they exist, know they are separable, and go
- * looking. Granularity is right and it created a discovery problem; this is the
- * answer to that problem and nothing else.
+ * WHY IT EXISTS. The preferences it shows are not new -- every one has worked
+ * since the A-track built it, and every one is in Settings. The problem was that
+ * they sat across five groups of a panel reached from the command palette, and
+ * **almost nobody would ever find them**. Granularity was right and it created a
+ * discovery problem.
  *
- * WHAT THE TOGGLE DOES AND DOES NOT DO. It changes what is *offered*, never
- * what is on. Turning the panel off keeps every accommodation the player chose
- * and leaves the same controls in Settings.
+ * WHAT THE TOGGLE DOES. A9 shipped it as a disclosure: the panel hid and every
+ * setting stayed applied. Gary asked for the sharper version -- two modes, "so
+ * we dont have to try to be everything to everybody" -- and that is A10.
+ * Standard mode stops the governed accommodations applying. Accessible mode
+ * resumes them.
  *
- * The other reading -- a switch that turns the accommodations themselves off --
- * is a sharper product with a real hazard: somebody flicks it to see what the
- * standard interface looks like, and then cannot read the screen well enough to
- * find the switch again. Until that is asked for explicitly, this one cannot
- * strand anybody.
+ * IT MASKS; IT NEVER ERASES. Switching to standard leaves every stored value
+ * untouched, so switching back restores the interface somebody built rather than
+ * a fresh one. That is what makes the switch safe to try, and it is the whole
+ * difference between a mode and a reset.
  *
- * WHAT IS NOT IN HERE. Keyboard operation, focus management, landmarks,
+ * WHAT IS NOT GOVERNED BY IT. Keyboard operation, focus management, landmarks,
  * accessible names, the announcer, colour never carrying meaning alone. Those
- * are unconditional and are listed in the panel as such -- somebody deciding
- * whether to turn accessibility "on" deserves to know what was never off.
+ * are unconditional in both modes and are listed in the panel as such --
+ * somebody deciding whether to switch deserves to know what was never off.
+ *
+ * Three of the panel's own options are not governed either, because their
+ * defaults are the *less* accessible value: reverting gestures, mute or
+ * orientation help would impose an accommodation's opposite on the person who
+ * asked for it. See `revertsInStandardMode` in preferences.js.
  */
 
 (function (window, document) {
@@ -72,7 +76,7 @@
         var toggleButton = null;
 
         function isOpen() {
-            return !!preferences.value("shell.accessibilityPanel");
+            return preferences.value("shell.mode") === "accessible";
         }
 
         /*
@@ -226,7 +230,20 @@
             host.textContent = "";
             host.hidden = !isOpen();
             if (toggleButton) {
-                toggleButton.setAttribute("aria-expanded", isOpen() ? "true" : "false");
+                /*
+                 * `aria-pressed`, not `aria-expanded`. It switches which
+                 * interface you are in; revealing the panel is a consequence of
+                 * that rather than the point of it. A disclosure that also
+                 * changed the contrast of the page would be lying about what it
+                 * does.
+                 */
+                toggleButton.setAttribute("aria-pressed", isOpen() ? "true" : "false");
+                toggleButton.setAttribute(
+                    "title",
+                    isOpen()
+                        ? "Accessible mode is on. Ctrl+Shift+A switches back."
+                        : "Switch to accessible mode. Ctrl+Shift+A."
+                );
             }
             if (!isOpen()) {
                 return;
@@ -240,8 +257,9 @@
             intro.className = "aetos-a11y-panel__detail";
             intro.textContent =
                 "Choose what you want. Each of these is separate -- there is no "
-                + "bundle to accept or refuse, and every one of them is also in "
-                + "Settings.";
+                + "bundle to accept or refuse. Switching back to standard mode "
+                + "stops them applying and keeps every choice, so you can look "
+                + "and come back.";
 
             host.appendChild(heading);
             host.appendChild(intro);
@@ -254,13 +272,52 @@
             buildUnconditional(host);
         }
 
+        /*
+         * Switch between the standard interface and the accessible one.
+         *
+         * The stored settings are never touched -- see `effective()` in
+         * preferences.js. Standard mode stops the governed accommodations
+         * applying; accessible mode resumes exactly what was there before.
+         *
+         * THE WAY BACK. This is the hazard in a real mode switch and the reason
+         * A9 shipped the softer version first: somebody turns it off to look,
+         * the type shrinks and the contrast drops, and they cannot find the
+         * control again. Three things answer that, and all three matter:
+         *
+         *   1. `Ctrl+Shift+A` works in both modes and is stated out loud at the
+         *      moment it becomes relevant, rather than in documentation nobody
+         *      is reading at that moment.
+         *   2. The toggle itself is never governed by the mode. It keeps its
+         *      place, its label and its size in both.
+         *   3. Nothing is erased, so the way back is one keystroke rather than
+         *      a rebuild.
+         */
         function toggle() {
             var next = !isOpen();
-            set("shell.accessibilityPanel", next);
+            var lost = preferences.activeAccommodations
+                ? preferences.activeAccommodations()
+                : [];
+            set("shell.mode", next ? "accessible" : "standard");
             render();
-            announce(next
-                ? "Accessibility options shown."
-                : "Accessibility options hidden. Nothing you chose was changed.");
+
+            if (next) {
+                announce(lost.length
+                    ? "Accessible mode. " + lost.join(", ") + " back on."
+                    : "Accessible mode. Choose the options you want.");
+            } else {
+                /*
+                 * Say what stopped and how to undo it, in that order. Somebody
+                 * who has just lost their contrast needs the second half more
+                 * than the first, and hears the sentence to the end.
+                 */
+                announce(lost.length
+                    ? "Standard mode. " + lost.join(", ") + " no longer applied, "
+                        + "and nothing was erased. Press Control Shift A to bring "
+                        + "them back."
+                    : "Standard mode. Press Control Shift A to return.",
+                    { priority: "important" });
+            }
+
             if (next && focusManager && focusManager.focusFirst) {
                 focusManager.focusFirst(host);
             }

@@ -159,24 +159,20 @@ does not claim the command works today.
 
 ---
 
-## 6. Does the accessibility toggle hide the panel, or switch the features off?
+## 6. ANSWERED -- the toggle switches modes, and masks rather than erases
 
-**Status:** built under reading 1. Still worth your decision.
+**Gary, 2026-09-05:** *"lets make the default mode and the accessable mode a
+toggle so we dont have to try to be everything to everybody"*.
 
-A9 is done and shipped as **the panel hides; nothing you chose changes**. Closing
-it writes exactly one preference -- its own -- and says so on screen: *"Nothing
-you chose was changed."*
+Built as A10. Standard mode stops the governed accommodations applying;
+accessible mode resumes them. Nothing is erased, so the way back is one keystroke
+and it restores the interface you built.
 
-I chose that reading because the other one can strand somebody: flick a switch
-labelled "accessibility" to see what the standard interface looks like, then be
-unable to read the screen well enough to find the switch again.
+Three options are deliberately never reverted, because their *off* state is the
+accommodation: muting sound, turning gestures off, and orientation help.
+See `notes/a10-two-modes.md`.
 
-**If you want the sharper version** -- toggle off really means a plain standard
-UI regardless of what was configured -- it is a small change, and it needs two
-things with it: a confirmation naming what is about to switch off, and a
-shortcut that works regardless of state so there is always a way back.
-
-**What I need:** a yes to what shipped, or a "make it the other one".
+Nothing outstanding here.
 
 ---
 

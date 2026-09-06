@@ -619,6 +619,9 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] M29  Compatibility matrix                           -- 1199 py
          (a :focus fallback that removed the thing it fell back to)
 [x] A9   Accessibility toggle + feature picker          -- 1222 py
+[x] A10  Two modes: standard <-> accessible            -- 1265 py
+         (Gary: "so we dont have to try to be everything to
+         everybody"; masks, never erases)
 [~] A8   Assistive-technology validation                -- 1249 py
          automated half DONE (axe x12 views, reflow, contrast);
          found a row of controls unreachable at 320px since M4.

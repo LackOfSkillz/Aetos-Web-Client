@@ -148,6 +148,38 @@
  * simply grows.
  * ---------------------------------------------------------------------- */
 
+/*
+ * The accessibility mode switch.  A10.
+ *
+ * This control is the way back from standard mode, so it is the one thing that
+ * must not get smaller, quieter or harder to find when the accommodations are
+ * off.
+ *
+ * Two things went wrong writing this, both worth leaving recorded:
+ *
+ * It first said `min-height: var(--aetos-target)`, which does nothing --
+ * `--aetos-target` is deliberately `0px` on a fine pointer and only becomes
+ * 44px under `pointer: coarse`.
+ *
+ * Then it said `min-height: 28px` in `aetos.css`, which also did nothing: the
+ * rule below sets 24px at equal specificity from a stylesheet that loads later,
+ * so it won. Measured both times rather than assumed, which is the only reason
+ * either was noticed.
+ *
+ * It lives here, above the rule it has to beat, for that reason -- and because
+ * this is where somebody looking for target sizes will look.
+ */
+.aetos-root .aetos-statusbar__button--mode {
+    min-height: 32px;
+    font-weight: 600;
+}
+
+/* On, and saying so in more than a colour. */
+.aetos-root .aetos-statusbar__button--mode[aria-pressed="true"] {
+    border-color: var(--aetos-accent);
+    box-shadow: inset 0 -3px 0 0 var(--aetos-accent);
+}
+
 .aetos-root button,
 .aetos-root [role="button"],
 .aetos-root a[href] {

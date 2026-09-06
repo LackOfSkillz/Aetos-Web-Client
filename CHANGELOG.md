@@ -11,6 +11,51 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### A10 — Two modes: standard and accessible
+
+1265 tests. axe clean in standard mode, accessible mode, and accessible mode at
+high contrast. [`notes/a10-two-modes.md`](notes/a10-two-modes.md)
+
+Gary: *"lets make the default mode and the accessable mode a toggle so we dont
+have to try to be everything to everybody"*. This answers `questions.md` 6 in the
+sharper direction.
+
+**Changed — the accessibility toggle now switches modes rather than revealing a
+panel**
+
+- A9 shipped it as a disclosure: the panel hid and every accommodation stayed
+  applied. Standard mode now genuinely stops the governed accommodations
+  applying, so neither interface is compromised to accommodate the other.
+- **It masks; it never erases.** `effective()` builds a view over the stored
+  preferences and never assigns into them, so switching back restores the
+  interface somebody built rather than an empty one. That is the difference
+  between a mode and a reset, and it is what makes the switch safe to try.
+- The way back is stated at the moment it matters: *"Standard mode. Contrast,
+  Text size, Quiet mode no longer applied, and nothing was erased. Press Control
+  Shift A to bring them back."* `Ctrl+Shift+A` works in both modes, and the
+  switch keeps its position and 32px height in both.
+- `aria-pressed` replaces `aria-expanded` — it switches which interface you are
+  in, and the panel appearing is a consequence rather than the point.
+
+**Three options are never reverted by the mode**, because their *off* state is
+the accommodation: `pointer.gestures` (default on — somebody with a tremor turns
+them off), `audio.muted` (default off — muting is the accommodation) and
+`cognitive.reorientEnabled` (default on — reverting would *add* a feature).
+Getting that backwards would have made standard mode hostile to exactly three of
+the people it is meant to leave alone.
+
+**Fixed while building it** — three things that read as guarantees and did
+nothing: `min-height: var(--aetos-target)` on the switch (that token is `0px` on
+a fine pointer); `min-height: 28px` in `aetos.css` (a 24px rule of equal
+specificity in `accessibility.css` loads later and won); and the shell dropping
+the announcement priority, which would have sent the one message somebody needs
+to hear into the quietest category there is. All three found by measuring the
+rendered button rather than reading the CSS.
+
+**Unchanged: the baseline.** Keyboard operation, focus management, landmarks,
+accessible names, the announcer and colour never carrying meaning alone are
+unconditional in both modes, and still listed in the panel under "Always on".
+
 ### A8 (part 1) — the automated half of assistive-technology validation
 
 1249 tests. axe clean across **twelve** views, not one.

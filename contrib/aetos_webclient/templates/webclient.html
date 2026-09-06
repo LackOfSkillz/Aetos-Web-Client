@@ -160,8 +160,10 @@ it is where a player wants to be nearly every time.
               aria-pressed="false">Edit Layout</button>
       <button id="aetos-open-help" class="aetos-statusbar__button" type="button">Help</button>
       {% comment %}
-      A9. The one control that has to be findable without already knowing the
-      client.
+      A9, then A10. The one control that has to be findable without already
+      knowing the client -- and, since A10 made it a mode switch, the one control
+      that has to remain findable *after* somebody has switched the
+      accommodations off.
 
       In the status bar rather than in Settings, because the whole point is
       discovery: the options behind it have worked since the A-track built them
@@ -169,9 +171,18 @@ it is where a player wants to be nearly every time.
 
       It says "Accessibility" and not an icon. An icon here would be a symbol
       somebody has to recognise before they can ask for help reading symbols.
+
+      `aria-pressed`, not `aria-expanded`: it switches which interface you are
+      in, and the panel appearing is a consequence rather than the point.
+
+      Its appearance is deliberately not governed by the mode -- same place,
+      same words, same target size in both. See `.aetos-statusbar__button--mode`
+      in aetos.css, which is the way back for somebody who has just made the
+      text small again.
       {% endcomment %}
-      <button id="aetos-accessibility-toggle" class="aetos-statusbar__button"
-              type="button" aria-expanded="false">Accessibility</button>
+      <button id="aetos-accessibility-toggle"
+              class="aetos-statusbar__button aetos-statusbar__button--mode"
+              type="button" aria-pressed="false">Accessibility</button>
     </nav>
   </header>
 

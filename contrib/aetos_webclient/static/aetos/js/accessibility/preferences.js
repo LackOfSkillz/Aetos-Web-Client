@@ -1,11 +1,22 @@
 /*
  * Aetos accessibility preferences.  Addendum A.70, A.71, A.72.
  *
- * NOT AN ON/OFF SWITCH. There is no "accessibility mode" here, because there is
- * no such thing as an accessible user. Semantic HTML, keyboard operation and
- * focus management are unconditional and are not represented in this file at
- * all -- they cannot be turned off, by a player or by a game developer
- * (A11Y-BASE-001).
+ * THERE IS A MODE, AND IT DOES NOT REACH THE BASELINE (A10).
+ *
+ * `shell.mode` chooses between the standard interface and the accessible one.
+ * It governs the *optional* layer only -- contrast, type size, motion,
+ * stimulation, verbosity, quiet and focus modes, the word board.
+ *
+ * Semantic HTML, keyboard operation, focus management, landmarks, accessible
+ * names and the announcer are unconditional, are not represented in this file
+ * at all, and cannot be turned off by a player or a game developer
+ * (A11Y-BASE-001). A mode switch that could reach them would not be a mode
+ * switch; it would be a way to break the client.
+ *
+ * This file said "there is no accessibility mode here" until A10, and for the
+ * baseline that is still exactly true. What changed is that the optional layer
+ * now has one, because trying to be everything to everybody at once produced an
+ * interface that was nobody's first choice.
  *
  * What lives here is the part that genuinely varies between people: how much
  * the client should say out loud, how much it should move, and how much it
@@ -55,20 +66,25 @@
         version: VERSION,
 
         /*
-         * The shell's own state.  A9.
+         * Which interface the player is in.  A10.
          *
-         * `accessibilityPanel` is whether the accessibility options are shown.
-         * It changes what is *offered*, never what is on: a player who turns
-         * the panel off keeps every accommodation they had chosen, and finds
-         * the same controls in Settings where they have always been.
+         * `"standard"` is the client as it is for somebody who never asks for
+         * anything: default contrast, default type, no accessibility panel.
+         * `"accessible"` applies the accommodations they have chosen and offers
+         * the panel to change them.
          *
-         * That asymmetry is deliberate. The alternative -- a switch that turns
-         * the accommodations themselves off -- can strand somebody who flicks
-         * it to see what the standard interface looks like and then cannot read
-         * the screen well enough to find the switch again.
+         * A9 shipped this as a *disclosure* -- the panel hid and every setting
+         * stayed applied. Gary asked for the sharper version: two modes, "so we
+         * dont have to try to be everything to everybody". This is that.
+         *
+         * **The mode masks; it never erases.** Switching to standard stops the
+         * governed accommodations applying and leaves every stored value
+         * exactly as it was, so switching back restores the interface somebody
+         * spent time building rather than handing them a fresh one. Erasing
+         * would make the toggle a thing you cannot afford to try.
          */
         shell: {
-            accessibilityPanel: false
+            mode: "standard"
         },
 
         screenReader: {
@@ -199,46 +215,74 @@
      * `kind` says how to render it; `label` is what a player reads; `detail`
      * says what changes, in terms of what they will see rather than what the
      * code does.
+     *
+     * `revertsInStandardMode` is the one that needs care. A10 makes standard
+     * mode stop applying the accommodations, and something may only be reverted
+     * safely if its **default is the standard experience** -- so that reverting
+     * removes an accommodation rather than imposing one.
+     *
+     * Three here fail that test and are marked `false`:
+     *
+     *   `pointer.gestures` defaults to ON, so somebody with a tremor turns them
+     *   OFF. Reverting would switch gestures back on for the person who most
+     *   needed them off.
+     *
+     *   `audio.muted` defaults to OFF, so muting is the accommodation.
+     *   Reverting would start playing sound at somebody.
+     *
+     *   `cognitive.reorientEnabled` defaults to ON. Reverting adds a feature
+     *   rather than removing one, which is not what a mode switch is for.
+     *
+     * They stay in the panel, because they belong there, and they survive the
+     * mode switch untouched. Getting this backwards would make standard mode
+     * actively hostile to three of the people it is meant to leave alone.
      */
     var GOVERNED = [
         {
             path: "visual.contrast",
+            revertsInStandardMode: true,
             kind: "enum",
             label: "Contrast",
             detail: "Higher contrast strengthens every border and text colour."
         },
         {
             path: "visual.scale",
+            revertsInStandardMode: true,
             kind: "range",
             label: "Text size",
             detail: "Scales the whole interface, not only the text."
         },
         {
             path: "visual.motion",
+            revertsInStandardMode: true,
             kind: "enum",
             label: "Motion",
             detail: "Your choice wins over the system setting, in both directions."
         },
         {
             path: "visual.stimulation",
+            revertsInStandardMode: true,
             kind: "enum",
             label: "Visual detail",
             detail: "Removes decoration that carries no information."
         },
         {
             path: "screenReader.announcementMode",
+            revertsInStandardMode: true,
             kind: "enum",
             label: "How much is announced",
             detail: "What is spoken aloud or sent to a braille display."
         },
         {
             path: "cognitive.quietMode",
+            revertsInStandardMode: true,
             kind: "boolean",
             label: "Quiet mode",
             detail: "Fewer interruptions. Nothing is lost -- it is still in the log."
         },
         {
             path: "cognitive.focusMode",
+            revertsInStandardMode: true,
             kind: "boolean",
             label: "Focus mode",
             detail: "A calmer screen. Separate from quiet mode, because wanting "
@@ -246,18 +290,21 @@
         },
         {
             path: "cognitive.reorientEnabled",
+            revertsInStandardMode: false,
             kind: "boolean",
             label: "Orientation help",
             detail: "Where you are, how you got here, and how to go back."
         },
         {
             path: "aac.enabled",
+            revertsInStandardMode: true,
             kind: "boolean",
             label: "Picture and word board",
             detail: "Compose commands from symbols and words instead of typing."
         },
         {
             path: "pointer.gestures",
+            revertsInStandardMode: false,
             kind: "boolean",
             label: "Touch gestures",
             detail: "Every gesture also has a keyboard command, so turning these "
@@ -265,6 +312,7 @@
         },
         {
             path: "audio.muted",
+            revertsInStandardMode: false,
             kind: "boolean",
             label: "Mute all sound",
             detail: "Captions stay on screen regardless."
@@ -311,6 +359,7 @@
     };
 
     var ENUMS = {
+        "shell.mode": ["standard", "accessible"],
         "screenReader.announcementMode": ["selective", "all", "minimal"],
         "screenReader.announceResources": ["never", "thresholds", "always"],
         "screenReader.reviewModeBehavior": ["pause-normal", "pause-all", "pause-none"],
@@ -405,7 +454,7 @@
         function notify() {
             listeners.forEach(function (listener) {
                 try {
-                    listener(clone(current));
+                    listener(effective());
                 } catch (err) {
                     // One bad subscriber must not stop the others from
                     // applying a preference the player explicitly asked for.
@@ -418,6 +467,63 @@
 
         function get() {
             return clone(current);
+        }
+
+        /*
+         * What is actually in force, as opposed to what the player has chosen.
+         *
+         * In accessible mode the two are the same. In standard mode the
+         * governed accommodations read as their defaults -- **without the
+         * stored values being touched**, so switching back restores the
+         * interface somebody built rather than a fresh one.
+         *
+         * Subscribers get this rather than `get()`, so every consumer honours
+         * the mode without having to know a mode exists. `get()` and `value()`
+         * still answer "what did the player choose", which is what the editors
+         * need in order to show it.
+         *
+         * A consumer that subscribed and then wrote back what it received would
+         * persist the mask and lose the choice. Nothing does; it is worth
+         * knowing that nothing may.
+         */
+        function effective() {
+            var view = clone(current);
+            if (view.shell && view.shell.mode === "accessible") {
+                return view;
+            }
+            GOVERNED.forEach(function (entry) {
+                if (!entry.revertsInStandardMode) {
+                    return;
+                }
+                var parts = entry.path.split(".");
+                if (view[parts[0]] && DEFAULTS[parts[0]]) {
+                    view[parts[0]][parts[1]] = DEFAULTS[parts[0]][parts[1]];
+                }
+            });
+            return view;
+        }
+
+        /*
+         * Whether anything the mode governs is actually set away from default.
+         *
+         * Used to decide what to say when somebody switches modes: "nothing you
+         * chose was in use anyway" and "your five settings have stopped
+         * applying" deserve different sentences.
+         */
+        function activeAccommodations() {
+            var names = [];
+            GOVERNED.forEach(function (entry) {
+                if (!entry.revertsInStandardMode) {
+                    return;
+                }
+                var parts = entry.path.split(".");
+                var chosen = current[parts[0]] && current[parts[0]][parts[1]];
+                var fallback = DEFAULTS[parts[0]] && DEFAULTS[parts[0]][parts[1]];
+                if (chosen !== fallback) {
+                    names.push(entry.label);
+                }
+            });
+            return names;
         }
 
         /*
@@ -518,8 +624,14 @@
             // Prime immediately. A subscriber that only hears about *changes*
             // never applies the current value, which is the bug the state store
             // hit in M6.
+            //
+            // `effective()`, matching `notify()`. Priming with `get()` would
+            // hand every subscriber the unmasked settings once at boot and the
+            // masked ones from then on -- so a client started in standard mode
+            // would apply the accommodations for exactly as long as it took
+            // somebody to change something.
             try {
-                listener(get());
+                listener(effective());
             } catch (err) {
                 if (window.console) {
                     window.console.error("Aetos: accessibility subscriber failed", err);
@@ -535,6 +647,8 @@
 
         return {
             get: get,
+            effective: effective,
+            activeAccommodations: activeAccommodations,
             value: value,
             update: update,
             reset: reset,

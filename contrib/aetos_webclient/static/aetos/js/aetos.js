@@ -2361,8 +2361,12 @@
         var accessibilityPanel = window.AetosAccessibilityPanel && accessibility
             ? window.AetosAccessibilityPanel.create({
                 preferences: accessibility.preferences,
-                announce: function (message) {
-                    accessibility.announce(message, { priority: "normal" });
+                announce: function (message, options) {
+                    // Forwarded, not fixed at "normal": switching to standard
+                    // mode announces at `important`, and swallowing that would
+                    // mean the one message somebody needs to hear -- how to get
+                    // back -- arrives in the quietest category there is.
+                    accessibility.announce(message, options || { priority: "normal" });
                 },
                 focusManager: window.AetosFocusManager || null
             })
