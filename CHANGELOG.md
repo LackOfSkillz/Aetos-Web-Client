@@ -11,6 +11,48 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### A8 (part 1) — the automated half of assistive-technology validation
+
+1249 tests. axe clean across **twelve** views, not one.
+[`notes/a8-partial-automated-validation.md`](notes/a8-partial-automated-validation.md)
+
+**I had written the whole stage off as "needs people".** Six of its ten items do.
+Four do not, and one of the four found a defect that had been in the client since
+M4.
+
+**Fixed — a row of controls unreachable on a phone (WCAG 1.4.10, 2.4.11)**
+
+- At 320px the status bar measured 589px and never wrapped, so the connection
+  indicator, game name, Edit Layout, Help and the Accessibility toggle sat off
+  the right-hand edge. `body` has `overflow-x: hidden`, so there was no
+  scrollbar, `window.scrollTo` did nothing, and they were **unreachable by
+  pointer or touch at all**. Tabbing to one put focus on something invisible.
+- Among them was the Accessibility toggle A9 had just added so people could find
+  the accessibility options.
+- M20's responsive rules cover the workspace and the widgets and not the header.
+  axe never caught it because axe does not test reflow, and every axe run had
+  been at the browser pane's own width.
+- Fixed by letting the bar wrap, unconditionally rather than at a breakpoint —
+  wrapping changes nothing when the row fits, and a media query is only another
+  width to be wrong about.
+
+**The check for it was wrong twice, which is the interesting part.** "Is anything
+wider than the viewport?" passed — the elements were narrow and *positioned*
+outside. "Is anything outside the viewport?" flagged nine controls inside
+scrollable widget bodies that are perfectly reachable. The question is
+*off-screen with no ancestor that can be scrolled*, which is what
+[`browser-qa/qa-reflow.js`](browser-qa/qa-reflow.js) now measures — zero, at text
+scales 1.0 through 2.5.
+
+**Also done:** axe across twelve views (previously one, reported as if it covered
+the client); contrast validated for both themes including the high-contrast
+theme's *merged* token set, so no colour pair goes unchecked.
+
+**Still blocked, and now the only thing blocking release:** the braille tester,
+the AAC reviewer, NVDA/JAWS/Orca passes and cognitive scenarios.
+[`docs/a8-tester-protocol.md`](docs/a8-tester-protocol.md) now holds their
+scripts, so their time goes on judgement rather than working out what to try.
+
 ### M31 — Release candidate (audit complete; **not releasable**)
 
 1243 tests. axe clean at every severity.

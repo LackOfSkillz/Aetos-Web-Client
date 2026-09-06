@@ -619,8 +619,11 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [x] M29  Compatibility matrix                           -- 1199 py
          (a :focus fallback that removed the thing it fell back to)
 [x] A9   Accessibility toggle + feature picker          -- 1222 py
-[ ] A8   Assistive-technology validation  <-- BLOCKED: needs a braille
-         tester and an AAC reviewer (questions.md 3)
+[~] A8   Assistive-technology validation                -- 1249 py
+         automated half DONE (axe x12 views, reflow, contrast);
+         found a row of controls unreachable at 320px since M4.
+         Human half BLOCKED: braille tester + AAC reviewer
+         (questions.md 3). Scripts ready: docs/a8-tester-protocol.md
 [~] M30  WITHDRAWN -- superseded by the A-track (A.106)
 [~] M31  Release candidate  -- audit done, 1243 py; NOT releasable:
          A8 is the only blocker and it needs people, not code

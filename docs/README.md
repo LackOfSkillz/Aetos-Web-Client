@@ -12,6 +12,7 @@ Also worth reading:
 | | |
 | --- | --- |
 | [Installing and configuring the contrib](../contrib/aetos_webclient/README.md) | Provider slots, settings, troubleshooting. This is the file that ships with the client. |
+| [A8 tester protocol](a8-tester-protocol.md) | Scripts and recording sheets for the screen-reader, braille, cognitive and AAC testing that A8 requires and that no tool can do. |
 | [Compatibility](compatibility.md) | Browsers, Evennia and Python versions, what each optional feature falls back to, and what has actually been tested rather than expected to work. |
 | [Roadmap](../notes/roadmap.md) | What is built, what is left, and the A-track staging. |
 | [Decisions](../notes/) | `decision-*.md` -- why the project is shaped the way it is. `m*.md` -- what each milestone did and what it broke. |

@@ -90,8 +90,27 @@ body {
 
 /* Status bar ---------------------------------------------------------- */
 
+/*
+ * The status bar wraps.  A8, WCAG 1.4.10 and 2.4.11.
+ *
+ * It did not, and at 320px its contents -- the connection indicator, the game
+ * name, Edit Layout, Help and the Accessibility toggle -- were 589px wide in a
+ * 320px viewport. `body` has `overflow-x: hidden`, so they were not merely
+ * off-screen: there was no scrollbar and `window.scrollTo` refused to move.
+ * They were unreachable by pointer or touch entirely, and focusing one by
+ * keyboard put focus on something nobody could see.
+ *
+ * M20's responsive work has phone rules for the workspace and the widgets and
+ * none for the header, which is how a whole row of controls stayed off the end
+ * of a phone screen through four milestones of accessibility work.
+ *
+ * `wrap` unconditionally rather than inside a media query: it changes nothing
+ * when the row fits, and a breakpoint would only be another number to be wrong
+ * about at some width nobody tested.
+ */
 .aetos-statusbar {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--aetos-space);
     padding: var(--aetos-space);
