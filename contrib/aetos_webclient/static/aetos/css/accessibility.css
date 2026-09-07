@@ -445,70 +445,270 @@
     line-height: var(--aetos-line-height);
 }
 
-/*
- * A stacked row, not a two-column grid.
+/* ----------------------------------------------------------------------
+ * Tiles.  A13.
  *
- * It was `grid-template-columns: auto 1fr` with the explanation spanning both.
- * That works for a checkbox and falls apart for the range, which inserts its
- * percentage readout as a third child -- the readout took a grid cell and
- * pushed the explanation somewhere that read as belonging to the next control.
- * Seen in a screenshot rather than reasoned about.
+ * Gary: *"I liked the tiles and then opening a box for that specific setting
+ * so if you are visually impaired, its easy to see choices and drill down into
+ * those choices."*
  *
- * Label, then the control and its value on one line, then the explanation. The
- * same shape whatever the control is.
- */
-.aetos-a11y-panel__row {
+ * A tile carries the setting's name and its current value, and is one target
+ * rather than a small control sitting beside a label and a sentence. The value
+ * is the half that turns a settings screen into an answer to "what is on".
+ * ---------------------------------------------------------------------- */
+
+.aetos-a11y-panel__tiles {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
-.aetos-a11y-panel__row .aetos-a11y-panel__checkbox,
-.aetos-a11y-panel__row .aetos-a11y-panel__select,
-.aetos-a11y-panel__row .aetos-a11y-panel__range {
-    align-self: flex-start;
-}
-
-.aetos-a11y-panel__label {
-    font-weight: 600;
-}
-
-/* The value readout sits with the control it belongs to. */
-.aetos-a11y-panel__value {
-    margin-left: 8px;
-}
-
-/*
- * A12: this was 1.25rem, and the comment above it said "a target big enough to
- * hit without fine pointing (A.57)". Measured, it was 20x20 -- under WCAG
- * 2.5.8's 24px, and passing the criterion only through the spacing exception,
- * which is to say by being far from its neighbours rather than by being big
- * enough. That is the fourth comment in this project to assert a target floor
- * the rendered element did not have.
- */
-.aetos-a11y-panel__checkbox {
-    width: var(--aetos-target);
-    height: var(--aetos-target);
-}
-
-.aetos-a11y-panel__select {
+.aetos-a11y-tile {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--aetos-space);
+    width: 100%;
     /*
-     * `font: inherit`, because a native <select> does not.  A12.
+     * Stated, not inferred from the padding.
      *
-     * Left alone it renders at the browser's own default size no matter what
-     * the client's text scale says -- so at 150% the dropdowns were visibly
-     * smaller than every word around them, including the label directly above
-     * them. The one control whose *purpose* is choosing an accommodation should
-     * not be the one control that ignores the accommodation.
+     * The first version of this rule had a comment saying it was "comfortably
+     * past the 24px floor" and no declaration to that effect -- which is the
+     * fourth-and-a-bit time in this project a comment has asserted a target
+     * size the element did not actually have. A floor that depends on the
+     * padding is a floor that changes when somebody adjusts the padding.
      */
-    font: inherit;
     min-height: var(--aetos-target);
-    padding: 4px 6px;
+    padding: calc(var(--aetos-space) * 0.85) var(--aetos-space);
     color: var(--aetos-text);
     background: var(--aetos-bg);
     border: 1px solid var(--aetos-border);
     border-radius: var(--aetos-radius);
-    max-width: 100%;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.aetos-a11y-tile:hover {
+    border-color: var(--aetos-accent);
+}
+
+.aetos-a11y-tile__name {
+    font-weight: 600;
+}
+
+/*
+ * The current value, in the accent.
+ *
+ * Colour is not carrying the meaning -- the words say it, and the value is
+ * always the second half of the tile. The accent only makes it findable at a
+ * glance among a column of names.
+ */
+.aetos-a11y-tile__value {
+    color: var(--aetos-accent);
+    white-space: nowrap;
+}
+
+/* ----------------------------------------------------------------------
+ * One setting, on its own.  A13.
+ * ---------------------------------------------------------------------- */
+
+.aetos-a11y-detail__back {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--aetos-target);
+    margin-bottom: var(--aetos-space);
+    padding: 4px 12px 4px 8px;
+    color: var(--aetos-text);
+    background: var(--aetos-bg);
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+    font: inherit;
+    cursor: pointer;
+}
+
+.aetos-a11y-detail__back:hover {
+    border-color: var(--aetos-accent);
+}
+
+.aetos-a11y-detail {
+    max-width: 44em;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.aetos-a11y-detail__legend {
+    padding: 0;
+    font-size: 1.35em;
+    font-weight: 600;
+}
+
+.aetos-a11y-detail__note {
+    margin: 0 0 var(--aetos-space);
+    color: var(--aetos-text);
+    line-height: var(--aetos-line-height);
+}
+
+.aetos-a11y-detail__choices {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/*
+ * A choice is a label wrapping a real radio.
+ *
+ * Native `<input type="radio">`, so the group arrives arrow-key operable and
+ * announced as "2 of 4" without a line of ARIA. The card is the label, so the
+ * whole thing is the target rather than a 24px circle beside some text.
+ */
+.aetos-a11y-choice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: var(--aetos-target);
+    padding: calc(var(--aetos-space) * 0.85) var(--aetos-space);
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+    cursor: pointer;
+}
+
+.aetos-a11y-choice:hover {
+    border-color: var(--aetos-accent);
+}
+
+/*
+ * The chosen one, marked by border weight as well as by the radio itself.
+ *
+ * The class is set from JavaScript rather than with `:has()`. `:has()` needs
+ * Chrome 105 and Firefox 121, and the published floor is Chrome 87 and Firefox
+ * 75 -- and the compatibility gate would not have caught it, because that gate
+ * only knows the features listed in its own table. A selector nothing tests is
+ * a floor claim nobody is checking.
+ *
+ * Never colour alone: the radio shows the state natively, and the border weight
+ * survives forced colours where the accent does not.
+ */
+.aetos-a11y-choice--chosen {
+    border-color: var(--aetos-accent);
+    border-width: 2px;
+}
+
+.aetos-a11y-choice__input {
+    width: var(--aetos-target);
+    height: var(--aetos-target);
+    flex: none;
+    accent-color: var(--aetos-accent);
+}
+
+.aetos-a11y-choice__label {
+    font-weight: 600;
+}
+
+/*
+ * Text size: a slider, and a way to do it without dragging.
+ *
+ * Dragging is the hardest gesture in the client and the least forgiving for a
+ * tremor, and this is the one setting somebody may need to change before they
+ * can comfortably see anything else. The steppers are not a convenience.
+ */
+.aetos-a11y-detail__range {
+    display: flex;
+    align-items: center;
+    gap: var(--aetos-space);
+    flex-wrap: wrap;
+}
+
+.aetos-a11y-detail__range .aetos-a11y-panel__range {
+    flex: 1 1 12em;
+}
+
+.aetos-a11y-detail__step {
+    min-width: var(--aetos-target);
+    min-height: var(--aetos-target);
+    color: var(--aetos-text);
+    background: var(--aetos-bg);
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+    font: inherit;
+    font-size: 1.2em;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.aetos-a11y-detail__step:hover {
+    border-color: var(--aetos-accent);
+}
+
+.aetos-a11y-detail__reading {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    min-width: 4ch;
+}
+
+/* The route back to the starting points. Quiet: it is a way out, not an
+   invitation to start over. */
+.aetos-a11y-panel__restart {
+    min-height: var(--aetos-target);
+    margin-top: var(--aetos-space);
+    padding: 4px 12px;
+    color: var(--aetos-text);
+    background: transparent;
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+    font: inherit;
+    cursor: pointer;
+}
+
+/* ----------------------------------------------------------------------
+ * What is in use, with the panel closed.  A13.
+ *
+ * Gary: *"once options are selected I dont see them on the main screen."*
+ *
+ * One line, only when there is something to say, sitting under the status bar.
+ * Each item is a button that opens that setting, so it doubles as the shortest
+ * route to changing one's mind.
+ * ---------------------------------------------------------------------- */
+
+.aetos-a11y-summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 6px calc(var(--aetos-space) * 1.5);
+    border-bottom: 1px solid var(--aetos-border);
+}
+
+.aetos-a11y-summary__lead {
+    color: var(--aetos-text-muted);
+}
+
+.aetos-a11y-summary__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.aetos-a11y-summary__item {
+    min-height: var(--aetos-target);
+    padding: 2px 10px;
+    color: var(--aetos-text);
+    background: var(--aetos-bg);
+    border: 1px solid var(--aetos-border);
+    border-radius: 999px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.aetos-a11y-summary__item:hover {
+    border-color: var(--aetos-accent);
 }
 
 /* ----------------------------------------------------------------------

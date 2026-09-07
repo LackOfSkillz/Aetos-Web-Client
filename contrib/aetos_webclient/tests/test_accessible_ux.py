@@ -246,9 +246,14 @@ class TestTheOptionsAreGrouped(TestCase):
         A screen reader should get the structure the eye gets, rather than
         eleven undifferentiated controls in a row.
 
+        A13 made the groups `<section>` elements holding tiles rather than
+        `<div role="group">` holding controls -- a named `<section>` is a region
+        landmark, which is a better fit for something you navigate to than a
+        group was.
+
         """
-        body = _function("function buildControls(container)", "function buildChooser")
-        self.assertIn('group.setAttribute("role", "group")', body)
+        body = _function("function buildHub(container)", "function tileFor")
+        self.assertIn('createElement("section")', body)
         self.assertIn('group.setAttribute("aria-labelledby", heading.id)', body)
 
 
@@ -351,10 +356,18 @@ class TestTheClientIsLegibleAndNotOnlyCorrect(TestCase):
         self.assertIn("min-height: var(--aetos-target)", before)
 
     def test_the_panel_controls_use_that_floor(self):
-        # Anchored to the start of a line: the same class name also appears at
-        # the end of an earlier selector list, and matching that one would
-        # measure a rule about alignment rather than the rule about size.
-        self.assertIn("var(--aetos-target)", _block(CSS, "\n.aetos-a11y-panel__checkbox {"))
+        """
+        A13 replaced the checkboxes and dropdowns with tiles and radio cards, so
+        the elements that have to clear the floor are those.
+
+        """
+        for selector in (
+            "\n.aetos-a11y-tile {",
+            "\n.aetos-a11y-choice {",
+            "\n.aetos-a11y-choice__input {",
+            "\n.aetos-a11y-summary__item {",
+        ):
+            self.assertIn("var(--aetos-target)", _block(CSS, selector))
 
     def test_every_slider_is_sized_and_not_only_the_panels(self):
         """
@@ -405,3 +418,246 @@ class TestTheClientIsLegibleAndNotOnlyCorrect(TestCase):
             self.assertEqual(
                 used - defined, set(), "%s uses custom properties nothing defines" % name
             )
+
+
+class TestYouCanAlwaysGetBack(TestCase):
+    """
+    A13. Gary, on A12's starting-point chooser:
+
+        *"I liked the screen with tiles when you first got to accessibility, but
+        theres no way to get back once you pick one."*
+
+    A screen somebody can enter and not leave is the worst thing an
+    accessibility panel can be, because the person stuck in it is the person
+    least able to guess at a way out. There are now three ways back and each is
+    tested here: out of a setting, back to the starting points, and out of the
+    panel entirely.
+
+    """
+
+    def test_a_setting_has_a_way_back_to_the_tiles(self):
+        body = _function("function buildDetail(container, entry)", "function choiceList")
+        self.assertIn("backToHub()", body)
+
+    def test_the_way_back_is_the_first_thing_in_the_detail_screen(self):
+        """
+        First in the DOM, so it is the first thing Tab reaches and the first
+        thing a screen reader meets inside the panel. A back button that is last
+        is a back button somebody has to hunt for.
+
+        """
+        body = _function("function buildDetail(container, entry)", "function choiceList")
+        self.assertLess(
+            body.index("aetos-a11y-detail__back"),
+            body.index('createElement("fieldset")'),
+        )
+
+    def test_the_starting_points_can_be_asked_for_again(self):
+        body = _function("function reopenChooser()", "function focusFirstHeading")
+        self.assertIn("preset: null", body)
+
+    def test_asking_for_them_again_changes_no_settings(self):
+        """
+        Clearing the preset shows the tiles; it must not undo what the previous
+        preset applied. Somebody looking at the starting points again has not
+        asked to lose their text size.
+
+        """
+        body = _function("function reopenChooser()", "function focusFirstHeading")
+        self.assertIn("Nothing has been changed", body)
+        for path in ("visual.", "cognitive.", "screenReader."):
+            self.assertNotIn(path, body)
+
+    def test_closing_the_panel_returns_to_the_tiles(self):
+        """
+        So reopening never drops somebody into a detail screen they have no
+        memory of leaving open.
+
+        """
+        body = _function("function toggleOptions()", "function attach(")
+        self.assertIn('view = "hub"', body)
+
+    def test_moving_between_screens_moves_focus_to_the_new_one(self):
+        """
+        Leaving focus on a tile that no longer exists drops it to the document,
+        which is the thing A0's focus rules exist to prevent. This is the case
+        WCAG allows deliberate focus movement: the activation *was* the request
+        to go there.
+
+        """
+        for name, until in (
+            ("function openDetail(path)", "function backToHub"),
+            ("function backToHub()", "function reopenChooser"),
+        ):
+            self.assertIn("focusFirstHeading()", _function(name, until))
+
+
+class TestTheSliderCanBeDragged(TestCase):
+    """
+    A13. Gary:
+
+        *"the text size slider is janky I try to slide it smoothly back and
+        forth but the slider redraws every time text sizes do so for every
+        increment I have to reclick the slider and move in one click, wait one
+        click wait."*
+
+    Every `input` event wrote a preference, every write notified subscribers,
+    and this panel's subscriber calls `render()`, which begins
+    `host.textContent = ""`. So dragging the slider destroyed the element being
+    dragged on the first pixel of movement.
+
+    """
+
+    def test_the_panel_does_not_repaint_for_its_own_writes(self):
+        self.assertIn("applyingOwnChange = true", PANEL)
+        self.assertIn("if (!applyingOwnChange)", PANEL)
+
+    def test_it_still_repaints_for_changes_from_elsewhere(self):
+        """
+        The subscription must survive. Settings, the command palette and the
+        keyboard shortcuts all write the same preferences, and a panel showing
+        stale state is worse than no panel.
+
+        """
+        self.assertIn("preferences.subscribe(", PANEL)
+
+    def test_the_flag_is_lowered_even_if_a_subscriber_throws(self):
+        """
+        A stuck flag would leave the panel permanently unable to notice an
+        outside change -- a worse bug than the one being fixed, and a silent one.
+
+        """
+        body = _function("function set(path, value)", "function rangeControl")
+        self.assertIn("} finally {", body)
+        self.assertIn("applyingOwnChange = false", body)
+
+    def test_there_is_a_way_to_change_text_size_without_dragging(self):
+        """
+        Dragging is the hardest gesture the client asks for and the least
+        forgiving for a tremor -- and this is the one setting somebody may need
+        to change *before* they can comfortably see anything else.
+
+        """
+        body = _function("function rangeControl(entry, id)", "function buildHub")
+        self.assertIn("Smaller text", body)
+        self.assertIn("Larger text", body)
+
+
+class TestWhatIsOnIsVisibleWithoutOpeningAnything(TestCase):
+    """
+    A13. Gary: *"once options are selected I dont see them on the main
+    screen."*
+
+    Accessible mode masks rather than erases, settings survive a mode switch,
+    and one preset can change five things at once -- so "what is in force right
+    now" is a real question with a non-obvious answer, and the only way to
+    answer it was to open the panel and read four groups.
+
+    """
+
+    def test_the_strip_lives_outside_the_panel(self):
+        """
+        Otherwise it would hide with it, which is precisely the complaint.
+
+        """
+        body = _function("function attach(container, button)", "return {")
+        self.assertLess(
+            body.index("aetos-accessibility-summary"),
+            body.index("host.id = PANEL_ID"),
+        )
+
+    def test_it_says_nothing_when_there_is_nothing_to_say(self):
+        """
+        A permanent strip reading "no accommodations" would spend a line of the
+        client's furniture telling people about the absence of a thing.
+
+        """
+        body = _function("function renderSummary()", "function buildHub")
+        self.assertIn("summaryHost.hidden = !active.length", body)
+
+    def test_standard_mode_lists_only_what_is_still_applying(self):
+        """
+        The confusing case, and the one worth getting right: somebody who
+        switched to standard and kept their text size should see that their text
+        size is still theirs and their contrast is not.
+
+        """
+        body = _function("function activeSettings()", "function defaultFor")
+        self.assertIn("!isAccessible() && entry.revertsInStandardMode", body)
+
+    def test_each_item_opens_the_setting_it_names(self):
+        """
+        So the strip is also the shortest route to changing one's mind, rather
+        than a read-only label.
+
+        """
+        body = _function("function renderSummary()", "function buildHub")
+        self.assertIn("openDetail(entry.path)", body)
+
+    def test_it_does_not_announce_itself(self):
+        """
+        Not a live region. It changes as a result of something the player just
+        did and was already told about, and announcing it again would say
+        everything twice -- which is one of the three failures `announce.js`
+        exists to catch.
+
+        """
+        body = _function("function attach(container, button)", "return {")
+        window = body[: body.index("host.id = PANEL_ID")]
+        self.assertNotIn("aria-live", window)
+
+
+class TestDrillingIntoOneSetting(TestCase):
+    """
+    A13. Gary: *"I liked the tiles and then opening a box for that specific
+    setting so if you are visually impaired, its easy to see choices and drill
+    down into those choices."*
+
+    """
+
+    def test_a_tile_says_what_the_setting_is_set_to(self):
+        """
+        The half that turns a settings screen into an answer to "what is on".
+
+        """
+        body = _function("function tileFor(entry)", "function valueText")
+        self.assertIn("valueText(entry)", body)
+
+    def test_a_tiles_accessible_name_carries_the_value_too(self):
+        """
+        A button reading only "Text size" tells a screen reader user nothing
+        about the state, and the state is half the reason the tile exists.
+
+        """
+        body = _function("function tileFor(entry)", "function valueText")
+        self.assertIn('"aria-label", entry.label + ", " + valueText(entry)', body)
+
+    def test_choices_are_all_visible_rather_than_behind_a_dropdown(self):
+        """
+        A `<select>` shows one option at a time in small text and hides the rest
+        behind an interaction -- the wrong control for somebody who drilled in
+        *because* reading small text is hard.
+
+        """
+        self.assertNotIn('createElement("select")', PANEL)
+        self.assertIn('input.type = "radio"', PANEL)
+
+    def test_the_chosen_choice_is_not_marked_by_colour_alone(self):
+        """
+        The radio carries the state natively; the border weight is the visual
+        emphasis, and weight survives forced colours where an accent does not.
+
+        """
+        block = _block(CSS, ".aetos-a11y-choice--chosen {")
+        self.assertIn("border-width", block)
+
+    def test_it_does_not_use_a_selector_the_published_floor_lacks(self):
+        """
+        `:has()` needs Chrome 105 and Firefox 121 against a floor of Chrome 87
+        and Firefox 75 -- and the compatibility gate would not have caught it,
+        because that gate only knows the features listed in its own table. A
+        selector nothing tests is a floor claim nobody is checking.
+
+        """
+        self.assertNotIn(":has(", _without_comments(CSS))
+        self.assertNotIn(":has(", _without_comments(SHELL_CSS))

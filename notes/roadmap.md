@@ -119,6 +119,23 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M29  Compatibility matrix
 [~] M30  Accessibility review  -- WITHDRAWN, see Addendum A below
 [ ] M31  Release candidate
+[x] A13  Tiles, drilling down, and a draggable slider -- 2026-09-07
+         Gary on the A12 panel: "theres no way to get back once you
+         pick one... the text size slider is janky... once options
+         are selected I dont see them on the main screen."
+         Four defects, all real. The slider destroyed the element
+         being dragged on the first pixel of movement -- measured
+         counterfactually at 2 distinct values across a twelve-step
+         drag, moving BACKWARDS, focus lost. No gate could see it:
+         axe, the tree, the keyboard walk and NVDA all passed a
+         control no mouse could use. Second time this project has
+         met that shape after A0's scrolling region.
+         Panel is now hub-of-tiles plus a detail screen per setting,
+         with three ways back, and a strip showing what is in use
+         with the panel closed.
+         New `dragging` check: 368 -> 371 suite checks.
+         See notes/a13-tiles-and-drilling-down.md.
+
 [x] A12  Accessible UI/UX research and rebuild -- 2026-09-07
          Gary, with every gate green: "this doesnt feel accessible
          to me... we are way off the mark". He was right. Every
@@ -687,6 +704,23 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (all five slots; equality after the normaliser is the gate,
          and an `order` field that would have done nothing was cut
          before it shipped)
+[x] A13  Tiles, drilling down, and a draggable slider -- 2026-09-07
+         Gary on the A12 panel: "theres no way to get back once you
+         pick one... the text size slider is janky... once options
+         are selected I dont see them on the main screen."
+         Four defects, all real. The slider destroyed the element
+         being dragged on the first pixel of movement -- measured
+         counterfactually at 2 distinct values across a twelve-step
+         drag, moving BACKWARDS, focus lost. No gate could see it:
+         axe, the tree, the keyboard walk and NVDA all passed a
+         control no mouse could use. Second time this project has
+         met that shape after A0's scrolling region.
+         Panel is now hub-of-tiles plus a detail screen per setting,
+         with three ways back, and a strip showing what is in use
+         with the panel closed.
+         New `dragging` check: 368 -> 371 suite checks.
+         See notes/a13-tiles-and-drilling-down.md.
+
 [x] A12  Accessible UI/UX research and rebuild -- 2026-09-07
          Gary, with every gate green: "this doesnt feel accessible
          to me... we are way off the mark". He was right. Every
@@ -1301,6 +1335,23 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [ ] M21..M29
 [ ] A8   Assistive-technology validation
 [ ] M31  Release candidate
+[x] A13  Tiles, drilling down, and a draggable slider -- 2026-09-07
+         Gary on the A12 panel: "theres no way to get back once you
+         pick one... the text size slider is janky... once options
+         are selected I dont see them on the main screen."
+         Four defects, all real. The slider destroyed the element
+         being dragged on the first pixel of movement -- measured
+         counterfactually at 2 distinct values across a twelve-step
+         drag, moving BACKWARDS, focus lost. No gate could see it:
+         axe, the tree, the keyboard walk and NVDA all passed a
+         control no mouse could use. Second time this project has
+         met that shape after A0's scrolling region.
+         Panel is now hub-of-tiles plus a detail screen per setting,
+         with three ways back, and a strip showing what is in use
+         with the panel closed.
+         New `dragging` check: 368 -> 371 suite checks.
+         See notes/a13-tiles-and-drilling-down.md.
+
 [x] A12  Accessible UI/UX research and rebuild -- 2026-09-07
          Gary, with every gate green: "this doesnt feel accessible
          to me... we are way off the mark". He was right. Every

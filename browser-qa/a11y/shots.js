@@ -1,7 +1,7 @@
 /*
- * Screenshots of the three states A12 changed, for a human to look at.
+ * Screenshots of the panel's screens, for a human to look at.
  *
- *     node a11y/scratch-shots.js
+ *     cd browser-qa && npm run a11y:shots
  */
 
 "use strict";
@@ -29,43 +29,52 @@ async function main() {
                 }),
             { mode, preset }
         );
-
-    const shut = () =>
-        page.evaluate(() => {
-            const panel = window.Aetos.accessibilityPanel;
-            if (panel.isOpen()) { panel.toggleOptions(); }
-        });
     const open = () =>
         page.evaluate(() => {
             const panel = window.Aetos.accessibilityPanel;
             if (!panel.isOpen()) { panel.toggleOptions(); }
         });
+    const shut = () =>
+        page.evaluate(() => {
+            const panel = window.Aetos.accessibilityPanel;
+            if (panel.isOpen()) { panel.toggleOptions(); }
+        });
 
-    // 1. standard mode, nothing open -- the client as it comes
-    await set("standard", "custom");
-    await shut();
-    await page.waitForTimeout(500);
-    await page.screenshot({ path: path.join(OUT, "1-standard.png") });
+    const shot = async (name) => {
+        // Long enough for a text-scale change to land AND for the responsive
+        // re-measure that follows it. At 500ms the console had not repainted
+        // and the shots showed an empty frame -- which looked exactly like a
+        // client defect and was not one.
+        await page.waitForTimeout(1600);
+        await page.screenshot({ path: path.join(OUT, name) });
+    };
 
-    // 2. the chooser -- what somebody meets on first turning the mode on
+    // 1. the chooser -- what somebody meets on first turning the mode on
     await set("accessible", null);
     await open();
-    await page.waitForTimeout(500);
-    await page.screenshot({ path: path.join(OUT, "2-chooser.png") });
+    await shot("1-chooser.png");
 
-    // 3. the grouped options, after a preset
+    // 2. the hub -- every setting as a tile, with its value on it
     await page.evaluate(() => window.Aetos.accessibilityPanel.choose("low-vision"));
     await page.waitForTimeout(700);
     await open();
-    await page.waitForTimeout(500);
-    await page.screenshot({ path: path.join(OUT, "3-options-after-low-vision.png") });
+    await shot("2-hub.png");
+
+    // 3. one setting, drilled into
+    await page.evaluate(() => window.Aetos.accessibilityPanel.openDetail("visual.motion"));
+    await shot("3-detail.png");
+
+    // 4. the summary strip, with the panel closed
+    await page.evaluate(() => window.Aetos.accessibilityPanel.backToHub());
+    await shut();
+    await shot("4-summary-panel-closed.png");
 
     // Leave the lab client where it started, so the next person to open it is
     // not looking at somebody else's preset.
     await set("standard", null);
     await shut();
 
-    process.stdout.write("wrote three shots to " + OUT + "\n");
+    process.stdout.write("wrote four shots to " + OUT + "\n");
     await browser.close();
 }
 

@@ -44,6 +44,7 @@ const CHECKS = {
     forcedColors: require("./checks/forced-colors"),
     reflow: require("./checks/reflow"),
     legibility: require("./checks/legibility"),
+    dragging: require("./checks/dragging"),
     focus: require("./checks/focus"),
     readiness: require("./checks/readiness"),
 };

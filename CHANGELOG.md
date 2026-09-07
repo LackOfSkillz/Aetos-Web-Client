@@ -11,6 +11,74 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Fixed — the text-size slider could not be dragged (A13)
+
+Gary: *"I try to slide it smoothly back and forth but the slider redraws every
+time... for every increment I have to reclick the slider and move in one click,
+wait one click wait."*
+
+Every `input` event wrote a preference, every write notified subscribers, and the
+panel's subscriber calls `render()`, which begins `host.textContent = ""`. The
+slider **destroyed the element being dragged** on the first pixel of movement.
+
+Measured with the fix reverted, across one twelve-step drag: **2 distinct values**
+(against 12), the value moving **backwards** from 1.0 to 0.9, and focus lost to
+the document. It went backwards because a rebuilt slider registers the pointer as
+a fresh click at the gesture's origin.
+
+**No automated gate could see this.** axe found a correctly named, correctly
+roled, correctly valued `<input type="range">`. The keyboard walk operated it,
+because arrow keys do not care whether an element survives a pointer gesture. The
+accessibility tree was right. NVDA read it correctly. Every check passed a control
+that could not be used with a mouse — the same shape as A0's scrolling region, and
+the second time this project has met it.
+
+The panel no longer repaints for writes it made itself. The subscription stays,
+because Settings, the palette and the shortcuts write the same preferences; the
+flag is lowered in a `finally`, because a stuck one would leave the panel
+permanently blind to outside changes.
+
+### Changed — the panel is tiles you drill into (A13)
+
+Gary: *"I liked the tiles and then opening a box for that specific setting so if
+you are visually impaired, its easy to see choices and drill down into those
+choices."*
+
+- **A hub of tiles**, each carrying its setting's name *and current value* —
+  "Text size / 150%". The value is what turns a settings screen into an answer to
+  "what is on", and the accessible name carries both halves.
+- **A detail screen per setting**, with every choice visible at once as a native
+  radio group. A `<select>` shows one option at a time in small text and hides the
+  rest — the wrong control for somebody who drilled in *because* small text is
+  hard. Radios keep A0's native-control rule: arrow-key operable and announced as
+  "2 of 4" with no ARIA.
+- **Three ways back**, where there had been none: out of a setting (the button is
+  first in the DOM, so Tab reaches it first), back to the starting points (which
+  changes no settings), and out of the panel (which returns to the hub).
+- **Steppers beside the slider**, so the one setting somebody may need before they
+  can see anything else does not require a drag.
+
+### Added — what is in use, with the panel closed (A13)
+
+Gary: *"once options are selected I dont see them on the main screen."*
+
+A strip under the status bar, only when there is something to say. Each item opens
+that setting. In standard mode it lists **only what is still applying**, which is
+the genuinely confusing case: somebody who switched back and kept their text size
+should see that their text size is still theirs and their contrast is not.
+
+Three further defects the work turned up: the strip was **outside every landmark**
+(axe's `region` rule caught it, and only at 250% text — the one view where a
+setting is off-default and the strip is on screen); `:has()` would have shipped
+against a Chrome 87 floor because **the compatibility gate only knows the features
+listed in its own table**; and a tile carried a comment claiming a 24px floor it
+did not declare.
+
+New `dragging` check — the first here to ask whether a gesture destroys its own
+target. **368 → 371 checks**, 0 failed.
+
+See [`notes/a13-tiles-and-drilling-down.md`](notes/a13-tiles-and-drilling-down.md).
+
 ### Changed — accessible mode now does something when you turn it on (A12)
 
 Gary, with all 288 automated accessibility checks passing, NVDA announcing the

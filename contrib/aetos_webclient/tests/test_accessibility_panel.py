@@ -631,22 +631,70 @@ class TestThePanelIsItselfAccessible(TestCase):
         self.assertNotIn('"dialog"', PANEL)
 
     def test_every_control_is_a_native_element(self):
+        """
+        The rule is unchanged; A13 changed which native elements.
+
+        A0 chose native controls because they arrive already keyboard-operable,
+        already announced with their value, and already understood by every
+        assistive technology -- and a hand-built one starts at none of that.
+        That reasoning has nothing to do with `<select>` specifically.
+
+        A13 replaced the dropdowns and checkboxes with radio groups, because a
+        dropdown shows one option at a time in small text and hides the rest
+        behind an interaction -- which is the wrong control for somebody who
+        drilled in *because* reading small text is hard. A radio is not a step
+        away from the native-control rule; it is the same rule.
+
+        """
         for native in (
-            'input.type = "checkbox"',
+            'input.type = "radio"',
             'input.type = "range"',
-            'createElement("select")',
+            'createElement("fieldset")',
         ):
             self.assertIn(native, PANEL)
         self.assertNotIn('role="slider"', PANEL)
+        self.assertNotIn('role="radio"', PANEL)
 
     def test_the_explanation_describes_rather_than_names(self):
-        self.assertIn('control.setAttribute("aria-describedby", note.id)', PANEL)
+        """
+        The sentence explains the setting; it is not part of its name.
+
+        A13 moved this up a level: the explanation now describes the whole
+        `<fieldset>` rather than one control, because the detail screen has one
+        setting and several choices, and hanging the description off each choice
+        would repeat it once per radio.
+
+        """
+        self.assertIn('fieldset.setAttribute("aria-describedby", note.id)', PANEL)
 
     def test_changes_are_announced(self):
-        self.assertIn('announce(entry.label + ": " + (input.checked ? "on" : "off"))', PANEL)
+        self.assertIn('announce(entry.label + ": " + choice[1] + ".")', PANEL)
 
-    def test_it_re_renders_when_something_else_changes_a_preference(self):
-        self.assertIn("preferences.subscribe(function () { render(); })", PANEL)
+    def test_it_re_renders_for_changes_from_elsewhere_but_not_its_own(self):
+        """
+        A13, and this is the slider fix stated as a rule.
+
+        Gary: *"the text size slider is janky... for every increment I have to
+        reclick the slider and move in one click, wait one click wait."*
+
+        Every `input` event wrote a preference, every write notified
+        subscribers, and this panel's subscriber calls `render()`, which begins
+        `host.textContent = ""`. Dragging the slider destroyed the element being
+        dragged on the first pixel of movement, so the browser had nothing left
+        to send pointer events to.
+
+        The subscription still exists, and must: Settings, the command palette
+        and the keyboard shortcuts all change the same values, and a panel
+        showing stale state is worse than no panel. What it must not do is
+        repaint for a change it made itself.
+
+        """
+        self.assertIn("if (!applyingOwnChange)", PANEL)
+        self.assertIn("applyingOwnChange = true", PANEL)
+        # The guard is worthless if the flag is never lowered again, and a
+        # `finally` is what survives a throwing subscriber.
+        self.assertIn("} finally {", PANEL)
+        self.assertNotIn("preferences.subscribe(function () { render(); })", PANEL)
 
     def test_the_layout_reflows_for_scaled_text_and_not_only_narrow_windows(self):
         """
