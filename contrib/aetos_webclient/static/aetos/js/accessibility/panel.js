@@ -351,7 +351,39 @@
          *      a rebuild.
          */
         function setMode(wanted) {
-            var next = wanted === undefined ? !isAccessible() : !!wanted;
+            /*
+             * `setMode("standard")` used to turn accessible mode ON.
+             *
+             * The argument was coerced with `!!wanted`, so any non-empty string
+             * was true -- and the two strings anybody would reach for are the
+             * names of the two modes. A function called `setMode` that accepts
+             * `"standard"` and does the opposite is the exact shape of defect
+             * this project keeps finding, except in an API rather than in a
+             * control.
+             *
+             * No player could hit it: every call site inside the client passes
+             * nothing and toggles. It was found by the A8 readiness probe, which
+             * is an outside caller, falling into it on its first run -- which is
+             * what an outside caller would do.
+             *
+             * Now the mode names work, booleans still work, no argument still
+             * toggles, and anything else is refused rather than guessed at.
+             * Refused with `null` rather than an exception, because this runs in
+             * a websocket-driven client where "degrade, never raise" is the
+             * rule -- and `null` rather than `false`, because a successful
+             * switch to standard mode already returns `false` and the two must
+             * not look the same.
+             */
+            var next;
+            if (wanted === undefined) {
+                next = !isAccessible();
+            } else if (wanted === "accessible" || wanted === "standard") {
+                next = wanted === "accessible";
+            } else if (typeof wanted === "boolean") {
+                next = wanted;
+            } else {
+                return null;
+            }
             var lost = preferences.activeAccommodations
                 ? preferences.activeAccommodations()
                 : [];

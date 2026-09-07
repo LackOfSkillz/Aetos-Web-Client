@@ -11,6 +11,38 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Fixed — `setMode("standard")` turned accessible mode on
+
+The argument was coerced with `!!wanted`, so the name of a mode was truthy and
+switched the client into the other one. No player could reach it: every call site
+inside the client passes nothing and toggles, which is how it survived A9, A10
+and four milestones after them. It was found by the first caller from outside the
+client falling into it immediately.
+
+`setMode` now understands `"accessible"` and `"standard"`, still toggles on a
+bare call, still accepts booleans, and refuses anything else with `null` rather
+than guessing.
+
+### Added — an A8 readiness gate (`browser-qa/qa-a8-readiness.js`)
+
+Walks the assistive-technology tester protocol task by task and checks that every
+destination exists, opens, is named, closes, and returns focus where it started.
+38 checks pass, none fail, at four viewports; 13 tasks need a logged-in character
+and 13 need a person's judgement, which is what the protocol reserves them for.
+
+It refuses to run against a hidden browser pane, where `innerWidth` is 0 and every
+layout measurement is meaningless — a way the QA harness had been able to report
+confident nonsense. It also restores the client's mode, contrast and text size
+afterwards, and reports whether it managed to.
+
+### Changed — the tester protocol says what has actually been demonstrated
+
+It claimed synthetic keystrokes never reached the page, so nobody had driven the
+client without a pointer. That was wrong; they reach it once the window has
+focus. The keyboard path is now walked rather than assumed — 33 focus stops,
+every one named, wrapping correctly — and the document says plainly that a
+number of stops is not a verdict on whether the journey is worth making.
+
 ### Added — bindings for equipment, effects, target and actions (D2)
 
 The declarative path now covers all five slots, so a game can expose equipment

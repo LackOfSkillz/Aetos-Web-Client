@@ -67,6 +67,30 @@ def _entry(path):
     return PREFS[start : PREFS.index("}", start)]
 
 
+def _code_only(source):
+    """
+    Source with its comments removed.
+
+    A guard that greps for a forbidden construct cannot tell an explanation from
+    an instruction, and the explanation is usually right next to it -- the
+    comment saying "`!!wanted` was removed because..." contains `!!wanted`.
+
+    That has now happened twice in one day, in two different files, so it is a
+    shape rather than an accident: any assertion of the form "this string must
+    not appear in the source" needs the comments gone first, or it fails the
+    moment somebody documents the fix.
+
+    Args:
+        source (str): JavaScript source.
+
+    Returns:
+        str: The same source with block and line comments stripped.
+
+    """
+    without_block = re.sub(r"/\*.*?\*/", "", source, flags=re.DOTALL)
+    return re.sub(r"^\s*//.*$", "", without_block, flags=re.MULTILINE)
+
+
 def _function(name, until):
     """
     Slice one function out of `panel.js`.
@@ -427,6 +451,45 @@ class TestThereIsAlwaysAWayBack(TestCase):
 
         """
         return _function("function setMode(wanted)", "function adjustTextSize")
+
+    def test_setmode_understands_the_names_of_the_modes_it_sets(self):
+        """
+        `setMode("standard")` used to turn accessible mode ON.
+
+        The argument was coerced with `!!wanted`, so any non-empty string was
+        true -- and the two strings anybody would reach for are the names of the
+        two modes. A function called `setMode` that accepts "standard" and does
+        the opposite is this project's recurring defect wearing an API's
+        clothes.
+
+        **No player could hit it.** Every call site inside the client passes
+        nothing and toggles, which is why it survived A9, A10 and four
+        milestones after them. It was found by the A8 readiness probe -- the
+        first caller from outside the client -- falling into it on its first
+        run, which is what an outside caller would do.
+
+        """
+        body = _code_only(self._set_mode())
+        self.assertIn('wanted === "accessible" || wanted === "standard"', body)
+        self.assertNotIn("!!wanted", body, "the argument is still coerced")
+
+    def test_a_bare_call_still_toggles(self):
+        """
+        The behaviour every shipped call site depends on, so the fix must not
+        have moved it.
+
+        """
+        self.assertIn("wanted === undefined", self._set_mode())
+
+    def test_an_unrecognised_argument_is_refused_rather_than_guessed_at(self):
+        """
+        And refused with `null`, not `false`: a successful switch to standard
+        mode already returns `false`, and a caller cannot be asked to tell those
+        two apart.
+
+        """
+        body = self._set_mode()
+        self.assertIn("return null", body)
 
     def test_leaving_says_how_to_return(self):
         self.assertIn("Press Control Shift A", self._set_mode())

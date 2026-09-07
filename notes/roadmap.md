@@ -630,11 +630,15 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          found a row of controls unreachable at 320px since M4.
          Human half is NOT blocked on people (Gary, 2026-09-06:
          "get it as ready for testing as we are able to... before
-         I ask her to test"). It is gated on an A8-readiness pass:
-         automate what the protocol can automate, run every gate at
-         every viewport/scale/mode, fix what is already visible, and
-         walk the protocol myself before anyone follows it.
-         Scripts: docs/a8-tester-protocol.md
+         I ask her to test"). READINESS PASS DONE, 2026-09-06:
+         qa-a8-readiness.js walks every task in the protocol --
+         38 ok, 0 FAIL, 13 need a session, 13 need a person.
+         Found setMode("standard") turning accessible mode ON, and
+         a QA harness reporting layout measured at 0x0. The keyboard
+         path is now walked (33 named stops) rather than assumed.
+         Outstanding: one pass over the 13 needs-session tasks with
+         a logged-in character -- needs somebody who can log in.
+         See notes/a8-readiness-pass.md, docs/a8-tester-protocol.md
 [~] M30  WITHDRAWN -- superseded by the A-track (A.106)
 [~] M31  Release candidate  -- audit done, 1243 py; NOT releasable:
          A8 is the only blocker and it needs people, not code

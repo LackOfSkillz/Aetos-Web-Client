@@ -3,6 +3,22 @@
 For the people whose judgement this stage depends on. The automated half is done
 and clean; what remains cannot be automated and is not a formality.
 
+**Before you were asked, somebody walked this document.** Every numbered task
+below has been checked to *exist* -- it opens, it is named, it closes, and focus
+comes back where it started -- at three window sizes, in both modes, by
+`browser-qa/qa-a8-readiness.js`. That pass currently reports 35 checks passing
+and none failing.
+
+That is deliberately not the same as saying it works. It means your time should
+not go on discovering that task 26 opens nothing, so that it can go on the thing
+only you can answer: whether any of this is *bearable*. Where the readiness gate
+could go no further it says so, and those tasks are marked below.
+
+The pass also found and fixed two things it is worth you knowing about, because
+both were invisible to every test that existed: an API that did the opposite of
+what its argument said, and a QA harness that had been reporting layout results
+measured in a window of zero by zero.
+
 **The rule that governs this whole document (A.95):** *"takes too many
 keystrokes", "focus jumps", "braille keeps losing its place"* are **defects**,
 even when every automated test passes. If something is technically operable and
@@ -264,9 +280,37 @@ than the client. Tell us if that is wrong.
 Physically unplug it, or turn it off. Then do tasks 1–14 above, **in both
 modes**.
 
-This has been reasoned about and never demonstrated — synthetic keystrokes in our
-test harness do not reach the page reliably, so nobody has actually driven this
-client without a pointer. You would be the first.
+**What has been demonstrated, and what has not.** This section used to say that
+synthetic keystrokes never reached the page, so nobody had driven the client
+without a pointer. That turned out to be wrong: they reach it fine once the
+window has focus, and the readiness pass then walked the whole tab order.
+
+So this much is now known rather than hoped: there are **33 focus stops**, every
+one of them has an accessible name, the order runs top-left to bottom-right
+through the status bar, the panels, the transcript and the composer, and Tab
+wraps from the last stop back to the first. The command input sits immediately
+after the game output, which is where a reply belongs.
+
+What that does *not* tell anybody is whether the journey is worth making. Thirty-
+three stops is a number, not a verdict. If reaching the thing you wanted takes
+eleven of them, that is a defect under A.95 and this section is where it gets
+reported.
+
+---
+
+## If something is simply broken
+
+It should not be, and if it is, that is our failure rather than yours. The
+readiness gate is a file in the repository:
+
+```text
+browser-qa/qa-a8-readiness.js
+```
+
+It is loaded into the client page and returns a report. If you hit something that
+does not open at all, saying so in one line is enough -- it means the gate has a
+blind spot, which is a bug in our preparation and gets fixed before you are asked
+again.
 
 ---
 
