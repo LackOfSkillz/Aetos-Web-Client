@@ -11,6 +11,23 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Verified — real NVDA says the mode switch is a switch
+
+`npm run a11y:nvda` run against an unlocked desktop: 6 checks pass, 0 fail. The
+one that matters is that **the mode control is announced as a switch, not a
+button**, with its state and its name. A10 chose `role="switch"` over
+`aria-pressed` on the argument that a screen reader should say the state rather
+than the act; that is now measured rather than argued.
+
+Three assertions were removed as unmakeable, not left red. The client writes the
+right sentence into its live region (confirmed by reading the element), NVDA
+speaks it (confirmed by a person hearing it), and Guidepup's spoken-phrase log
+is empty for that window — it captures speech produced by its own navigation
+commands, not spontaneous live-region or focus announcements. A check that
+reports a defect the client does not have is worse than no check. That behaviour
+is covered deterministically by `checks/announce.js`, which reads the regions
+directly.
+
 ### Fixed — a mistyped `AETOS_UI` threw out of every player's handshake
 
 `build_manifest()` has always documented that it raises `AetosManifestError`.

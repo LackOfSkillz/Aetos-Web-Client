@@ -209,11 +209,55 @@ front, unlocked interactive session. Bundling it into the fast suite would make
 the fast suite depend on the slow one's environment, and it could never run on a
 machine without a desktop.
 
-### It has not been verified
+### Verified, 2026-09-07
+
+Run against an unlocked desktop with real NVDA. **6 checks pass, 0 fail.**
+
+The one worth naming: **the mode control is announced as a switch, not a
+button** — by the real screen reader, with its state and its name. A10 chose
+`role="switch"` over `aria-pressed` on the argument that a screen reader should
+say the *state* ("on"/"off") rather than the *act* ("pressed"). That argument is
+now a measurement.
+
+Also verified aloud: arriving at the page reads something that identifies it,
+moving by landmark reaches named regions, and moving by heading gives the
+structure.
+
+### Three assertions this harness cannot make, and how we know
+
+The first run reported three failures. All three were the harness, not the
+client, and the evidence is worth keeping because it decides what this check may
+ever claim:
+
+- the client writes `"Standard mode. Press Control Shift A to return."` into
+  `#aetos-announcer` — confirmed by reading the element back;
+- NVDA **speaks it aloud** — confirmed by a person in the room hearing it;
+- `spokenPhraseLog()` for that same window is **empty**.
+
+Guidepup captures the speech NVDA produces *in response to its own navigation
+commands* — `next`, `nextHeading`, `nextLandmark`. It does not capture
+spontaneous speech: a live-region update, or an announcement caused by focus
+moving programmatically.
+
+So those three assertions were removed rather than kept red. **A check that
+reports a defect the client does not have is worse than no check**, and this
+project has now met that shape often enough to recognise it early.
+
+The behaviour is covered where it can be. `checks/announce.js` reads the live
+regions directly and deterministically — the right sentence, once, in the right
+region, and not repeated on a reconnect. Belt and braces turned out to be
+necessary rather than decorative.
+
+One practical note: Guidepup's NVDA build speaks far faster than anybody would
+set for real use. Gary, hearing it: *"way too fast to understand... faster than a
+human can listen to it."* That is the automation build being quick, not a rate
+Aetos chooses or one a tester would hear.
+
+### What was outstanding before this
 
 The machine was locked while this was built, so NVDA was reading the Windows lock
-screen. The check detects that and **refuses**, exactly as the readiness gate
-refuses a hidden browser pane:
+screen for six consecutive attempts. The check detected that and **refused**,
+exactly as the readiness gate refuses a hidden browser pane:
 
 ```text
 NVDA is reading the Windows lock screen, not the browser. A screen reader reads
@@ -225,10 +269,10 @@ Refusing is the point. Every assertion would otherwise have failed for a reason
 with nothing to do with the client, and a suite that reports seven failures
 because the screen was locked is a suite people stop reading.
 
-**The first run against an unlocked desktop is outstanding.** Until it happens
-this check is written and unproven, and the assertions in it are guesses about
-what NVDA says — informed guesses, but the difference between a passing test and
-an untested one is the whole reason this file exists.
+Refusing was the right call and it paid: when the desktop was finally available,
+three of the nine assertions turned out to be unmakeable. Had the check ever run
+against a locked screen and reported nine failures, nobody would have read the
+output closely enough to notice which three were real.
 
 ## Still a person's job
 
