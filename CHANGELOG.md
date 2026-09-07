@@ -11,6 +11,37 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Added — `npm run a11y`, one command for the whole accessibility suite
+
+Four gates existed and every one was driven by hand: paste a script into a page,
+read JSON back. That is why axe spent its life measuring a single viewport. There
+is now one command, and it sweeps a matrix of viewport x text scale x mode --
+160 checks, 0 failures.
+
+Six of the eight checks are new ground:
+
+- **the accessibility tree Chrome computes**, rather than our hand-rolled idea of
+  what each element is named
+- **keyboard reachability and operation**, in every view rather than once by hand
+- **what the client writes to its live regions** -- our half of what a screen
+  reader says, tested deterministically without one: nothing announced twice,
+  gameplay never reaching the urgent region, and a reconnect not replaying old
+  news at somebody
+- **Windows High Contrast**, which measured a claim A10 had only ever argued:
+  with author colours discarded the switch's thumb still moves 16px, and focus is
+  shown by an outline (which forced colours keep) rather than a border colour
+  (which it does not)
+- **WCAG 1.4.10 as written** -- 320 CSS px, no two-dimensional scrolling, with
+  every control still present and usable
+- **focus not moving unless somebody moved it**, which for a client receiving
+  unprompted game output is the hard case
+
+Nothing here ships. `browser-qa/` is development-only and is not a dependency of
+the contrib.
+
+Every run ends by saying what it cannot do: whether any of this is bearable to
+use is `docs/a8-tester-protocol.md`, and it needs a person.
+
 ### Fixed — `setMode("standard")` turned accessible mode on
 
 The argument was coerced with `!!wanted`, so the name of a mode was truthy and

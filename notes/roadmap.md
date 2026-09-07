@@ -638,7 +638,13 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          path is now walked (33 named stops) rather than assumed.
          Outstanding: one pass over the 13 needs-session tasks with
          a logged-in character -- needs somebody who can log in.
-         See notes/a8-readiness-pass.md, docs/a8-tester-protocol.md
+         `npm run a11y` now runs the whole suite -- 8 checks over a
+         viewport/scale/mode matrix, 160 ok. Adds the computed a11y
+         tree, keyboard operation, live-region assertions, forced
+         colours, WCAG 1.4.10 at 320px, and focus stability.
+         Next: Guidepup driving real NVDA (approved, not built).
+         See notes/a11y-suite.md, notes/a8-readiness-pass.md,
+         docs/a8-tester-protocol.md
 [~] M30  WITHDRAWN -- superseded by the A-track (A.106)
 [~] M31  Release candidate  -- audit done, 1243 py; NOT releasable:
          A8 is the only blocker and it needs people, not code
