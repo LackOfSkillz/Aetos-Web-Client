@@ -11,6 +11,33 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Added — `npm run a11y:nvda`, asserting on what a real screen reader says
+
+Drives actual NVDA through Guidepup and checks the words it speaks, which takes
+several questions the tester protocol puts to a person and makes them string
+comparisons: that the mode control is announced as a *switch* rather than a
+button (the reason `role="switch"` was chosen over `aria-pressed`), that its
+state and name are both spoken, and that leaving accessible mode is announced
+with the way back in it.
+
+A separate command from `npm run a11y`, because a screen reader reads the
+foreground window of a real desktop — headed browser, unlocked session — and the
+fast suite should not inherit that.
+
+**Not yet verified.** The machine was locked when it was written, so NVDA was
+reading the Windows lock screen; the check detects that and refuses rather than
+reporting failures that have nothing to do with the client. Its first run
+against an unlocked desktop is still outstanding.
+
+### Fixed — the new axe check had quietly stopped scanning the overlays
+
+It scanned the page in whatever state it was in — the default workspace, and
+nothing else — while the gate it replaced opened thirteen views. Moving axe into
+the runner would have swapped thirteen scans for one while the number in the
+report went up, because it now ran at four viewports. Dialogs are where
+accessibility defects concentrate, so it now opens nine overlays per view: 144
+axe scans across the matrix, all clean.
+
 ### Added — `npm run a11y`, one command for the whole accessibility suite
 
 Four gates existed and every one was driven by hand: paste a script into a page,

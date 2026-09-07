@@ -2,7 +2,7 @@
 
 Status: **COMPLETE**
 
-Verification: 160 checks, 0 failures, across 8 checks and up to 16 views each.
+Verification: 288 checks, 0 failures, across 8 checks and up to 16 views each.
 
 Gary, on being told what the A8 readiness pass had and had not covered:
 
@@ -159,10 +159,81 @@ automated check passing. Nothing here answers "how many keystrokes was that",
 "did focus jump", "does braille keep its place", or "would you play a game in
 this".
 
-## Next: a real screen reader
+## A coverage regression I nearly shipped
 
-[Guidepup](https://www.guidepup.dev/) drives actual NVDA on Windows from
-Playwright and captures its speech output, which would convert *"what does your
-screen reader announce?"* from a human question into an assertion — most of
-protocol §1. Gary has approved the NVDA install; it is the obvious next check and
-it is not built here.
+The first version of the `axe` check scanned `document` in whatever state the
+page happened to be in — the default workspace, and nothing else. The gate it
+replaced opened **thirteen** views.
+
+So moving axe into the runner would have swapped thirteen scans for one and
+looked like an improvement, because it now ran at four viewports instead of one.
+**Coverage traded for breadth, silently, with the number in the report going up.**
+That is the worst way to lose it.
+
+Dialogs are where accessibility defects concentrate — focus order, naming, the
+relationship between a control and its description — so scanning only the page
+behind them would have missed the class of defect the gate exists for. The check
+now opens nine overlays per view and closes them again: **144 axe scans, all
+clean**.
+
+A view that fails to open is *skipped* rather than failed. A game with
+diagnostics off genuinely has no inspector, and reporting that as a violation
+would train people to ignore the output.
+
+## A real screen reader: built, and not yet verified
+
+```bash
+npm run a11y:nvda
+```
+
+drives **actual NVDA** through [Guidepup](https://www.guidepup.dev/) and asserts
+on the words it speaks. It takes protocol §0.2, §0.3, §0.5 and §1.1–1.6 off a
+person's list: *"What does your screen reader announce when you focus it? When
+you flip it?"* becomes a string comparison.
+
+What it asserts, each one a question the protocol currently puts to a human:
+
+- arriving at the page reads something that identifies it
+- moving by landmark announces named regions
+- moving by heading announces the structure
+- **the mode control is announced as a switch, not a button** — which is why
+  `role="switch"` was chosen over `aria-pressed` in the first place, and where
+  that decision stops being an argument in a note
+- its state and its name are both spoken
+- leaving accessible mode is spoken, and the spoken message names the way back
+- the command input is announced as an edit field with its label
+
+**A separate command from `npm run a11y`, deliberately.** A screen reader reads
+the foreground window of a real desktop: headed browser, window brought to the
+front, unlocked interactive session. Bundling it into the fast suite would make
+the fast suite depend on the slow one's environment, and it could never run on a
+machine without a desktop.
+
+### It has not been verified
+
+The machine was locked while this was built, so NVDA was reading the Windows lock
+screen. The check detects that and **refuses**, exactly as the readiness gate
+refuses a hidden browser pane:
+
+```text
+NVDA is reading the Windows lock screen, not the browser. A screen reader reads
+the foreground window of an interactive desktop, so this needs the machine
+unlocked and somebody logged in. Nothing was tested.
+```
+
+Refusing is the point. Every assertion would otherwise have failed for a reason
+with nothing to do with the client, and a suite that reports seven failures
+because the screen was locked is a suite people stop reading.
+
+**The first run against an unlocked desktop is outstanding.** Until it happens
+this check is written and unproven, and the assertions in it are guesses about
+what NVDA says — informed guesses, but the difference between a passing test and
+an untested one is the whole reason this file exists.
+
+## Still a person's job
+
+NVDA is not JAWS and not Orca, and where those disagree with NVDA the protocol
+says the difference is usually ours. And no amount of asserting on transcripts
+reaches the question A8 exists for: whether hearing these sentences, at these
+moments, all evening, is bearable. A.95 calls *"takes too many keystrokes"* and
+*"focus jumps"* defects even when every automated test passes.
