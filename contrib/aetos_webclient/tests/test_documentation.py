@@ -195,9 +195,7 @@ class TestEveryAutomationKeyIsEitherHonouredOrMarkedReserved(TestCase):
 
         """
         js = CONTRIB_DIR / "static" / "aetos" / "js"
-        return "\n".join(
-            path.read_text(encoding="utf-8") for path in sorted(js.rglob("*.js"))
-        )
+        return "\n".join(path.read_text(encoding="utf-8") for path in sorted(js.rglob("*.js")))
 
     def test_every_documented_key_is_consulted_or_reserved(self):
         from evennia.contrib.base_systems.aetos_webclient import manifest
@@ -366,9 +364,7 @@ class TestNoSettingIsDocumentedThatNothingReads(TestCase):
 
         from evennia.contrib.base_systems.aetos_webclient import bindings
 
-        examples = [
-            block for block in _python_blocks(README) if "AETOS_BINDINGS" in block
-        ]
+        examples = [block for block in _python_blocks(README) if "AETOS_BINDINGS" in block]
         self.assertTrue(examples, "the README no longer shows how to use AETOS_BINDINGS")
 
         for block in examples:

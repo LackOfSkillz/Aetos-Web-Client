@@ -119,7 +119,7 @@ class TestTheComposerIsInTheFrame(TestCase):
         """
         section = _console_section()
         self.assertIn('class="aetos-composer__prompt" aria-hidden="true"', section)
-        self.assertNotIn('.aetos-composer::before', CSS)
+        self.assertNotIn(".aetos-composer::before", CSS)
 
     def test_the_composer_follows_the_console_reading_width(self):
         """
@@ -128,9 +128,7 @@ class TestTheComposerIsInTheFrame(TestCase):
         part of.
 
         """
-        self.assertIn(
-            '.aetos-root[data-aetos-size="wide"] .aetos-composer', CSS
-        )
+        self.assertIn('.aetos-root[data-aetos-size="wide"] .aetos-composer', CSS)
 
 
 class TestOneFrame(TestCase):
@@ -146,9 +144,7 @@ class TestOneFrame(TestCase):
         self.assertIn(".aetos-widget--console", CSS)
 
     def test_panels_are_separated_by_a_rule_rather_than_boxed_each(self):
-        self.assertIn(
-            ".aetos-region > .aetos-widget--panel + .aetos-widget--panel", CSS
-        )
+        self.assertIn(".aetos-region > .aetos-widget--panel + .aetos-widget--panel", CSS)
 
     def test_the_frame_clips_so_the_composer_corners_follow_it(self):
         block = CSS[CSS.index(".aetos-widget--console {") :][:400]
@@ -170,14 +166,10 @@ class TestTheBoxesComeBackWhenTheyAreLoadBearing(TestCase):
         self.assertIn(".aetos-widget--panel", block)
 
     def test_the_client_setting_restores_it_too(self):
-        self.assertIn(
-            ':root[data-aetos-contrast="high"] .aetos-widget--panel', CSS
-        )
+        self.assertIn(':root[data-aetos-contrast="high"] .aetos-widget--panel', CSS)
 
     def test_the_composer_field_gets_its_edges_back(self):
-        self.assertIn(
-            ':root[data-aetos-contrast="high"] .aetos-composer .aetos-input', CSS
-        )
+        self.assertIn(':root[data-aetos-contrast="high"] .aetos-composer .aetos-input', CSS)
 
     def test_and_so_do_the_scrollbars(self):
         """
@@ -253,8 +245,7 @@ class TestNothingSizedInPixelsIgnoresTheTextSetting(TestCase):
         self.assertEqual(
             offenders,
             [],
-            "these do not grow when the player turns the text size up: %s"
-            % ", ".join(offenders),
+            "these do not grow when the player turns the text size up: %s" % ", ".join(offenders),
         )
 
     def test_the_touch_floor_is_still_allowed_to_be_a_floor(self):
@@ -311,15 +302,11 @@ class TestTheLayoutKnowsHowBigTheTextIs(TestCase):
         to resize it.
 
         """
-        block = ACCESSIBILITY[ACCESSIBILITY.index('removeProperty("--aetos-scale")') :][
-            :900
-        ]
+        block = ACCESSIBILITY[ACCESSIBILITY.index('removeProperty("--aetos-scale")') :][:900]
         self.assertIn("window.Aetos.responsive.measure()", block)
 
     def test_it_does_not_assume_the_shell_has_finished_booting(self):
-        block = ACCESSIBILITY[ACCESSIBILITY.index('removeProperty("--aetos-scale")') :][
-            :900
-        ]
+        block = ACCESSIBILITY[ACCESSIBILITY.index('removeProperty("--aetos-scale")') :][:900]
         self.assertIn("window.Aetos.responsive.measure", block)
 
 
@@ -335,24 +322,22 @@ class TestTheStackedLayoutHoldsItsShape(TestCase):
     """
 
     def test_the_strips_cannot_be_squeezed_to_a_sliver(self):
-        block = CSS[
-            CSS.index('.aetos-root[data-aetos-size="phone"] .aetos-region--sidebar,') :
-        ][:1400]
+        block = CSS[CSS.index('.aetos-root[data-aetos-size="phone"] .aetos-region--sidebar,') :][
+            :1400
+        ]
         self.assertIn("min-height: 4em", block)
 
     def test_their_cap_grows_with_the_text(self):
-        block = CSS[
-            CSS.index('.aetos-root[data-aetos-size="phone"] .aetos-region--sidebar,') :
-        ][:1400]
+        block = CSS[CSS.index('.aetos-root[data-aetos-size="phone"] .aetos-region--sidebar,') :][
+            :1400
+        ]
         self.assertIn("max-height: max(18vh, 4em)", block)
 
     def test_a_swipeable_card_stays_wide_enough_to_read(self):
         self.assertIn("min(78%, max(260px, 13em))", CSS)
 
     def test_the_workspace_scrolls_rather_than_crushing_its_rows(self):
-        block = CSS[
-            CSS.index('.aetos-root[data-aetos-size="phone"] .aetos-workspace {') :
-        ][:1200]
+        block = CSS[CSS.index('.aetos-root[data-aetos-size="phone"] .aetos-workspace {') :][:1200]
         self.assertIn("overflow-y: auto", block)
 
     def test_the_short_window_cap_is_bounded_at_both_ends(self):

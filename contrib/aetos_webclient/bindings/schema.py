@@ -207,14 +207,14 @@ def explain_expression(expression):
     """
     if not isinstance(expression, str):
         return (
-            "must be a string like \"db.hp\", not %s. Quote it: \"value\": \"db.hp\""
+            'must be a string like "db.hp", not %s. Quote it: "value": "db.hp"'
             % type(expression).__name__
         )
     if not expression.strip():
         return 'is empty. It should name an attribute, like "db.hp"'
     if expression != expression.strip():
         return (
-            'has a space at the start or end: %r. Aetos does not trim it for you, '
+            "has a space at the start or end: %r. Aetos does not trim it for you, "
             'because "db.hp " and "db.hp" would then be the same binding and only '
             "one of them is what you typed" % expression
         )
@@ -244,7 +244,7 @@ def explain_expression(expression):
     if not expression.startswith("db."):
         return (
             "must start with db. -- that is Evennia's attribute store, where "
-            '`character.db.hp = 50` puts things. You wrote %r' % expression
+            "`character.db.hp = 50` puts things. You wrote %r" % expression
         )
     if expression.count(".") > 2:
         return (
@@ -319,8 +319,7 @@ def validate_bindings(raw, error_class=ValueError):
             if not isinstance(entry, dict):
                 raise error_class(
                     "%s must be a dict, got %s. It looks like:\n"
-                    '    {"label": "Health", "value": "db.hp"}'
-                    % (where, type(entry).__name__)
+                    '    {"label": "Health", "value": "db.hp"}' % (where, type(entry).__name__)
                 )
 
             missing = [name for name in fields["required"] if name not in entry]
@@ -345,9 +344,7 @@ def validate_bindings(raw, error_class=ValueError):
             for name, value in entry.items():
                 if name in EXPRESSION_FIELDS:
                     if not is_valid_expression(value):
-                        raise error_class(
-                            "%s[%r] %s" % (where, name, explain_expression(value))
-                        )
+                        raise error_class("%s[%r] %s" % (where, name, explain_expression(value)))
                 elif not isinstance(value, (str, int, float)):
                     raise error_class(
                         "%s[%r] must be text or a number, got %s"

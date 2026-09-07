@@ -45,15 +45,6 @@ consume it are D2.
 
 """
 
-from evennia.contrib.base_systems.aetos_webclient.discovery.candidates import (  # noqa: F401
-    Candidate,
-    CandidateSet,
-)
-from evennia.contrib.base_systems.aetos_webclient.discovery.roots import (  # noqa: F401
-    APPROVED_ROOTS,
-    ScanRootError,
-    approved_files,
-)
 # The grammar lives in `bindings`, not here.
 #
 # D0 defined it in this package because that is where it was being written, and
@@ -67,6 +58,15 @@ from evennia.contrib.base_systems.aetos_webclient.bindings.schema import (  # no
     EXPRESSION_PATTERN,
     REJECTED_EXPRESSIONS,
     is_valid_expression,
+)
+from evennia.contrib.base_systems.aetos_webclient.discovery.candidates import (  # noqa: F401
+    Candidate,
+    CandidateSet,
+)
+from evennia.contrib.base_systems.aetos_webclient.discovery.roots import (  # noqa: F401
+    APPROVED_ROOTS,
+    ScanRootError,
+    approved_files,
 )
 
 __all__ = [

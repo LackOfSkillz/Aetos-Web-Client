@@ -8,7 +8,11 @@ trusted, and one bad entry costs that entry rather than the widget.
 
 from django.test import TestCase, override_settings
 
-from evennia.contrib.base_systems.aetos_webclient import character_state, providers, state
+from evennia.contrib.base_systems.aetos_webclient import (
+    character_state,
+    providers,
+    state,
+)
 from evennia.contrib.base_systems.aetos_webclient.providers import base, defaults
 from evennia.objects.objects import DefaultObject
 from evennia.utils.create import create_object

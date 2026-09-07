@@ -11,6 +11,24 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Fixed — the contrib was not formatted the way Evennia's CI demands
+
+Evennia runs `black --check`, and **twelve files would have been reformatted**.
+The PR would have failed CI on the first push.
+
+`AGENTS.md` says it plainly -- *"Don't manually format code. Run `make format`
+after editing"* -- and across the whole D-track and the UI work it was never run,
+because nothing failed when it was skipped. That is this project's recurring
+shape in a new place: a rule that reads as a guarantee and is enforced by nobody.
+
+Now formatted with black and isort, and guarded: a test runs black over every
+Python file in the contrib and fails naming the files it would change. Only this
+contrib is checked, because formatting somebody else's file to satisfy a test
+here would put changes in the PR diff that have nothing to do with Aetos.
+
+Verified by breaking the formatting deliberately and watching the guard fail,
+rather than trusting a green run on a test that had never been red.
+
 ### Fixed — the README claimed the client honours an automation flag it ignores
 
 Found while preparing the upstream PR. `AETOS_AUTOMATION` is printed as a whole

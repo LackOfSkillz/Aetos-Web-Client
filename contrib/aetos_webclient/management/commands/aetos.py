@@ -103,8 +103,7 @@ class Command(BaseCommand):
 
         if subcommand not in SUBCOMMANDS:
             raise CommandError(
-                "unknown Aetos subcommand %r. Available: %s"
-                % (subcommand, ", ".join(SUBCOMMANDS))
+                "unknown Aetos subcommand %r. Available: %s" % (subcommand, ", ".join(SUBCOMMANDS))
             )
 
         self._discover(options)
@@ -124,8 +123,6 @@ class Command(BaseCommand):
         from evennia.contrib.base_systems.aetos_webclient.discovery import (
             CandidateSet,
             ScanRootError,
-        )
-        from evennia.contrib.base_systems.aetos_webclient.discovery import (
             report,
             runtime_scan,
             static_scan,

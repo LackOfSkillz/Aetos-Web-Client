@@ -232,9 +232,7 @@ class TestExamplesCanBeScrolledWithoutAMouse(TestCase):
         self.assertIn('pre.setAttribute("role", "group")', HELP)
 
     def test_a_focus_stop_is_visible_when_it_is_focused(self):
-        css = (
-            Path(AETOS_STATIC_DIR) / "aetos" / "css" / "aetos.css"
-        ).read_text(encoding="utf-8")
+        css = (Path(AETOS_STATIC_DIR) / "aetos" / "css" / "aetos.css").read_text(encoding="utf-8")
         self.assertIn(".aetos-help__example:focus-visible", css)
 
 

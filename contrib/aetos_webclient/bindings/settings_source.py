@@ -10,7 +10,9 @@ not have to know that bindings exist in order to resolve a slot nobody bound.
 from django.conf import settings
 
 from evennia.contrib.base_systems.aetos_webclient.bindings import schema
-from evennia.contrib.base_systems.aetos_webclient.bindings.resolver import AetosBindingError
+from evennia.contrib.base_systems.aetos_webclient.bindings.resolver import (
+    AetosBindingError,
+)
 
 
 def get_bindings():

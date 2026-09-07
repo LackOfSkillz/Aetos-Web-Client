@@ -20,7 +20,11 @@ from pathlib import Path
 
 from django.test import TestCase
 
-from evennia.contrib.base_systems.aetos_webclient import AETOS_STATIC_DIR, inputfuncs, protocol
+from evennia.contrib.base_systems.aetos_webclient import (
+    AETOS_STATIC_DIR,
+    inputfuncs,
+    protocol,
+)
 
 CONTRIB_DIR = Path(AETOS_STATIC_DIR).parent
 JS_DIR = Path(AETOS_STATIC_DIR) / "aetos" / "js"

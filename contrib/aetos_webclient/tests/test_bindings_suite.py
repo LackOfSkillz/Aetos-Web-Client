@@ -93,7 +93,11 @@ class TestTheClientCannotTell(TestCase):
 
         bound = bound_providers.BoundEquipmentProvider().get_equipment(character)
         handwritten = [
-            {"slot": "weapon", "label": "Weapon", "item": {"id": "weapon", "name": "a rusty sword"}},
+            {
+                "slot": "weapon",
+                "label": "Weapon",
+                "item": {"id": "weapon", "name": "a rusty sword"},
+            },
             {"slot": "head", "label": "Head", "item": None},
         ]
 
@@ -170,9 +174,7 @@ class TestEachSlotsOwnRule(TestCase):
         self.assertEqual([slot["slot"] for slot in built], ["weapon", "head"])
         self.assertIsNone(built[1]["item"])
 
-    @override_settings(
-        AETOS_BINDINGS={"resources": {"hp": {"label": "HP", "value": "db.hp"}}}
-    )
+    @override_settings(AETOS_BINDINGS={"resources": {"hp": {"label": "HP", "value": "db.hp"}}})
     def test_an_absent_resource_is_dropped(self):
         """
         And the other half of that pair. A resource that will not resolve is not
@@ -189,9 +191,7 @@ class TestEachSlotsOwnRule(TestCase):
         showing it is one a player learns to distrust.
 
         """
-        built = bound_providers.BoundEffectProvider().get_effects(
-            _Character(poison=0, blessed=1)
-        )
+        built = bound_providers.BoundEffectProvider().get_effects(_Character(poison=0, blessed=1))
         self.assertEqual([effect["id"] for effect in built], ["blessed"])
 
     @override_settings(AETOS_BINDINGS=EFFECTS)
@@ -203,9 +203,7 @@ class TestEachSlotsOwnRule(TestCase):
         """
         for value in (True, 3, "yes", 0.5):
             with self.subTest(value=value):
-                built = bound_providers.BoundEffectProvider().get_effects(
-                    _Character(poison=value)
-                )
+                built = bound_providers.BoundEffectProvider().get_effects(_Character(poison=value))
                 self.assertEqual([effect["id"] for effect in built], ["poison"])
 
     @override_settings(AETOS_BINDINGS=TARGET)
@@ -232,9 +230,7 @@ class TestEachSlotsOwnRule(TestCase):
 
     @override_settings(AETOS_BINDINGS={"target": {"health": {"label": "H", "value": "db.hp"}}})
     def test_a_target_declaration_with_no_name_entry_yields_nothing(self):
-        self.assertEqual(
-            bound_providers.BoundTargetProvider().get_target(_Character(hp=5)), {}
-        )
+        self.assertEqual(bound_providers.BoundTargetProvider().get_target(_Character(hp=5)), {})
 
     @override_settings(AETOS_BINDINGS=ACTIONS)
     def test_no_actions_are_offered_without_a_target(self):
@@ -243,9 +239,7 @@ class TestEachSlotsOwnRule(TestCase):
         targetless commands are.
 
         """
-        self.assertEqual(
-            bound_providers.BoundActionProvider().get_actions(_Character(), None), []
-        )
+        self.assertEqual(bound_providers.BoundActionProvider().get_actions(_Character(), None), [])
 
     @override_settings(AETOS_BINDINGS=ACTIONS)
     def test_an_entity_that_cannot_name_itself_costs_the_menu_not_the_session(self):
@@ -341,15 +335,11 @@ class TestThePrecedenceAndDerivationRulesHoldForEverySlot(TestCase):
 
     def test_a_provider_class_still_beats_a_binding_on_any_slot(self):
         path = "%s.%s" % (__name__, "CustomEquipmentProvider")
-        with override_settings(
-            AETOS_BINDINGS=self.ALL_FIVE, AETOS_PROVIDERS={"equipment": path}
-        ):
+        with override_settings(AETOS_BINDINGS=self.ALL_FIVE, AETOS_PROVIDERS={"equipment": path}):
             resolved = providers.get_providers()
             self.assertEqual(resolved["equipment"].name, "custom equipment")
             # ...and the slots it did not claim are still bound.
-            self.assertIsInstance(
-                resolved["effects"], bound_providers.BoundEffectProvider
-            )
+            self.assertIsInstance(resolved["effects"], bound_providers.BoundEffectProvider)
 
     def test_the_table_covers_every_slot_the_schema_allows(self):
         """
@@ -394,9 +384,9 @@ class TestNoFieldIsAcceptedThatNothingReads(TestCase):
         from evennia.contrib.base_systems.aetos_webclient import AETOS_STATIC_DIR
         from evennia.contrib.base_systems.aetos_webclient.bindings import schema
 
-        source = (
-            Path(AETOS_STATIC_DIR).parent / "bindings" / "bound_providers.py"
-        ).read_text(encoding="utf-8")
+        source = (Path(AETOS_STATIC_DIR).parent / "bindings" / "bound_providers.py").read_text(
+            encoding="utf-8"
+        )
 
         for slot, fields in schema.BINDING_FIELDS.items():
             for field in fields["optional"]:

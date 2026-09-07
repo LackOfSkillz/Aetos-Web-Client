@@ -15,7 +15,11 @@ still subject to locks, permissions, cooldowns and game rules.
 
 from django.conf import settings
 
-from evennia.contrib.base_systems.aetos_webclient import constants, providers, ui_manifest
+from evennia.contrib.base_systems.aetos_webclient import (
+    constants,
+    providers,
+    ui_manifest,
+)
 
 # --- Automation policy ---------------------------------------------------
 

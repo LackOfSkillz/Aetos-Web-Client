@@ -179,7 +179,9 @@ def scan_source(source, label, receivers=CHARACTER_RECEIVERS):
                             evidence="%s:%d, assigned as %s.db.%s"
                             % (label, node.lineno, receiver, name),
                             kind=_kind_of(node.value),
-                            confidence="likely" if _kind_of(node.value) != "unknown" else "possible",
+                            confidence=(
+                                "likely" if _kind_of(node.value) != "unknown" else "possible"
+                            ),
                         )
                     )
         elif isinstance(node, ast.Call):

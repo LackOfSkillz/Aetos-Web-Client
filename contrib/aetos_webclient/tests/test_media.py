@@ -17,7 +17,11 @@ from pathlib import Path
 
 from django.test import TestCase
 
-from evennia.contrib.base_systems.aetos_webclient import AETOS_STATIC_DIR, media, providers
+from evennia.contrib.base_systems.aetos_webclient import (
+    AETOS_STATIC_DIR,
+    media,
+    providers,
+)
 from evennia.contrib.base_systems.aetos_webclient.providers import base
 
 JS_DIR = Path(AETOS_STATIC_DIR) / "aetos" / "js"

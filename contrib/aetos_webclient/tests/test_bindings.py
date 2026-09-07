@@ -34,9 +34,11 @@ from django.test import TestCase, override_settings
 from evennia.contrib.base_systems.aetos_webclient import bindings, manifest, providers
 from evennia.contrib.base_systems.aetos_webclient.bindings import (
     bound_providers,
-    resolver as resolver_module,
-    schema,
 )
+from evennia.contrib.base_systems.aetos_webclient.bindings import (
+    resolver as resolver_module,
+)
+from evennia.contrib.base_systems.aetos_webclient.bindings import schema
 from evennia.contrib.base_systems.aetos_webclient.providers import base
 
 HEALTH = {
@@ -216,9 +218,7 @@ class TestNothingIsCalledSubscriptedOrTraversed(TestCase):
         check.
 
         """
-        source = (
-            resolver_module.__file__.replace(".pyc", ".py")
-        )
+        source = resolver_module.__file__.replace(".pyc", ".py")
         with open(source, "r", encoding="utf-8") as handle:
             body = handle.read()
         traversal = body[body.index("def resolve(self, character, expression)") :]
@@ -447,9 +447,7 @@ class TestPrecedence(TestCase):
 
         """
         path = "%s.%s" % (__name__, "CustomResourceProvider")
-        with override_settings(
-            AETOS_BINDINGS=HEALTH, AETOS_PROVIDERS={"resources": path}
-        ):
+        with override_settings(AETOS_BINDINGS=HEALTH, AETOS_PROVIDERS={"resources": path}):
             self.assertEqual(providers.get_providers()["resources"].name, "custom")
 
     @override_settings(AETOS_BINDINGS=HEALTH, AETOS_PROVIDERS={})
@@ -695,9 +693,7 @@ class TestTheSchemaMovedForAReason(TestCase):
                 elif isinstance(node, ast.ImportFrom):
                     modules = [node.module or ""]
                 for module in modules:
-                    self.assertNotIn(
-                        "discovery", module, "%s imports discovery" % path.name
-                    )
+                    self.assertNotIn("discovery", module, "%s imports discovery" % path.name)
 
 
 class TestTheGrammarIsAWhitelist(TestCase):

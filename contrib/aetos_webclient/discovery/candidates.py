@@ -189,17 +189,13 @@ class CandidateSet:
         merged = replace(
             existing,
             origin=(
-                existing.origin
-                if existing.origin == candidate.origin
-                else "static and runtime"
+                existing.origin if existing.origin == candidate.origin else "static and runtime"
             ),
             evidence="%s; %s" % (existing.evidence, candidate.evidence),
             kind=existing.kind if existing.kind != "unknown" else candidate.kind,
             maximum=existing.maximum or candidate.maximum,
             confidence=(
-                "likely"
-                if "likely" in (existing.confidence, candidate.confidence)
-                else "possible"
+                "likely" if "likely" in (existing.confidence, candidate.confidence) else "possible"
             ),
         )
         self.candidates[candidate.expression] = merged
@@ -264,9 +260,7 @@ class CandidateSet:
             for candidate in self.candidates.values()
             if include_all or candidate.interesting
         ]
-        ceilings = {
-            candidate.maximum for candidate in chosen if candidate.maximum
-        }
+        ceilings = {candidate.maximum for candidate in chosen if candidate.maximum}
         chosen = [c for c in chosen if c.expression not in ceilings]
         return sorted(chosen, key=lambda c: (not c.looks_like_a_resource, c.name))
 

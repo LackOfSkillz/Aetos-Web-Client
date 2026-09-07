@@ -32,10 +32,10 @@ from pathlib import Path
 from django.test import TestCase
 
 from evennia.contrib.base_systems.aetos_webclient import AETOS_STATIC_DIR
+from evennia.contrib.base_systems.aetos_webclient.bindings import schema
 from evennia.contrib.base_systems.aetos_webclient.discovery import (
     candidates as candidates_module,
 )
-from evennia.contrib.base_systems.aetos_webclient.bindings import schema
 from evennia.contrib.base_systems.aetos_webclient.discovery import (
     report,
     roots,
@@ -457,7 +457,9 @@ class TestTheRuntimeScanReadsWhatIsThere(TestCase):
         self.assertEqual(problems, [])
 
     def test_a_flag_is_not_reported_as_a_number(self):
-        found, _ = runtime_scan.scan_characters([_FakeCharacter(1, [_FakeAttribute("dead", False)])])
+        found, _ = runtime_scan.scan_characters(
+            [_FakeCharacter(1, [_FakeAttribute("dead", False)])]
+        )
         self.assertEqual(found[0].kind, "boolean")
 
     def test_a_key_the_grammar_cannot_express_is_skipped(self):
@@ -606,7 +608,9 @@ class TestTheReportIsPastable(TestCase):
     def _report(self):
         found = CandidateSet()
         found.add(Candidate("db.hp", "hp", "static", "typeclasses/characters.py:12", "number"))
-        found.add(Candidate("db.hp_max", "hp_max", "static", "typeclasses/characters.py:13", "number"))
+        found.add(
+            Candidate("db.hp_max", "hp_max", "static", "typeclasses/characters.py:13", "number")
+        )
         found.add(Candidate("db.gold", "gold", "runtime", "on 4 of 4 characters sampled", "number"))
         found.pair_maximums()
         return report.render(found)

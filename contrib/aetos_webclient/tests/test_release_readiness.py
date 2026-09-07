@@ -353,3 +353,75 @@ class TestAConnectedClientThatHearsNothingSaysSo(TestCase):
         body = shell[shell.index('emitter.on("connection_close"') :][:500]
         self.assertIn("manifestReceived = false;", body)
         self.assertIn("clearHandshakeWatch();", body)
+
+
+class TestTheCodeIsFormattedTheWayEvenniaDemands(TestCase):
+    """
+    Evennia's CI runs `black --check`, and a PR that fails it fails immediately.
+
+    Found while preparing the upstream submission: **twelve files would have been
+    reformatted**, and nothing in this project said so. `AGENTS.md` is explicit --
+    *"Don't manually format code. Run `make format` after editing"* -- and across
+    the whole D-track and the UI work it was never run, because nothing failed
+    when it was skipped.
+
+    That is the shape this project keeps finding, in a new place: a rule that
+    reads as a guarantee and is enforced by nobody. The fix is not to remember
+    harder.
+
+    **Only this contrib is checked.** The PR diff is confined to
+    `evennia/contrib/base_systems/aetos_webclient/`, and formatting somebody
+    else's file to satisfy a test here would put changes in the diff that have
+    nothing to do with Aetos.
+
+    """
+
+    def _sources(self):
+        """
+        Every Python file in the contrib.
+
+        Returns:
+            list: Paths.
+
+        """
+        return sorted(CONTRIB_DIR.rglob("*.py"))
+
+    def test_black_would_change_nothing(self):
+        try:
+            import black
+        except ImportError:  # pragma: no cover - depends on the dev environment
+            self.skipTest("black is not installed; Evennia's CI will still run it")
+
+        mode = black.Mode(line_length=100)
+        unformatted = []
+        for path in self._sources():
+            source = path.read_text(encoding="utf-8")
+            try:
+                if black.format_file_contents(source, fast=True, mode=mode):
+                    unformatted.append(path.name)
+            except black.NothingChanged:
+                continue
+            except Exception as err:  # pragma: no cover - a parse failure is its own bug
+                unformatted.append("%s (%s)" % (path.name, err))
+
+        self.assertEqual(
+            unformatted,
+            [],
+            "black would reformat these, and Evennia's CI runs `black --check`: %s"
+            % ", ".join(unformatted),
+        )
+
+    def test_the_line_length_matches_evennias(self):
+        """
+        100, from Evennia's own `pyproject.toml`.
+
+        Hard-coded above rather than read from that file, because a contrib is
+        also installed on its own -- and a test that silently skipped when the
+        Evennia checkout was not laid out as expected would be a guard that
+        stopped guarding without saying so.
+
+        """
+        pyproject = CONTRIB_DIR.parents[3] / "pyproject.toml"
+        if not pyproject.is_file():
+            self.skipTest("not running from an Evennia checkout")
+        self.assertIn("line-length = 100", pyproject.read_text(encoding="utf-8"))

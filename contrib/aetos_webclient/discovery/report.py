@@ -106,12 +106,15 @@ def render(candidate_set, problems=(), include_all=False):
             if not is_valid_expression(candidate.expression):
                 continue
 
-            lines.append("        # %s -- %s (%s, %s)" % (
-                candidate.name,
-                candidate.evidence,
-                candidate.origin,
-                candidate.confidence,
-            ))
+            lines.append(
+                "        # %s -- %s (%s, %s)"
+                % (
+                    candidate.name,
+                    candidate.evidence,
+                    candidate.origin,
+                    candidate.confidence,
+                )
+            )
             lines.append('        "%s": {' % candidate.name)
             lines.append('            "label": "%s",' % _label_for(candidate.name))
             lines.append('            "value": "%s",' % candidate.expression)
