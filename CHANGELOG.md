@@ -11,6 +11,30 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Added — the licensing position is now enforceable rather than only argued
+
+`aac_mappings/README.md` says *"These files contain no artwork"*, and the whole
+reason Aetos ships no symbol set is that the licences do not allow it inside a
+BSD-3 tree — ARASAAC is NonCommercial, the aggregators are per-set. A mapping
+names a symbol; the picture is fetched by whoever installs the pack.
+
+That is a careful argument recorded in prose, and prose does not stop somebody
+dropping a PNG into the directory in a later milestone. If one arrived, the
+contrib would quietly become a mixed-licence tree and Evennia would be the one
+distributing it.
+
+So the contrib now ships text only, checked: no binary files, no base64 image
+payloads, and nothing in the mappings but identifiers. Not "no artwork" — no
+binaries at all, because the narrower rule needs somebody to judge what counts
+as artwork and the broader one does not.
+
+The first version of that check was stricter than the concern it protects and
+failed on the inline SVG favicon: sixteen pixels, one text character, authored
+here, no third party involved. A rule stricter than its own justification
+produces findings a reviewer rejects and teaches people to skip the output. It
+now forbids what actually distinguishes artwork from a drawn glyph — being
+encoded rather than written, or being large.
+
 ### Added — `scripts/verify_install.py`, which installs Aetos the way the README says to
 
 The README's first promise is *"install it and you immediately get a better

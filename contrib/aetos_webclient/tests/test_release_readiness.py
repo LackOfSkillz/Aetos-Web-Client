@@ -426,6 +426,98 @@ class TestTheInstallVerifierRunsWhatTheReadmeSays(TestCase):
             )
 
 
+class TestNoArtworkOrBinaryAssetShips(TestCase):
+    """
+    The licensing position, made enforceable.
+
+    `aac_mappings/README.md` says **"These files contain no artwork"**, and the
+    whole reason Aetos ships no symbol set is that the licences do not permit it
+    inside a BSD-3 tree: ARASAAC is NonCommercial, and the aggregators are
+    per-set. A mapping says *"Aetos's `help` concept is Mulberry's `help_,_to`
+    symbol"*; the picture is fetched by whoever installs the pack.
+
+    That is a careful argument recorded in prose, and prose does not stop
+    somebody dropping a PNG into the directory during a later milestone. If one
+    arrived, the contrib would quietly become a mixed-licence tree and Evennia
+    would be the one distributing it.
+
+    So: the contrib ships **text only**. Not "no artwork" -- no binaries at all,
+    because the narrower rule needs somebody to judge what counts as artwork and
+    the broader one does not. A future milestone that genuinely needs a binary
+    can change this test and explain itself in the diff, which is exactly the
+    conversation that should happen.
+
+    """
+
+    #: Everything the contrib is allowed to be made of.
+    TEXT_SUFFIXES = {".py", ".js", ".css", ".html", ".md", ".json", ".txt", ""}
+
+    def test_every_shipped_file_is_text(self):
+        unexpected = [
+            str(path.relative_to(CONTRIB_DIR))
+            for path in sorted(CONTRIB_DIR.rglob("*"))
+            if path.is_file()
+            and "__pycache__" not in path.parts
+            and path.suffix.lower() not in self.TEXT_SUFFIXES
+        ]
+        self.assertEqual(
+            unexpected,
+            [],
+            "the contrib ships non-text files, which is how a licence gets mixed in: %s"
+            % unexpected,
+        )
+
+    #: How long a data URI may be before it stops being a glyph.
+    #:
+    #: The first version of this test forbade `data:image/` outright and
+    #: immediately failed on the inline SVG favicon in `base.html` -- sixteen
+    #: pixels, one text character, authored here, no third party involved. That
+    #: is a rule stricter than the concern it protects, which produces findings
+    #: a reviewer would reject and teaches people to skip the output.
+    #:
+    #: What the licensing argument is actually about is *third-party artwork*.
+    #: So the rule is now about the two things that distinguish artwork from a
+    #: drawn glyph: it is encoded rather than written, or it is big.
+    MAX_DATA_URI = 500
+
+    def test_no_file_embeds_artwork(self):
+        """
+        The other way artwork arrives: a data URI pasted into a stylesheet or a
+        mapping. It ships as text and is a picture all the same.
+
+        """
+        offenders = []
+        for path in sorted(CONTRIB_DIR.rglob("*")):
+            if not path.is_file() or "__pycache__" in path.parts:
+                continue
+            if path.suffix.lower() not in {".css", ".js", ".json", ".html"}:
+                continue
+            source = path.read_text(encoding="utf-8", errors="replace")
+
+            for match in re.finditer(r"data:image/[^\"')\s]*", source):
+                uri = match.group(0)
+                if "base64" in uri:
+                    offenders.append("%s (base64)" % path.relative_to(CONTRIB_DIR))
+                elif len(uri) > self.MAX_DATA_URI:
+                    offenders.append("%s (%d chars)" % (path.relative_to(CONTRIB_DIR), len(uri)))
+
+        self.assertEqual(offenders, [], "embedded artwork found in: %s" % offenders)
+
+    def test_the_mappings_carry_names_rather_than_pictures(self):
+        """
+        A mapping is a list of identifiers. If one ever grows a field holding
+        image bytes, the licence argument in its README stops being true.
+
+        """
+        mappings = CONTRIB_DIR / "aac_mappings"
+        if not mappings.is_dir():
+            self.skipTest("no mappings ship")
+        for path in sorted(mappings.glob("*.json")):
+            source = path.read_text(encoding="utf-8")
+            for forbidden in ("data:image", "base64,", "\\x89PNG"):
+                self.assertNotIn(forbidden, source, "%s contains image data" % path.name)
+
+
 class TestTheContribDependsOnNothing(TestCase):
     """
     The claim the whole project rests on, finally checked.
