@@ -355,6 +355,196 @@ class TestAConnectedClientThatHearsNothingSaysSo(TestCase):
         self.assertIn("clearHandshakeWatch();", body)
 
 
+class TestTheReadmeSurvivesEvenniasDocsGenerator(TestCase):
+    """
+    Evennia publishes this contrib's page by parsing the README, and it parses it
+    crudely.
+
+    `docs/pylib/contrib_readmes2docs.py` does exactly this::
+
+        credits = data.split("\n\n", 3)[1]
+        blurb = data.split("\n\n", 3)[2]
+
+    Split on blank lines: **the second paragraph becomes the credits line and the
+    third becomes the blurb** shown in the contrib index that every Evennia user
+    browses. There is no marker, no front-matter and no validation -- put a badge,
+    a note, or a second title line near the top and the published page credits the
+    contrib to whatever that paragraph happens to say.
+
+    Nothing upstream needs editing to add a contrib, which is what keeps the PR
+    diff confined to this directory. The price is that the README's opening shape
+    is load-bearing and looks like prose.
+
+    These tests *replicate* that parsing rather than running the generator, which
+    writes a hundred files into the docs tree. So the replication itself is
+    checked: the last test below reads the generator's source and fails if the
+    split it depends on ever changes. A guard built on an assumption about
+    somebody else's code should say out loud when that assumption expires.
+
+    """
+
+    def _generated(self):
+        """
+        What Evennia's generator would extract.
+
+        Returns:
+            tuple: The credits paragraph and the blurb paragraph.
+
+        """
+        data = README
+        parts = data.split("\n\n", 3)
+        return parts[1], parts[2]
+
+    def test_the_credits_line_is_the_credits_line(self):
+        credits, _ = self._generated()
+        self.assertTrue(
+            credits.startswith("Contribution by"),
+            "Evennia would publish this as the contrib's credits: %r" % credits[:80],
+        )
+
+    def test_the_blurb_describes_the_contrib(self):
+        """
+        The third paragraph is what appears under the contrib's name in the index
+        Evennia ships. A stray note or badge there would be the description
+        thousands of people read first.
+
+        """
+        _, blurb = self._generated()
+        self.assertIn("Evennia", blurb)
+        self.assertGreater(len(blurb.strip()), 60, "the blurb is too short to say anything")
+        for wrong in ("![", "```", "| ---", "**Note"):
+            self.assertNotIn(
+                wrong, blurb, "the blurb paragraph contains markup that would render badly"
+            )
+
+    def test_the_title_is_a_title(self):
+        parts = README.split("\n\n", 3)
+        self.assertTrue(parts[0].startswith("# "), "the README does not open with an H1")
+        self.assertEqual(parts[0].count("\n"), 0, "the H1 paragraph has extra lines in it")
+
+    def test_the_assumption_still_matches_evennias_generator(self):
+        """
+        The three tests above are only meaningful while Evennia parses READMEs
+        this way. If it stops, they go on passing while guarding nothing --
+        which is a failure mode this project has met more than once.
+
+        Skipped rather than failed when the generator is absent: a contrib
+        installed on its own has no `docs/` beside it, and that is a legitimate
+        way to use this code rather than a problem with it.
+
+        """
+        generator = CONTRIB_DIR.parents[3] / "docs" / "pylib" / "contrib_readmes2docs.py"
+        if not generator.is_file():
+            self.skipTest("not running from an Evennia checkout with docs/")
+
+        source = generator.read_text(encoding="utf-8")
+        self.assertIn(
+            'data.split("\\n\\n", 3)[1]',
+            source,
+            "Evennia's docs generator no longer takes the credits from the second "
+            "paragraph, so the README guards above are guarding nothing",
+        )
+        self.assertIn('data.split("\\n\\n", 3)[2]', source)
+
+
+class TestTheContribDependsOnNothing(TestCase):
+    """
+    The claim the whole project rests on, finally checked.
+
+    The README's closing line is *"No CDN, no build step, no JavaScript
+    framework"*, and the design constraint above that is core-only dependencies:
+    Python, Evennia, Django, and universal browser APIs. A game installs this and
+    needs nothing else.
+
+    **Nothing verified it.** An `import requests` added in a hurry would have
+    shipped, and the first anybody would know is a game failing to start with an
+    ImportError naming a package they never asked for -- which is the single most
+    annoying way for a contrib to be wrong.
+
+    Checked by parsing rather than by running: an import that only happens inside
+    a function still counts, because it still fails, and it fails later and more
+    confusingly than one at the top of a file.
+
+    """
+
+    #: Imports allowed beyond the standard library.
+    #:
+    #: `black` is the one exception and it is a *test-only* import, guarded by a
+    #: `skipTest` so a game without it is unaffected. It is here because
+    #: Evennia's CI runs `black --check` and this contrib arrived at that gate
+    #: with twelve unformatted files; the check that prevents a recurrence has to
+    #: live where it will actually be run.
+    ALLOWED_EXTERNAL = {"black"}
+
+    def _external_imports(self):
+        """
+        Every non-stdlib import in the contrib, and where it came from.
+
+        Returns:
+            dict: Top-level module name mapped to the files importing it.
+
+        """
+        import sys
+
+        stdlib = set(sys.stdlib_module_names)
+        found = {}
+
+        for path in sorted(CONTRIB_DIR.rglob("*.py")):
+            if "__pycache__" in path.parts:
+                continue
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                modules = []
+                if isinstance(node, ast.Import):
+                    modules = [alias.name for alias in node.names]
+                elif isinstance(node, ast.ImportFrom):
+                    if node.level:
+                        # Relative, so inside the contrib by construction.
+                        continue
+                    modules = [node.module or ""]
+                for module in modules:
+                    top = module.split(".")[0]
+                    if not top or top in stdlib:
+                        continue
+                    if top in ("evennia", "django"):
+                        continue
+                    found.setdefault(top, set()).add(path.name)
+
+        return found
+
+    def test_it_imports_nothing_but_python_django_and_evennia(self):
+        unexpected = {
+            module: sorted(files)
+            for module, files in self._external_imports().items()
+            if module not in self.ALLOWED_EXTERNAL
+        }
+        self.assertEqual(
+            unexpected,
+            {},
+            "the contrib promises core-only dependencies and imports: %s" % unexpected,
+        )
+
+    def test_the_one_exception_is_test_only_and_degrades(self):
+        """
+        `black` may be imported, and only from a test, and only in a way that
+        skips when it is absent. An allowance that quietly became a runtime
+        dependency would be worse than never having made it.
+
+        """
+        for module, files in self._external_imports().items():
+            if module not in self.ALLOWED_EXTERNAL:
+                continue
+            with self.subTest(module=module):
+                self.assertTrue(
+                    all(name.startswith("test_") for name in files),
+                    "%s is imported outside the tests: %s" % (module, sorted(files)),
+                )
+
+        source = (CONTRIB_DIR / "tests" / "test_release_readiness.py").read_text(encoding="utf-8")
+        self.assertIn("except ImportError", source)
+        self.assertIn("self.skipTest", source)
+
+
 class TestTheCodeIsFormattedTheWayEvenniaDemands(TestCase):
     """
     Evennia's CI runs `black --check`, and a PR that fails it fails immediately.

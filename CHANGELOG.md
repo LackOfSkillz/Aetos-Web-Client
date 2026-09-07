@@ -11,6 +11,30 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Added — guards for two things the upstream PR depends on
+
+**The contrib depends on nothing, and now something checks that.** The README's
+selling point is core-only dependencies — Python, Evennia, Django, browser APIs —
+and nothing verified it. An `import requests` added in a hurry would have
+shipped, and the first anybody would know is a game failing to start with an
+ImportError naming a package they never asked for. Checked by parsing, so an
+import hidden inside a function counts too.
+
+The single allowed exception is `black`, imported only from a test and only
+behind a `skipTest`, because the formatting check has to live where it will
+actually be run. A test asserts that exception stays test-only.
+
+**The README's opening shape is load-bearing.** Evennia generates this contrib's
+published page by splitting the README on blank lines: the second paragraph
+becomes the credits line and the third becomes the blurb in the contrib index
+everyone browses. No marker, no validation. A badge or a note near the top would
+silently become the description. Guarded — and the guard checks its own
+assumption against Evennia's generator, so if that parsing changes we are told
+rather than left with three tests that pass while guarding nothing.
+
+Good news for the diff: nothing upstream needs hand-editing to register a
+contrib, so the PR stays confined to this directory.
+
 ### Fixed — the contrib was not formatted the way Evennia's CI demands
 
 Evennia runs `black --check`, and **twelve files would have been reformatted**.
