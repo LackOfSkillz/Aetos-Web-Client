@@ -76,6 +76,113 @@ class TestOutputIsNotALiveRegion(TestCase):
         self.assertIn("announcer: announcer", script)
 
 
+class TestGameOutputIsActuallyAnnounced(TestCase):
+    """
+    A14, and the other half of the class above.
+
+    Gary: *"when I turn screen reader on and then go back to the game and type
+    look nothing is read to me."*
+
+    He was right, and it was the most serious defect this project has shipped.
+    The console is deliberately `aria-live="off"` -- `role="log"` carries an
+    implicit polite region that would speak every line including combat spam --
+    and the stated design is that deliberate announcements go through the
+    announcer instead.
+
+    **Nothing went through the announcer.** The pipeline has had an `announce`
+    stage since E0, the announcer has had categories, per-category preferences,
+    priorities, flood control and review mode since A0, and
+    `screenReader.announceRoom` has defaulted to `True` throughout. The only
+    observer of that stage was the capture recorder, so no game text was ever
+    handed to the announcer at all. A screen reader user heard silence.
+
+    Every test in the class above passed, because each asserts one end of a wire
+    that was never joined: the console is not a live region (true), an announcer
+    region exists (true), widgets can reach it (true). Nobody asserted that game
+    output arrives at it.
+
+    The browser suite made the same mistake in a sharper form. Its `announce`
+    check ingested five lines of game text and asserted only that none reached
+    the *urgent* region -- which was true, because none reached anywhere. **A
+    negative assertion is satisfied by nothing happening**, and needs a positive
+    one beside it or it is measuring an empty room.
+
+    """
+
+    def setUp(self):
+        self.script = (STATIC_DIR / "js" / "aetos.js").read_text(encoding="utf-8")
+
+    def _announce_stage(self):
+        """
+        The block that observes the pipeline's announce stage.
+
+        Returns:
+            str: JavaScript source from the first announce observer onward.
+
+        """
+        start = self.script.index('pipeline.observe("announce"')
+        return self.script[start : start + 2000]
+
+    def test_something_observes_the_announce_stage_besides_the_recorder(self):
+        """
+        The stage existed and ran; it simply had no listener that spoke.
+
+        """
+        self.assertGreaterEqual(self.script.count('pipeline.observe("announce"'), 2)
+
+    def test_game_output_is_handed_to_the_announcer(self):
+        self.assertIn("announcer.announce(", self._announce_stage())
+
+    def test_it_announces_the_plain_text_rather_than_the_markup(self):
+        """
+        Server markup legitimately reaches the client, and a screen reader must
+        not read span tags aloud.
+
+        """
+        self.assertIn("event.plainText", self._announce_stage())
+
+    def test_it_carries_the_category_so_the_announcer_can_decide(self):
+        """
+        Category is how `announceCombat: False` and the rest take effect. An
+        announcement with no category is one the player's preferences cannot
+        reach.
+
+        """
+        self.assertIn("category: event.category", self._announce_stage())
+
+    def test_it_does_not_second_guess_the_announcer(self):
+        """
+        Priorities, per-category preferences, quiet mode, review mode and burst
+        aggregation are the announcer's job. A second opinion in the shell is
+        how two places come to disagree about what a player asked for.
+
+        """
+        stage = self._announce_stage()
+        for policy in ("quietMode", "announceCombat", "announcementMode", "FLOOD"):
+            self.assertNotIn(policy, stage)
+
+    def test_empty_events_are_not_announced(self):
+        """
+        A structured event with no text would otherwise announce an empty
+        string, which a screen reader reports as a change with nothing in it.
+
+        """
+        self.assertIn("if (!spoken", self._announce_stage())
+
+    def test_the_console_is_still_not_a_live_region(self):
+        """
+        The fix must not be "turn the console on".
+
+        `role="log"`'s implicit polite region would speak every line, with no
+        categories, no thresholds and no flood control -- which is the thing the
+        announcer exists to avoid and the reason `aria-live="off"` is there.
+
+        """
+        markup = TEMPLATE_PATH.read_text(encoding="utf-8")
+        console = markup[markup.index('id="aetos-console"') :][:200]
+        self.assertIn('aria-live="off"', console)
+
+
 class TestStatusIsNotColourAlone(TestCase):
     """
     No information may depend on colour alone (blueprint sections 45, 49).

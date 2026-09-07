@@ -238,10 +238,25 @@ class TestTheShellWiresThem(TestCase):
         rather than what arrived. The bugs worth reproducing live in the second
         thing.
 
+        A14 gave that stage a second observer -- the one that hands game output
+        to the announcer, which had been missing since E0 -- so this can now
+        assert what it always meant: capture is registered **last**, after
+        everything else that stage does. Anchoring on the first observer was
+        only ever right while there was exactly one.
+
         """
-        start = SHELL.index('pipeline.observe("announce"')
-        window = SHELL[start : start + 300]
+        observers = [
+            index
+            for index in range(len(SHELL))
+            if SHELL.startswith('pipeline.observe("announce"', index)
+        ]
+        self.assertGreaterEqual(len(observers), 2, "the announcer observer is missing")
+
+        window = SHELL[observers[-1] : observers[-1] + 300]
         self.assertIn("capture.recordInbound", window)
+
+        # And nothing else is registered after it.
+        self.assertNotIn('pipeline.observe("announce"', SHELL[observers[-1] + 30 :])
 
     def test_outbound_is_recorded_at_the_single_convergence_point(self):
         """

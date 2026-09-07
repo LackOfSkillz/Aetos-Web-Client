@@ -148,6 +148,35 @@ async function run(page) {
         : { status: "FAIL", what: `gameplay interrupted: ${JSON.stringify(gameplay.urgent[0]).slice(0, 80)}` });
 
     /*
+     * ...and that it reaches the polite one at all.  A14.
+     *
+     * THE ASSERTION ABOVE PASSED FOR THE WORST POSSIBLE REASON. It says game
+     * output must not reach the *urgent* region, and for the whole life of this
+     * check that was true because **no game output was announced anywhere**.
+     * The pipeline's `announce` stage had exactly one observer -- the capture
+     * recorder -- so nothing was ever handed to the announcer, and the console
+     * is deliberately `aria-live="off"`. A screen reader user typed `look` and
+     * heard silence.
+     *
+     * A check of the form "X must not happen" is satisfied by nothing happening
+     * at all, and that is not a subtle failure mode -- it is the default one.
+     * Every negative assertion in this suite needs a positive one beside it
+     * saying the thing under test occurred, or it is measuring an empty room.
+     *
+     * Gary found this by using the client. Five automated gates did not.
+     */
+    results.push(gameplay.polite.length > 0
+        ? {
+            status: "ok",
+            what: `game output is announced (${gameplay.polite.length} to the polite region)`,
+        }
+        : {
+            status: "FAIL",
+            what: "game output was announced nowhere -- a screen reader user hears "
+                + "nothing when the game speaks",
+        });
+
+    /*
      * Announcing the absence of news. A reconnect re-sends state, and a client
      * that announced all of it would say everything again on every drop -- which
      * on a flaky connection is the worst experience this client can produce for

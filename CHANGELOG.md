@@ -11,6 +11,54 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Fixed — game output was never announced at all (A14)
+
+Gary: *"when I turn screen reader on and then go back to the game and type look
+nothing is read to me."*
+
+**No game output had ever been announced.** Not room descriptions, not tells, not
+anything the server sent.
+
+Every piece existed. The pipeline has had an `announce` stage since E0. The
+announcer has had categories, per-category preferences, priorities, flood control
+and review mode since A0. `screenReader.announceRoom` has defaulted to `true`
+throughout. Both live regions are in the template. The console is deliberately
+`aria-live="off"`, because `role="log"`'s implicit polite region would speak every
+line including combat spam.
+
+The only observer of the `announce` stage was **the capture recorder**. The stage
+ran, handed each event to a debugging tool, and stopped. The announcer was never
+given anything to decide about, and the console was told not to speak.
+
+Fixed with wiring and no new policy — category, priority, per-category
+preferences, quiet mode, review mode and burst aggregation stay the announcer's
+job. Verified with a realistic `look`: the full room description reaches the
+polite region as plain text, with the markup stripped.
+
+**Why five gates missed it, which is the part worth keeping.** The browser
+suite's `announce` check ingested five lines of game text and asserted only that
+none reached the *urgent* region. That was true — because none reached anywhere.
+
+> A negative assertion is satisfied by nothing happening at all.
+
+The Python tests failed the same way more quietly: `TestOutputIsNotALiveRegion`
+asserted the console is not a live region, an announcer region exists, and widgets
+can reach it. All true, each one end of a wire that was never joined. Nobody
+asserted that game output arrives at it. axe checks names, roles and states — all
+correct. NVDA could not have caught it either: Guidepup captures speech produced
+by its own navigation commands, not spontaneous live-region updates.
+
+Every gate measured the machinery; none measured the outcome. The rule this earns:
+**any "X must not happen" assertion needs a positive one beside it saying the
+thing under test happened at all.**
+
+`checks/announce.js` gained that positive assertion (**371 → 373 checks**), and
+`test_capture_replay.py`'s announce-stage test now asserts what it always meant —
+capture is registered *last* — which was only testable once a second observer
+existed.
+
+See [`notes/a14-game-output-was-never-announced.md`](notes/a14-game-output-was-never-announced.md).
+
 ### Fixed — the text-size slider could not be dragged (A13)
 
 Gary: *"I try to slide it smoothly back and forth but the slider redraws every

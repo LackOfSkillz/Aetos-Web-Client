@@ -119,6 +119,24 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M29  Compatibility matrix
 [~] M30  Accessibility review  -- WITHDRAWN, see Addendum A below
 [ ] M31  Release candidate
+[x] A14  Game output was never announced -- 2026-09-07
+         Gary: "when I turn screen reader on and then go back to
+         the game and type look nothing is read to me."
+         NO GAME OUTPUT HAS EVER BEEN ANNOUNCED. The pipeline's
+         `announce` stage has existed since E0; the announcer has
+         had categories, preferences, priorities and flood control
+         since A0; announceRoom has defaulted true throughout; the
+         console is deliberately aria-live="off". The only observer
+         of the announce stage was the capture recorder, so nothing
+         was ever handed to the announcer. Silence.
+         The browser suite's announce check ingested five lines and
+         asserted only that none reached the URGENT region -- true,
+         because none reached anywhere. A negative assertion is
+         satisfied by nothing happening at all.
+         Fixed with 30 lines of wiring and no new policy.
+         371 -> 373 suite checks.
+         See notes/a14-game-output-was-never-announced.md.
+
 [x] A13  Tiles, drilling down, and a draggable slider -- 2026-09-07
          Gary on the A12 panel: "theres no way to get back once you
          pick one... the text size slider is janky... once options
@@ -704,6 +722,24 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (all five slots; equality after the normaliser is the gate,
          and an `order` field that would have done nothing was cut
          before it shipped)
+[x] A14  Game output was never announced -- 2026-09-07
+         Gary: "when I turn screen reader on and then go back to
+         the game and type look nothing is read to me."
+         NO GAME OUTPUT HAS EVER BEEN ANNOUNCED. The pipeline's
+         `announce` stage has existed since E0; the announcer has
+         had categories, preferences, priorities and flood control
+         since A0; announceRoom has defaulted true throughout; the
+         console is deliberately aria-live="off". The only observer
+         of the announce stage was the capture recorder, so nothing
+         was ever handed to the announcer. Silence.
+         The browser suite's announce check ingested five lines and
+         asserted only that none reached the URGENT region -- true,
+         because none reached anywhere. A negative assertion is
+         satisfied by nothing happening at all.
+         Fixed with 30 lines of wiring and no new policy.
+         371 -> 373 suite checks.
+         See notes/a14-game-output-was-never-announced.md.
+
 [x] A13  Tiles, drilling down, and a draggable slider -- 2026-09-07
          Gary on the A12 panel: "theres no way to get back once you
          pick one... the text size slider is janky... once options
@@ -1335,6 +1371,24 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [ ] M21..M29
 [ ] A8   Assistive-technology validation
 [ ] M31  Release candidate
+[x] A14  Game output was never announced -- 2026-09-07
+         Gary: "when I turn screen reader on and then go back to
+         the game and type look nothing is read to me."
+         NO GAME OUTPUT HAS EVER BEEN ANNOUNCED. The pipeline's
+         `announce` stage has existed since E0; the announcer has
+         had categories, preferences, priorities and flood control
+         since A0; announceRoom has defaulted true throughout; the
+         console is deliberately aria-live="off". The only observer
+         of the announce stage was the capture recorder, so nothing
+         was ever handed to the announcer. Silence.
+         The browser suite's announce check ingested five lines and
+         asserted only that none reached the URGENT region -- true,
+         because none reached anywhere. A negative assertion is
+         satisfied by nothing happening at all.
+         Fixed with 30 lines of wiring and no new policy.
+         371 -> 373 suite checks.
+         See notes/a14-game-output-was-never-announced.md.
+
 [x] A13  Tiles, drilling down, and a draggable slider -- 2026-09-07
          Gary on the A12 panel: "theres no way to get back once you
          pick one... the text size slider is janky... once options
