@@ -11,6 +11,32 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Added — `scripts/verify_install.py`, which installs Aetos the way the README says to
+
+The README's first promise is *"install it and you immediately get a better
+client on an ordinary Evennia game, with no changes to your game code"*, and the
+installation section is three lines somebody pastes into `settings.py`. That is
+the first thing every user does and it had never been tested end to end — the lab
+game has carried accumulated settings since Phase 0, so it could not say whether
+a *pristine* install works.
+
+It does. On a game created seconds earlier with nothing else configured: the
+client serves, Aetos wins the template race against Evennia's own webclient, the
+console and composer are on the page, the CSP is applied, **every feature flag is
+off** — the progressive-enhancement promise — no diagnostics payload leaks, and
+all nine provider slots resolve.
+
+It also checks the half that matters more: leaving out the input-handler line
+makes the startup checks say so (`aetos.W003`). A check that never fires is
+indistinguishable from one that does not work.
+
+The script never starts the server. Evennia's first `start` prompts for a
+superuser, and answering this question needs no account and no listening port —
+Django's test client fetches the page directly, which also makes it safe to run
+while the lab game is up. A test asserts the script pastes the README's block
+verbatim, because a verifier running slightly different lines would prove those
+lines work and say nothing about the ones people copy.
+
 ### Added — guards for two things the upstream PR depends on
 
 **The contrib depends on nothing, and now something checks that.** The README's

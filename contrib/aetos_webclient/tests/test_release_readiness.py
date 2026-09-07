@@ -133,6 +133,30 @@ class TestTheReadmeFeedsEvenniasDocumentation(TestCase):
     def test_the_readme_says_what_it_is_before_how_to_install_it(self):
         self.assertLess(README.index("## Features"), README.index("## Installation"))
 
+    def test_the_assumption_still_matches_evennias_generator(self):
+        """
+        Everything above is only meaningful while Evennia parses READMEs this
+        way. If it stops, these tests go on passing while guarding nothing --
+        a shape this project has met more than once.
+
+        The class describes the split from memory; this reads the generator and
+        fails when the description expires. Skipped when the contrib is
+        installed without an Evennia checkout beside it, which is legitimate.
+
+        """
+        generator = CONTRIB_DIR.parents[3] / "docs" / "pylib" / "contrib_readmes2docs.py"
+        if not generator.is_file():
+            self.skipTest("not running from an Evennia checkout with docs/")
+
+        source = generator.read_text(encoding="utf-8")
+        self.assertIn(
+            r'data.split("\n\n", 3)[1]',
+            source,
+            "Evennia no longer takes the credits from the second paragraph, so the "
+            "README tests in this class are guarding nothing",
+        )
+        self.assertIn(r'data.split("\n\n", 3)[2]', source)
+
 
 class TestTheContribIsSelfContained(TestCase):
     """
@@ -355,96 +379,51 @@ class TestAConnectedClientThatHearsNothingSaysSo(TestCase):
         self.assertIn("clearHandshakeWatch();", body)
 
 
-class TestTheReadmeSurvivesEvenniasDocsGenerator(TestCase):
+class TestTheInstallVerifierRunsWhatTheReadmeSays(TestCase):
     """
-    Evennia publishes this contrib's page by parsing the README, and it parses it
-    crudely.
+    `scripts/verify_install.py` installs Aetos into a brand-new game and checks
+    that a pristine install behaves as documented -- the client serves, Aetos
+    wins the template race, every feature flag is off, and the startup checks
+    fire when a line is left out.
 
-    `docs/pylib/contrib_readmes2docs.py` does exactly this::
+    It can only mean anything if it pastes **the README's own block**. A verifier
+    running a slightly different three lines would prove that *those* lines work
+    and say nothing about the ones people copy, while looking like the strongest
+    check in the project.
 
-        credits = data.split("\n\n", 3)[1]
-        blurb = data.split("\n\n", 3)[2]
-
-    Split on blank lines: **the second paragraph becomes the credits line and the
-    third becomes the blurb** shown in the contrib index that every Evennia user
-    browses. There is no marker, no front-matter and no validation -- put a badge,
-    a note, or a second title line near the top and the published page credits the
-    contrib to whatever that paragraph happens to say.
-
-    Nothing upstream needs editing to add a contrib, which is what keeps the PR
-    diff confined to this directory. The price is that the README's opening shape
-    is load-bearing and looks like prose.
-
-    These tests *replicate* that parsing rather than running the generator, which
-    writes a hundred files into the docs tree. So the replication itself is
-    checked: the last test below reads the generator's source and fails if the
-    split it depends on ever changes. A guard built on an assumption about
-    somebody else's code should say out loud when that assumption expires.
+    Skipped when the repository is not present: the contrib is also installed on
+    its own, and `scripts/` is not part of what ships.
 
     """
 
-    def _generated(self):
+    def _script(self):
         """
-        What Evennia's generator would extract.
+        The verifier's source, or None when it is not beside us.
 
         Returns:
-            tuple: The credits paragraph and the blurb paragraph.
+            str or None: The script.
 
         """
-        data = README
-        parts = data.split("\n\n", 3)
-        return parts[1], parts[2]
+        script = CONTRIB_DIR.parents[4] / "scripts" / "verify_install.py"
+        return script.read_text(encoding="utf-8") if script.is_file() else None
 
-    def test_the_credits_line_is_the_credits_line(self):
-        credits, _ = self._generated()
-        self.assertTrue(
-            credits.startswith("Contribution by"),
-            "Evennia would publish this as the contrib's credits: %r" % credits[:80],
-        )
+    def test_it_pastes_the_readme_block_verbatim(self):
+        script = self._script()
+        if script is None:
+            self.skipTest("scripts/ is not present; the contrib is installed standalone")
 
-    def test_the_blurb_describes_the_contrib(self):
-        """
-        The third paragraph is what appears under the contrib's name in the index
-        Evennia ships. A stray note or badge there would be the description
-        thousands of people read first.
+        block = re.search(r"```python\n(from evennia.*?)```", README, re.S)
+        self.assertIsNotNone(block, "the README's installation block has moved or changed shape")
 
-        """
-        _, blurb = self._generated()
-        self.assertIn("Evennia", blurb)
-        self.assertGreater(len(blurb.strip()), 60, "the blurb is too short to say anything")
-        for wrong in ("![", "```", "| ---", "**Note"):
-            self.assertNotIn(
-                wrong, blurb, "the blurb paragraph contains markup that would render badly"
+        for line in block.group(1).strip().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            self.assertIn(
+                line,
+                script,
+                "verify_install.py does not run this line from the README: %r" % line,
             )
-
-    def test_the_title_is_a_title(self):
-        parts = README.split("\n\n", 3)
-        self.assertTrue(parts[0].startswith("# "), "the README does not open with an H1")
-        self.assertEqual(parts[0].count("\n"), 0, "the H1 paragraph has extra lines in it")
-
-    def test_the_assumption_still_matches_evennias_generator(self):
-        """
-        The three tests above are only meaningful while Evennia parses READMEs
-        this way. If it stops, they go on passing while guarding nothing --
-        which is a failure mode this project has met more than once.
-
-        Skipped rather than failed when the generator is absent: a contrib
-        installed on its own has no `docs/` beside it, and that is a legitimate
-        way to use this code rather than a problem with it.
-
-        """
-        generator = CONTRIB_DIR.parents[3] / "docs" / "pylib" / "contrib_readmes2docs.py"
-        if not generator.is_file():
-            self.skipTest("not running from an Evennia checkout with docs/")
-
-        source = generator.read_text(encoding="utf-8")
-        self.assertIn(
-            'data.split("\\n\\n", 3)[1]',
-            source,
-            "Evennia's docs generator no longer takes the credits from the second "
-            "paragraph, so the README guards above are guarding nothing",
-        )
-        self.assertIn('data.split("\\n\\n", 3)[2]', source)
 
 
 class TestTheContribDependsOnNothing(TestCase):
