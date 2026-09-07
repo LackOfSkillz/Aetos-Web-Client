@@ -198,7 +198,23 @@ def build_manifest(character=None):
 
     # What the game says about its own interface (M23). Descriptive only --
     # labels, order and thresholds -- never a source of values.
-    described = ui_manifest.get_ui_description()
+    #
+    # Translated to this function's own error type, and that is not tidiness.
+    # `AetosUIError` is a sibling of `AetosManifestError`, not a subclass, and
+    # the handshake in `inputfuncs.aetos_hello` catches only the latter -- so a
+    # malformed `AETOS_UI` escaped the handshake as an unhandled exception
+    # instead of the "server misconfiguration" reply the client is built to
+    # receive. Every player connecting to that game hit it.
+    #
+    # The docstring above has always said this function raises
+    # `AetosManifestError`. It was the code that did not keep the promise, so
+    # the fix belongs here rather than in a longer `except` clause at the call
+    # site -- a list of sibling exceptions to catch is a list that goes stale
+    # the next time somebody adds a validator.
+    try:
+        described = ui_manifest.get_ui_description()
+    except ui_manifest.AetosUIError as err:
+        raise AetosManifestError(str(err)) from err
 
     payload = {
         "protocol": constants.PROTOCOL_VERSION,

@@ -11,6 +11,31 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Fixed — a mistyped `AETOS_UI` threw out of every player's handshake
+
+`build_manifest()` has always documented that it raises `AetosManifestError`.
+With a malformed `AETOS_UI` it raised `AetosUIError` — a *sibling* class, not a
+subclass — and `aetos_hello` catches only the documented one. So the exception
+left the handshake unhandled and the player got a connection that neither
+completed nor explained itself, instead of the "server misconfiguration" reply
+the client is built to receive. The startup check had only warned.
+
+`build_manifest` now keeps its own documented contract. The fix is there rather
+than in a longer `except` clause at the call site, because a list of sibling
+exceptions to catch is a list that goes stale the next time somebody adds a
+validator.
+
+**Two tests were covering this and both were looking slightly the wrong way.**
+The handshake's misconfiguration test used `AETOS_AUTOMATION`, which happened to
+raise the one exception that was caught. And `test_ui_manifest` asserted that
+`build_manifest` raised `AetosUIError` and read that as "the handshake reports
+it" — pinning the mechanism one layer below the outcome, so it went on passing
+while the outcome was the opposite of its own docstring.
+
+Both now check the outcome: every Aetos setting a game can write is given a
+malformed value, and each must either degrade or produce a reply. Whatever a
+developer gets wrong, a player gets an answer.
+
 ### Added — the licensing position is now enforceable rather than only argued
 
 `aac_mappings/README.md` says *"These files contain no artwork"*, and the whole

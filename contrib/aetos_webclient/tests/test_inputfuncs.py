@@ -128,3 +128,50 @@ class TestHandshakeFailure(TestCase):
         self.assertIsNotNone(error)
         self.assertIn("misconfiguration", error["message"])
         self.assertIsNone(self.session.last("aetos_manifest"))
+
+    #: One malformed value per Aetos setting a game can write.
+    #:
+    #: Kept as a table because the test above used `AETOS_AUTOMATION` alone --
+    #: and `AETOS_AUTOMATION` happened to raise the one exception the handshake
+    #: catches. `AETOS_UI` raises `AetosUIError`, a *sibling* of
+    #: `AetosManifestError` rather than a subclass, so it went straight through
+    #: `aetos_hello` as an unhandled exception. Every player connecting to a game
+    #: with a mistyped `AETOS_UI` hit it, the startup check having only warned.
+    #:
+    #: Found by asking what a malformed setting does for *each* setting rather
+    #: than for the one that was convenient to write a test with.
+    MALFORMED = {
+        "AETOS_UI": {"resources": "not a list"},
+        "AETOS_FEATURES": {"resources": "yes"},
+        "AETOS_AUTOMATION": {"macros": "sometimes"},
+        "AETOS_PROVIDERS": {"resources": "world.nope.Missing"},
+        "AETOS_BINDINGS": {"resources": {"h": {"value": "db.hp()"}}},
+    }
+
+    def test_no_malformed_setting_escapes_the_handshake(self):
+        """
+        Whatever a developer gets wrong, a player must get an answer.
+
+        Either the manifest is built anyway -- providers and bindings degrade to
+        their defaults on purpose -- or the client is told the server is
+        misconfigured. What must never happen is an exception leaving
+        `aetos_hello`, because that is a connection that neither completes nor
+        explains itself.
+
+        """
+        for name, value in self.MALFORMED.items():
+            with self.subTest(setting=name):
+                session = FakeSession()
+                with override_settings(**{name: value}):
+                    try:
+                        inputfuncs.aetos_hello(session, **protocol.build_hello())
+                    except Exception as err:  # noqa: BLE001 - that is the finding
+                        self.fail(
+                            "a malformed %s escaped the handshake as %s: %s"
+                            % (name, type(err).__name__, err)
+                        )
+
+                answered = session.last("aetos_manifest") or session.last("aetos_error")
+                self.assertIsNotNone(
+                    answered, "a malformed %s left the client with no reply at all" % name
+                )
