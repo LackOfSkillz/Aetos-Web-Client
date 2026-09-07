@@ -119,7 +119,14 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M29  Compatibility matrix
 [~] M30  Accessibility review  -- WITHDRAWN, see Addendum A below
 [ ] M31  Release candidate
-[ ] M32  Upstream PR
+[x] M32  Upstream PR -- SUBMITTED 2026-09-07
+         evennia/evennia#3981, 154 files, +54,980.
+         Opened from LackOfSkillz/evennia feature/aetos-webclient.
+         Merging is Evennia's decision, not ours: their guidelines
+         say a contrib PR is reviewed and may go through several
+         iterations, and that not all PRs can be accepted.
+         The description states what is NOT validated -- braille,
+         AAC, JAWS, Orca -- and does not claim voice.
 [ ] M33  Voice input + speech accessibility
          CONFIRMED after M32 (Gary, 2026-09-06). The PR description
          must therefore not claim voice control -- blueprint s.76
@@ -664,7 +671,14 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (all five slots; equality after the normaliser is the gate,
          and an `order` field that would have done nothing was cut
          before it shipped)
-[ ] M32  Upstream PR
+[x] M32  Upstream PR -- SUBMITTED 2026-09-07
+         evennia/evennia#3981, 154 files, +54,980.
+         Opened from LackOfSkillz/evennia feature/aetos-webclient.
+         Merging is Evennia's decision, not ours: their guidelines
+         say a contrib PR is reviewed and may go through several
+         iterations, and that not all PRs can be accepted.
+         The description states what is NOT validated -- braille,
+         AAC, JAWS, Orca -- and does not claim voice.
 [ ] M33  Voice input + speech accessibility
          CONFIRMED after M32 (Gary, 2026-09-06). The PR description
          must therefore not claim voice control -- blueprint s.76
@@ -1255,7 +1269,14 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [ ] M21..M29
 [ ] A8   Assistive-technology validation
 [ ] M31  Release candidate
-[ ] M32  Upstream PR
+[x] M32  Upstream PR -- SUBMITTED 2026-09-07
+         evennia/evennia#3981, 154 files, +54,980.
+         Opened from LackOfSkillz/evennia feature/aetos-webclient.
+         Merging is Evennia's decision, not ours: their guidelines
+         say a contrib PR is reviewed and may go through several
+         iterations, and that not all PRs can be accepted.
+         The description states what is NOT validated -- braille,
+         AAC, JAWS, Orca -- and does not claim voice.
 [ ] M33  Voice input
 ```
 

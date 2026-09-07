@@ -11,6 +11,20 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Submitted — the upstream pull request (M32)
+
+[evennia/evennia#3981](https://github.com/evennia/evennia/pull/3981). 154 files,
+confined entirely to `evennia/contrib/base_systems/aetos_webclient/`.
+
+Submitted with its gaps stated rather than with claims that cannot be evidenced.
+The description says plainly what is **not** validated — refreshable braille on
+hardware, the AAC review, JAWS and Orca — and does not claim voice control,
+which is not built.
+
+**Merging is Evennia's decision.** Their contrib guidelines say a PR is reviewed,
+may go through several iterations, and that not all can be accepted, because
+merging a contrib means the project takes on maintaining it.
+
 ### Verified — real NVDA says the mode switch is a switch
 
 `npm run a11y:nvda` run against an unlocked desktop: 6 checks pass, 0 fail. The
