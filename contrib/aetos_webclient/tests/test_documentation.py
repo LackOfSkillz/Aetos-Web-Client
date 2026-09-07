@@ -164,6 +164,90 @@ class TestTheSettingsExamplesStillWork(TestCase):
             self.assertIn("`%s`" % name, README, "%s is not in the README" % name)
 
 
+class TestEveryAutomationKeyIsEitherHonouredOrMarkedReserved(TestCase):
+    """
+    The `AETOS_AUTOMATION` table, checked against the client that reads it.
+
+    Found while preparing the upstream PR. The README prints the whole table and
+    says *"The client honours these"* -- and `automationAllowed("voice")` has no
+    caller anywhere in the client, because voice input is M33 and ships after the
+    PR. A game reading that sentence would have set `voice: False` believing it
+    had forbidden something.
+
+    That is the M28 defect exactly: a setting documented as working that nothing
+    reads. It is worth its own class because the automation table is the one
+    place in the README that makes a blanket promise about a *list*, so a key
+    added later inherits the promise without anybody deciding it should.
+
+    The rule: every key is either **consulted by the client** or **named as
+    reserved**. When M33 lands and `automationAllowed("voice")` gains a caller,
+    this test is what tells somebody the README sentence is now out of date in
+    the other direction.
+
+    """
+
+    def _client_source(self):
+        """
+        Every line of client JavaScript, concatenated.
+
+        Returns:
+            str: The client's source.
+
+        """
+        js = CONTRIB_DIR / "static" / "aetos" / "js"
+        return "\n".join(
+            path.read_text(encoding="utf-8") for path in sorted(js.rglob("*.js"))
+        )
+
+    def test_every_documented_key_is_consulted_or_reserved(self):
+        from evennia.contrib.base_systems.aetos_webclient import manifest
+
+        source = self._client_source()
+        reserved = set(manifest.RESERVED_AUTOMATION)
+
+        for key in manifest.DEFAULT_AUTOMATION:
+            with self.subTest(key=key):
+                consulted = 'automationAllowed("%s")' % key in source
+                self.assertTrue(
+                    consulted or key in reserved,
+                    "AETOS_AUTOMATION[%r] is documented as honoured, nothing in the "
+                    "client consults it, and it is not listed in "
+                    "manifest.RESERVED_AUTOMATION" % key,
+                )
+
+    def test_nothing_is_reserved_that_the_client_actually_honours(self):
+        """
+        The other direction, which is the one that goes stale silently.
+
+        A key marked reserved *and* consulted means the feature landed and the
+        README is now understating the client -- harmless to a player and
+        misleading to a developer choosing whether to set it.
+
+        """
+        from evennia.contrib.base_systems.aetos_webclient import manifest
+
+        source = self._client_source()
+        for key in manifest.RESERVED_AUTOMATION:
+            with self.subTest(key=key):
+                self.assertNotIn(
+                    'automationAllowed("%s")' % key,
+                    source,
+                    "%r is consulted by the client but still listed as reserved; "
+                    "the README says it does nothing and it now does something" % key,
+                )
+
+    def test_the_readme_says_which_keys_are_reserved(self):
+        from evennia.contrib.base_systems.aetos_webclient import manifest
+
+        for key in manifest.RESERVED_AUTOMATION:
+            with self.subTest(key=key):
+                self.assertIn(
+                    "`%s` is reserved" % key,
+                    README,
+                    "the README does not tell a developer that %r does nothing" % key,
+                )
+
+
 class TestNothingShippedIsDescribedAsForthcoming(TestCase):
     """
     The defect M28 was written to fix, turned into something that cannot recur

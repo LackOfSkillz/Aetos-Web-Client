@@ -11,6 +11,21 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Fixed — the README claimed the client honours an automation flag it ignores
+
+Found while preparing the upstream PR. `AETOS_AUTOMATION` is printed as a whole
+table under the sentence *"The client honours these"*, and
+`automationAllowed("voice")` has no caller anywhere in the client -- voice input
+is not built. A game reading that would have set `voice: False` believing it had
+forbidden something.
+
+The key stays, so setting it is not an error and the capability keeps its place,
+but the README now says plainly that it is reserved and does nothing. A test ties
+the two together in both directions: every automation key must be either
+consulted by the client or listed in `manifest.RESERVED_AUTOMATION`, and nothing
+listed as reserved may be consulted. When voice input lands, that test is what
+tells somebody the README sentence is now wrong the other way.
+
 ### Added — `npm run a11y:nvda`, asserting on what a real screen reader says
 
 Drives actual NVDA through Guidepup and checks the words it speaks, which takes

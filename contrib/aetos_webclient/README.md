@@ -184,6 +184,11 @@ The client honours these. With `scripting` false, no scripting editor is offered
 at all. These are policy, not security: they shape the interface, while the server
 remains the thing that decides whether any command succeeds.
 
+**`voice` is reserved and nothing honours it yet.** Voice input is not built, so
+there is no spoken input for the flag to govern. It is in the defaults so that
+setting it is not an error and so the capability has its place, but setting it
+today changes nothing.
+
 ### Features
 
 Which structured subsystems your game exposes. All default to `False`, which is

@@ -28,6 +28,21 @@ from evennia.contrib.base_systems.aetos_webclient import constants, providers, u
 #: listed here rather than treated as a client-only preference because a game
 #: may reasonably want spoken commands previewed rather than executed, in the
 #: same way it governs macros and triggers. Blueprint sections 32 and 87.
+#:
+#: **`voice` is reserved and nothing honours it yet.** Voice input is M33, which
+#: ships after the upstream PR, and until it exists there is no spoken input for
+#: the flag to govern -- `automationAllowed("voice")` has no caller anywhere in
+#: the client.
+#:
+#: The key stays in the defaults rather than being removed, so that a game which
+#: sets it is not met with an "unknown key" error for a setting the
+#: documentation once described, and so M33 has its slot waiting. What it must
+#: not do is *look* honoured: the README says plainly that this one is reserved,
+#: and `test_documentation` ties that claim to whether the client actually
+#: consults it -- so the day M33 lands, the test is what tells somebody to update
+#: the sentence.
+RESERVED_AUTOMATION = ("voice",)
+
 DEFAULT_AUTOMATION = {
     "macros": True,
     "aliases": True,
