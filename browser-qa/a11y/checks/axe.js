@@ -36,49 +36,106 @@ const AXE = path.join(__dirname, "..", "..", "node_modules", "axe-core", "axe.mi
  */
 const INCOMPLETE_IS_NOT_A_FAILURE = new Set(["color-contrast"]);
 
-async function run(page) {
-    await inject(page, "axe", AXE);
+/*
+ * The overlays, not just the page behind them.
+ *
+ * The first version of this check scanned `document` in whatever state the page
+ * happened to be in -- which is the default workspace and nothing else. The gate
+ * it replaced opened thirteen views, so moving to the runner would have swapped
+ * thirteen scans for one and called it an improvement because it now ran at four
+ * viewports. Coverage traded for breadth, silently, which is the worst way to
+ * lose it.
+ *
+ * A dialog is where accessibility defects concentrate: focus order, naming, the
+ * relationship between a control and its description. Scanning only the page
+ * behind them would miss the lot.
+ *
+ * Each entry opens something, and closes it again. A view that fails to open is
+ * skipped rather than failed -- a game with diagnostics off genuinely has no
+ * inspector, and reporting that as a violation would train people to ignore the
+ * output.
+ */
+const OVERLAYS = [
+    ["default workspace", null, null],
+    ["help", () => window.Aetos.help.open(), () => window.Aetos.help.close()],
+    ["command palette", () => window.Aetos.palette.open(), () => window.Aetos.palette.close()],
+    ["settings dashboard", () => window.Aetos.settingsDashboard.open(), () => window.AetosDialog.close(null)],
+    ["privacy", () => window.Aetos.settings.openPrivacy(), () => window.AetosDialog.close(null)],
+    ["themes", () => window.Aetos.settings.openThemes(), () => window.AetosDialog.close(null)],
+    ["reminders", () => window.Aetos.settings.openReminders(), () => window.AetosDialog.close(null)],
+    ["symbol packs", () => window.Aetos.settings.openSymbolPacks(), () => window.AetosDialog.close(null)],
+    ["edit layout", () => window.Aetos.workspaces.toggleEditing(), () => window.Aetos.workspaces.toggleEditing()],
+];
 
-    const report = await page.evaluate(async () => {
+/**
+ * Run axe over whatever is currently on screen.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @returns {Promise<object[]>} Violations.
+ */
+async function scan(page) {
+    return page.evaluate(async () => {
         const result = await window.axe.run(document, {
             resultTypes: ["violations"],
-            runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"] },
+            runOnly: {
+                type: "tag",
+                values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"],
+            },
         });
-        return {
-            violations: result.violations.map((violation) => ({
-                id: violation.id,
-                impact: violation.impact,
-                nodes: violation.nodes.length,
-                target: violation.nodes[0] && violation.nodes[0].target.join(" "),
-            })),
-        };
+        return result.violations.map((violation) => ({
+            id: violation.id,
+            impact: violation.impact,
+            nodes: violation.nodes.length,
+            target: violation.nodes[0] && violation.nodes[0].target.join(" "),
+        }));
     });
+}
 
-    const serious = report.violations.filter(
-        (violation) => !INCOMPLETE_IS_NOT_A_FAILURE.has(violation.id)
-            && (violation.impact === "serious" || violation.impact === "critical")
-    );
-    const minor = report.violations.filter(
-        (violation) => violation.impact !== "serious" && violation.impact !== "critical"
-    );
-
+async function run(page) {
+    await inject(page, "axe", AXE);
     const results = [];
-    if (serious.length) {
-        for (const violation of serious) {
-            results.push({
-                status: "FAIL",
-                what: `${violation.id} (${violation.impact}, ${violation.nodes} node(s)): ${violation.target}`,
-            });
-        }
-    } else {
-        results.push({ status: "ok", what: "no serious or critical violations" });
-    }
 
-    for (const violation of minor) {
-        results.push({
-            status: "FAIL",
-            what: `${violation.id} (${violation.impact}, ${violation.nodes} node(s)): ${violation.target}`,
-        });
+    for (const [name, open, close] of OVERLAYS) {
+        if (open) {
+            const opened = await page.evaluate((source) => {
+                try {
+                    // eslint-disable-next-line no-new-func
+                    return new Function(`return (${source})()`)() !== false;
+                } catch (error) {
+                    return false;
+                }
+            }, open.toString()).catch(() => false);
+
+            if (!opened) {
+                results.push({ status: "skip", what: `${name}: not available in this client` });
+                continue;
+            }
+            await page.waitForTimeout(400);
+        }
+
+        const violations = await scan(page);
+        const real = violations.filter((violation) => !INCOMPLETE_IS_NOT_A_FAILURE.has(violation.id));
+
+        if (real.length) {
+            for (const violation of real) {
+                results.push({
+                    status: "FAIL",
+                    what: `${name}: ${violation.id} (${violation.impact}, ${violation.nodes} node(s)) ${violation.target}`,
+                });
+            }
+        } else {
+            results.push({ status: "ok", what: `${name}: clean` });
+        }
+
+        if (close) {
+            await page.evaluate((source) => {
+                try {
+                    // eslint-disable-next-line no-new-func
+                    new Function(`return (${source})()`)();
+                } catch (error) { /* already closed */ }
+            }, close.toString());
+            await page.waitForTimeout(300);
+        }
     }
 
     return results;
