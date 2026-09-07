@@ -64,6 +64,10 @@
             ["selective", "Only what I chose"],
             ["all", "Everything"],
             ["minimal", "As little as possible"]
+        ],
+        "visual.typeface": [
+            ["proportional", "Normal lettering"],
+            ["monospace", "Fixed-width lettering"]
         ]
     };
 
@@ -92,6 +96,21 @@
 
         function isOpen() {
             return optionsShown;
+        }
+
+        /*
+         * Whether the starting-point question is still owed.  A12.
+         *
+         * Only in accessible mode: standard mode is the client as it comes, and
+         * putting an accessibility question in front of somebody who has not
+         * asked for one is the presumption A10 was right to avoid.
+         *
+         * `null` is "never asked". Every other value -- including "custom" --
+         * is an answer, which is why choosing to set things up by hand has to
+         * be a preset rather than a way of dismissing the chooser.
+         */
+        function needsChooser() {
+            return isAccessible() && preferences.value("shell.preset") === null;
         }
 
         /*
@@ -220,17 +239,186 @@
             return row;
         }
 
+        function controlFor(entry, id) {
+            if (entry.kind === "boolean") {
+                return booleanControl(entry, id);
+            }
+            if (entry.kind === "enum") {
+                return enumControl(entry, id);
+            }
+            if (entry.kind === "range") {
+                return rangeControl(entry, id);
+            }
+            return null;
+        }
+
+        /*
+         * The options, in named groups.  A12.
+         *
+         * This used to append all eleven into one grid, which measured five
+         * columns wide and made the reading order zig-zag across a whole 1920px
+         * screen. Grouping is not decoration: COGA's guidance is about how many
+         * things are in front of somebody at once, and a heading every three or
+         * four controls is what turns a list into a place you can navigate.
+         *
+         * Each group is a `group` with its heading as the accessible name, so a
+         * screen reader gets the same structure the eye does rather than eleven
+         * undifferentiated controls.
+         */
         function buildControls(container) {
-            entriesForMode().forEach(function (entry, index) {
-                var id = "aetos-a11y-opt-" + index;
-                if (entry.kind === "boolean") {
-                    container.appendChild(booleanControl(entry, id));
-                } else if (entry.kind === "enum") {
-                    container.appendChild(enumControl(entry, id));
-                } else if (entry.kind === "range") {
-                    container.appendChild(rangeControl(entry, id));
+            var available = entriesForMode();
+            var byPath = {};
+            available.forEach(function (entry) {
+                byPath[entry.path] = entry;
+            });
+
+            var placed = {};
+            var index = 0;
+
+            function addGroup(label, entries) {
+                if (!entries.length) {
+                    return;
+                }
+                var group = document.createElement("div");
+                group.className = "aetos-a11y-panel__group";
+                group.setAttribute("role", "group");
+
+                var heading = document.createElement("h3");
+                heading.className = "aetos-a11y-panel__group-heading";
+                heading.id = "aetos-a11y-group-"
+                    + label.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+                heading.textContent = label;
+                group.setAttribute("aria-labelledby", heading.id);
+                group.appendChild(heading);
+
+                var options = document.createElement("div");
+                options.className = "aetos-a11y-panel__options";
+                entries.forEach(function (entry) {
+                    var row = controlFor(entry, "aetos-a11y-opt-" + index);
+                    index += 1;
+                    if (row) {
+                        options.appendChild(row);
+                    }
+                });
+                group.appendChild(options);
+                container.appendChild(group);
+            }
+
+            (schema.SECTIONS || []).forEach(function (section) {
+                var entries = [];
+                section.paths.forEach(function (path) {
+                    if (byPath[path]) {
+                        entries.push(byPath[path]);
+                        placed[path] = true;
+                    }
+                });
+                addGroup(section.label, entries);
+            });
+
+            // Anything the sections forgot. A test asserts this is empty; it
+            // renders anyway so that adding a preference and not listing it
+            // costs a heading rather than the control itself.
+            addGroup(
+                "More",
+                available.filter(function (entry) {
+                    return !placed[entry.path];
+                })
+            );
+        }
+
+        /*
+         * The starting point chooser.  A12.
+         *
+         * Shown instead of the options when somebody has turned accessible mode
+         * on and has never been asked. One question, five answers, in the words
+         * a person would use about their own situation -- against the eleven
+         * technical decisions this panel used to open with.
+         *
+         * Buttons rather than radios: choosing one *does* something
+         * immediately, and a radio group implies a pending Apply. The list is a
+         * `list` so the number of choices is announced up front, which is the
+         * thing that tells somebody how long this will take.
+         */
+        function buildChooser(container) {
+            var heading = document.createElement("h2");
+            heading.className = "aetos-a11y-panel__heading";
+            heading.textContent = "What would help most?";
+
+            var intro = document.createElement("p");
+            intro.className = "aetos-a11y-panel__detail";
+            intro.textContent =
+                "Pick the closest one and the client changes straight away. "
+                + "You can change any of it afterwards, and nothing here is "
+                + "permanent.";
+
+            container.appendChild(heading);
+            container.appendChild(intro);
+
+            var list = document.createElement("ul");
+            list.className = "aetos-a11y-panel__choices";
+
+            (schema.PRESETS || []).forEach(function (preset) {
+                var item = document.createElement("li");
+
+                var button = document.createElement("button");
+                button.type = "button";
+                button.className = "aetos-a11y-panel__choice";
+                button.setAttribute(
+                    "aria-describedby", "aetos-a11y-preset-" + preset.name
+                );
+
+                var name = document.createElement("span");
+                name.className = "aetos-a11y-panel__choice-label";
+                name.textContent = preset.label;
+
+                var detail = document.createElement("span");
+                detail.className = "aetos-a11y-panel__choice-detail";
+                detail.id = "aetos-a11y-preset-" + preset.name;
+                detail.textContent = preset.detail;
+
+                button.appendChild(name);
+                button.appendChild(detail);
+                button.addEventListener("click", function () {
+                    choose(preset.name);
+                });
+
+                item.appendChild(button);
+                list.appendChild(item);
+            });
+
+            container.appendChild(list);
+        }
+
+        /*
+         * Take a starting point, and say what happened.
+         *
+         * The announcement names the way back in the same breath as the change.
+         * Somebody who has just altered the contrast and type size of their
+         * whole client on one keypress needs to hear that it is undoable before
+         * they need to hear anything else.
+         */
+        function choose(name) {
+            var preset = null;
+            (schema.PRESETS || []).forEach(function (candidate) {
+                if (candidate.name === name) {
+                    preset = candidate;
                 }
             });
+            if (!preset) {
+                return null;
+            }
+            preferences.applyPreset(name);
+            render();
+            if (focusManager && focusManager.focusFirst) {
+                focusManager.focusFirst(host);
+            }
+            announce(
+                preset.name === "custom"
+                    ? "Every setting is listed below. Nothing has been changed."
+                    : preset.label + " applied. Every setting is listed below "
+                        + "and any of them can be changed."
+            );
+            return preset.name;
         }
 
         function buildUnconditional(container) {
@@ -302,6 +490,19 @@
                 return;
             }
 
+            /*
+             * Never asked, and in accessible mode: ask.  A12.
+             *
+             * This is the whole answer to "you flip the switch and nothing
+             * happens". It happens once -- taking any starting point, including
+             * "let me choose each setting myself", records an answer and this
+             * never appears again.
+             */
+            if (needsChooser()) {
+                buildChooser(host);
+                return;
+            }
+
             var heading = document.createElement("h2");
             heading.className = "aetos-a11y-panel__heading";
             heading.textContent = isAccessible()
@@ -322,10 +523,13 @@
             host.appendChild(heading);
             host.appendChild(intro);
 
-            var options = document.createElement("div");
-            options.className = "aetos-a11y-panel__options";
-            buildControls(options);
-            host.appendChild(options);
+            // The groups lay out side by side; the controls inside each one
+            // stack. A12 -- the flat version put every control in a single
+            // grid, which came out five columns wide with no headings.
+            var groups = document.createElement("div");
+            groups.className = "aetos-a11y-panel__groups";
+            buildControls(groups);
+            host.appendChild(groups);
 
             buildUnconditional(host);
         }
@@ -388,13 +592,40 @@
                 ? preferences.activeAccommodations()
                 : [];
             set("shell.mode", next ? "accessible" : "standard");
+
+            /*
+             * Ask the question, once, at the only moment it makes sense.  A12.
+             *
+             * This is a deliberate narrowing of the rule stated below, and it
+             * is worth being plain about that. The objection there was that
+             * opening the settings made the switch read as "show me a panel of
+             * options" rather than as a mode control, and that objection was
+             * right about a panel of eleven technical choices.
+             *
+             * One question with five plain-language answers is not that panel.
+             * And the alternative, measured, is worse than the thing the rule
+             * was protecting against: turning on accessible mode with no preset
+             * and no options open changes **nothing at all** on screen, because
+             * every governed preference already sits at its standard value. A
+             * switch that visibly does nothing teaches people it is cosmetic.
+             *
+             * It happens once. Any answer, including "let me choose each
+             * setting myself", is recorded, and from then on the switch behaves
+             * exactly as the rule below describes.
+             */
+            if (next && needsChooser()) {
+                optionsShown = true;
+            }
             render();
 
             if (next) {
-                announce(lost.length
-                    ? "Accessible mode. " + lost.join(", ") + " back on."
-                    : "Accessible mode. The Options button beside the switch "
-                        + "chooses what it applies.");
+                announce(needsChooser()
+                    ? "Accessible mode. One question below about what would "
+                        + "help most."
+                    : lost.length
+                        ? "Accessible mode. " + lost.join(", ") + " back on."
+                        : "Accessible mode. The Options button beside the switch "
+                            + "chooses what it applies.");
             } else {
                 /*
                  * Say what stopped and how to undo it, in that order. Somebody
@@ -510,6 +741,8 @@
             adjustTextSize: adjustTextSize,
             isAccessible: isAccessible,
             isOpen: isOpen,
+            needsChooser: needsChooser,
+            choose: choose,
             render: render
         };
     }

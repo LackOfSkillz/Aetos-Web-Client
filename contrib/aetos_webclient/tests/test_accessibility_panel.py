@@ -188,9 +188,45 @@ class TestTheSwitchAndTheOptionsAreSeparate(TestCase):
     """
 
     def test_switching_the_mode_does_not_open_the_options(self):
+        """
+        A12 narrowed this rule, and the test says exactly how far.
+
+        It used to be absolute: `setMode` never sets `optionsShown`. That was
+        right when the only thing behind the switch was a panel of eleven
+        technical choices, and wrong once measurement showed the alternative --
+        turning accessible mode on with no preset changes nothing whatsoever on
+        screen, because every governed preference already sits at its standard
+        value.
+
+        So the rule is now conditional, and the condition is the whole
+        protection: the panel may open **only** when the starting-point question
+        is owed, which happens at most once per profile. Asserting on the guard
+        rather than on its absence is what stops this quietly becoming "the
+        switch opens the panel again".
+
+        """
         body = _function("function setMode(wanted)", "function adjustTextSize")
-        self.assertNotIn("optionsShown = true", body)
+        opens = [line for line in body.splitlines() if "optionsShown = true" in line]
+        self.assertEqual(len(opens), 1, "setMode should open the panel in exactly one place")
+        # ...and that one place is guarded by the chooser being owed.
+        self.assertIn("if (next && needsChooser()) {", body)
+        # Still never steals focus. Moving focus on a mode switch was the
+        # original complaint and no part of A12 needs it.
         self.assertNotIn("focusFirst", body)
+
+    def test_the_chooser_is_owed_only_once_and_only_in_accessible_mode(self):
+        """
+        `null` is "never asked"; every other value is an answer.
+
+        Including `"custom"`, which is why choosing to set things up by hand has
+        to be a preset rather than a way of dismissing the question. A chooser
+        that reappears every session is an interruption, and interruptions are
+        the thing this panel exists to reduce.
+
+        """
+        body = _function("function needsChooser()", "function set(")
+        self.assertIn("isAccessible()", body)
+        self.assertIn('preferences.value("shell.preset") === null', body)
 
     def test_opening_the_options_does_not_change_the_mode(self):
         body = _function("function toggleOptions()", "function attach(")
@@ -613,10 +649,34 @@ class TestThePanelIsItselfAccessible(TestCase):
         self.assertIn("preferences.subscribe(function () { render(); })", PANEL)
 
     def test_the_layout_reflows_for_scaled_text_and_not_only_narrow_windows(self):
-        block = CSS[CSS.index(".aetos-a11y-panel__options {") :]
+        """
+        The same requirement, one level up.
+
+        A12 split the flat option grid into named groups, so the container that
+        has to reflow is now `__groups`. The rule it is protecting is unchanged
+        and is the one UI1 established: a `minmax` floor rather than a width
+        breakpoint, because scaling the text up is a different layout and a
+        breakpoint measured in pixels gets it wrong.
+
+        """
+        block = CSS[CSS.index(".aetos-a11y-panel__groups {") :]
         block = block[: block.index("}")]
         self.assertIn("auto-fit", block)
         self.assertIn("minmax(", block)
+
+    def test_the_controls_in_a_group_stack_rather_than_forming_a_second_grid(self):
+        """
+        Groups sit side by side; their contents do not.
+
+        Measured before A12, the flat grid came out five columns wide on a
+        1920px screen, so the reading order zig-zagged across the whole display.
+        A group holds at most four short rows and a column of four is read in
+        one movement.
+
+        """
+        block = CSS[CSS.index(".aetos-a11y-panel__options {") :]
+        block = block[: block.index("}")]
+        self.assertIn("flex-direction: column", block)
 
 
 class TestTheSwitchIsFindable(TestCase):

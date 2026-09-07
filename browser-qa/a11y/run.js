@@ -43,6 +43,7 @@ const CHECKS = {
     announce: require("./checks/announce"),
     forcedColors: require("./checks/forced-colors"),
     reflow: require("./checks/reflow"),
+    legibility: require("./checks/legibility"),
     focus: require("./checks/focus"),
     readiness: require("./checks/readiness"),
 };

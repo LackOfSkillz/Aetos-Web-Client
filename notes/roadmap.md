@@ -119,8 +119,24 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M29  Compatibility matrix
 [~] M30  Accessibility review  -- WITHDRAWN, see Addendum A below
 [ ] M31  Release candidate
-[x] M32  Upstream PR -- SUBMITTED 2026-09-07
-         evennia/evennia#3981, 154 files, +54,980.
+[x] A12  Accessible UI/UX research and rebuild -- 2026-09-07
+         Gary, with every gate green: "this doesnt feel accessible
+         to me... we are way off the mark". He was right. Every
+         check we owned measured machine-readable correctness;
+         nothing measured legibility, density or effort.
+         Accessible mode and standard mode rendered BYTE-IDENTICAL,
+         because the mode masks preferences and every governed
+         preference defaults to its standard value.
+         Five starting points asked once; two typefaces; options
+         grouped four-and-fewer; a 24px target floor on every
+         pointer; the reading line bounded at 84 characters.
+         New `legibility` check: 288 -> 368 suite checks.
+         See notes/a12-accessible-ux-research.md.
+
+[x] M32  Upstream PR -- OPEN AS DRAFT 2026-09-07
+         evennia/evennia#3981, opened 154 files / +54,980, then
+         converted to draft the same day so A12 lands before any
+         reviewer reads it cold. Nobody had commented.
          Opened from LackOfSkillz/evennia feature/aetos-webclient.
          Merging is Evennia's decision, not ours: their guidelines
          say a contrib PR is reviewed and may go through several
@@ -671,8 +687,24 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (all five slots; equality after the normaliser is the gate,
          and an `order` field that would have done nothing was cut
          before it shipped)
-[x] M32  Upstream PR -- SUBMITTED 2026-09-07
-         evennia/evennia#3981, 154 files, +54,980.
+[x] A12  Accessible UI/UX research and rebuild -- 2026-09-07
+         Gary, with every gate green: "this doesnt feel accessible
+         to me... we are way off the mark". He was right. Every
+         check we owned measured machine-readable correctness;
+         nothing measured legibility, density or effort.
+         Accessible mode and standard mode rendered BYTE-IDENTICAL,
+         because the mode masks preferences and every governed
+         preference defaults to its standard value.
+         Five starting points asked once; two typefaces; options
+         grouped four-and-fewer; a 24px target floor on every
+         pointer; the reading line bounded at 84 characters.
+         New `legibility` check: 288 -> 368 suite checks.
+         See notes/a12-accessible-ux-research.md.
+
+[x] M32  Upstream PR -- OPEN AS DRAFT 2026-09-07
+         evennia/evennia#3981, opened 154 files / +54,980, then
+         converted to draft the same day so A12 lands before any
+         reviewer reads it cold. Nobody had commented.
          Opened from LackOfSkillz/evennia feature/aetos-webclient.
          Merging is Evennia's decision, not ours: their guidelines
          say a contrib PR is reviewed and may go through several
@@ -1269,8 +1301,24 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [ ] M21..M29
 [ ] A8   Assistive-technology validation
 [ ] M31  Release candidate
-[x] M32  Upstream PR -- SUBMITTED 2026-09-07
-         evennia/evennia#3981, 154 files, +54,980.
+[x] A12  Accessible UI/UX research and rebuild -- 2026-09-07
+         Gary, with every gate green: "this doesnt feel accessible
+         to me... we are way off the mark". He was right. Every
+         check we owned measured machine-readable correctness;
+         nothing measured legibility, density or effort.
+         Accessible mode and standard mode rendered BYTE-IDENTICAL,
+         because the mode masks preferences and every governed
+         preference defaults to its standard value.
+         Five starting points asked once; two typefaces; options
+         grouped four-and-fewer; a 24px target floor on every
+         pointer; the reading line bounded at 84 characters.
+         New `legibility` check: 288 -> 368 suite checks.
+         See notes/a12-accessible-ux-research.md.
+
+[x] M32  Upstream PR -- OPEN AS DRAFT 2026-09-07
+         evennia/evennia#3981, opened 154 files / +54,980, then
+         converted to draft the same day so A12 lands before any
+         reviewer reads it cold. Nobody had commented.
          Opened from LackOfSkillz/evennia feature/aetos-webclient.
          Merging is Evennia's decision, not ours: their guidelines
          say a contrib PR is reviewed and may go through several

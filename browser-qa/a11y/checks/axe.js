@@ -65,6 +65,59 @@ const OVERLAYS = [
     ["reminders", () => window.Aetos.settings.openReminders(), () => window.AetosDialog.close(null)],
     ["symbol packs", () => window.Aetos.settings.openSymbolPacks(), () => window.AetosDialog.close(null)],
     ["edit layout", () => window.Aetos.workspaces.toggleEditing(), () => window.Aetos.workspaces.toggleEditing()],
+
+    /*
+     * The accessibility panel itself, in both of its states.  A12.
+     *
+     * It was in none of the views above, which means axe had never scanned the
+     * one surface this project's whole accessibility argument rests on -- and
+     * it went unnoticed because the list *looks* exhaustive. Every other dialog
+     * is here.
+     *
+     * Both states, because they are different documents: somebody who has never
+     * been asked gets the starting-point chooser, and everybody else gets the
+     * grouped options. Scanning only the second would miss the screen a person
+     * meets first, which is the one that matters most.
+     *
+     * `shell.preset` is saved and put back by the close function, so these two
+     * cannot leak a preset into the views that follow them.
+     */
+    [
+        "accessibility chooser",
+        () => {
+            const prefs = window.Aetos.accessibility.preferences;
+            window.__aetosPreset = prefs.value("shell.preset");
+            prefs.update({ shell: { mode: "accessible", preset: null } });
+            const panel = window.Aetos.accessibilityPanel;
+            if (!panel.isOpen()) { panel.toggleOptions(); }
+            return panel.needsChooser();
+        },
+        () => {
+            const panel = window.Aetos.accessibilityPanel;
+            if (panel.isOpen()) { panel.toggleOptions(); }
+            window.Aetos.accessibility.preferences.update({
+                shell: { preset: window.__aetosPreset },
+            });
+        },
+    ],
+    [
+        "accessibility options",
+        () => {
+            const prefs = window.Aetos.accessibility.preferences;
+            window.__aetosPreset = prefs.value("shell.preset");
+            prefs.update({ shell: { mode: "accessible", preset: "custom" } });
+            const panel = window.Aetos.accessibilityPanel;
+            if (!panel.isOpen()) { panel.toggleOptions(); }
+            return !panel.needsChooser() && panel.isOpen();
+        },
+        () => {
+            const panel = window.Aetos.accessibilityPanel;
+            if (panel.isOpen()) { panel.toggleOptions(); }
+            window.Aetos.accessibility.preferences.update({
+                shell: { preset: window.__aetosPreset },
+            });
+        },
+    ],
 ];
 
 /**

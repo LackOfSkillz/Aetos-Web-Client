@@ -28,6 +28,65 @@
     --aetos-warning: #d8a13a;
     --aetos-danger: #d2564b;
     --aetos-font-mono: "Cascadia Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+
+    /*
+     * Two faces, and the split between them is a decision rather than a style.
+     * A12.
+     *
+     * Until A12 there was one family on all 86 text-bearing elements in the
+     * client -- game output, button labels, and 242 words of explanatory prose
+     * in the accessibility panel, all monospaced. Measured, not assumed.
+     *
+     * The research does not agree with itself, which is why this is a token and
+     * not a replacement. Vision Australia and APA Style both say avoid
+     * monospace for long passages; Rello and Baeza-Yates, measuring dyslexic
+     * readers directly, found monospace *significantly improved* reading
+     * performance. Those are two populations wanting opposite things, so any
+     * single answer is wrong for somebody.
+     *
+     * So: proportional for prose the client writes, monospace wherever
+     * character alignment carries meaning -- game output, the map, tables,
+     * anything the server aligned by counting characters. And `visual.typeface`
+     * lets a player put prose back into monospace, which is the only honest
+     * response to evidence that splits.
+     *
+     * A system stack, because the contrib ships no font files and loads nothing
+     * from a CDN. `system-ui` first so it matches whatever the player's OS
+     * already renders text in.
+     */
+    --aetos-font-ui: system-ui, -apple-system, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+
+    /*
+     * Body copy leading.  WCAG 1.4.8 asks for at least 1.5 inside a paragraph.
+     *
+     * The console was `line-height: normal` -- about 1.2 -- through every
+     * milestone of accessibility work, because nothing we measured had an
+     * opinion about it. It is among the cheapest changes here and among the
+     * largest for low vision and dyslexia.
+     */
+    --aetos-line-height: 1.5;
+
+    /*
+     * The reading line.  WCAG 1.4.8 asks for no more than 80 characters.
+     *
+     * There *was* a cap -- `max-width: 120ch` -- but only under
+     * `data-aetos-size="wide"`, and measurement found that a 1920x1080 monitor
+     * does not qualify: at 16px text `effectiveWidth` is 1680, which is inside
+     * the 1800 boundary for `desktop`. So on the commonest large screen there
+     * is no cap at all, and the console measured **127 characters** a line.
+     *
+     * Worse, raising the type floor above would have pushed `wide` further out
+     * of reach and made it rarer still. A breakpoint was the wrong mechanism:
+     * the question "is this line too long to track back from" is about
+     * characters, so the answer is in `ch` and applies at every size. Below
+     * 80ch a viewport is narrower than the cap and it simply does nothing.
+     *
+     * 80 is also the width most game text is already wrapped to server-side,
+     * so this cuts almost nothing off in practice.
+     */
+    --aetos-measure: 80ch;
+
     --aetos-radius: 4px;
 
     /*
@@ -41,14 +100,29 @@
      * grows into something cartoonish on a large monitor.
      */
     --aetos-space: clamp(6px, 0.6vw, 12px);
-    --aetos-font-size: clamp(13px, 0.85vw, 16px);
+    /* Floor raised from 13px at A12. Low-vision guidance treats running text
+       below about 9pt as a barrier, and 13px UI prose is close enough to it
+       that the first thing anybody did was reach for browser zoom -- which is
+       the thing `visual.scale` exists to make unnecessary. */
+    --aetos-font-size: clamp(15px, 0.85vw, 17px);
 
     /* Side columns are a proportion of the width, bounded so they stay useful
        on a small screen and do not sprawl on a large one. */
     --aetos-column: clamp(200px, 20vw, 340px);
 
-    /* Touch targets. Pointer-dependent, set under `pointer: coarse` below. */
-    --aetos-target: 0px;
+    /*
+     * The smallest a target may be.  WCAG 2.5.8, and A12.
+     *
+     * This was `0px`, raised to 44px only under `pointer: coarse` -- so a mouse
+     * user had **no floor at all**, and twelve controls measured under 24x24.
+     * They passed 2.5.8 even so, but on the *spacing* exception: they are far
+     * apart rather than big. A 20px checkbox is still 20px to somebody with a
+     * tremor, and passing on a technicality is not the same as being hittable.
+     *
+     * 24px is the criterion. 44px stays for coarse pointers below, where it is
+     * the smallest most people can hit reliably (section 49).
+     */
+    --aetos-target: 24px;
 }
 
 /*
@@ -84,8 +158,30 @@ body {
     flex-direction: column;
     background: var(--aetos-bg);
     color: var(--aetos-text);
-    font-family: var(--aetos-font-mono);
+    /*
+     * The shell is prose, so the shell is proportional.  A12.
+     *
+     * Game output is not, and takes the monospace face back explicitly wherever
+     * the server aligned something by counting characters -- the console, the
+     * map, tables, the history. See `--aetos-font-ui` for why this is a split
+     * rather than a replacement, and why `visual.typeface` can undo it.
+     */
+    font-family: var(--aetos-font-ui);
     font-size: var(--aetos-font-size);
+    line-height: var(--aetos-line-height);
+}
+
+/*
+ * Put prose back into monospace on request.
+ *
+ * Set by `visual.typeface`. It exists because the evidence genuinely splits:
+ * monospace measured *better* for dyslexic readers in Rello and Baeza-Yates
+ * while the low-vision guidance says the opposite, and a client that picks one
+ * and calls it accessibility has just chosen which of its players to be wrong
+ * about.
+ */
+.aetos-root[data-aetos-typeface="monospace"] {
+    font-family: var(--aetos-font-mono);
 }
 
 /* Status bar ---------------------------------------------------------- */
@@ -246,7 +342,17 @@ body {
     padding: var(--aetos-space) calc(var(--aetos-space) * 1.5);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-    line-height: 1.5;
+    line-height: var(--aetos-line-height);
+    /*
+     * Monospace, unconditionally and regardless of `visual.typeface`.
+     *
+     * This is the one place the face is not a preference. Game text arrives
+     * pre-aligned by the server -- ASCII maps, score tables, box drawing, the
+     * `====` rules in Evennia's own connection screen -- and all of it is laid
+     * out by counting characters. A proportional face does not make that
+     * prettier, it makes it wrong.
+     */
+    font-family: var(--aetos-font-mono);
 }
 
 .aetos-console:focus-visible {
@@ -292,9 +398,18 @@ body {
     color: var(--aetos-text);
     border: 1px solid var(--aetos-border);
     border-radius: var(--aetos-radius);
-    font-family: inherit;
+    /*
+     * Monospace, like the transcript it feeds.  A12.
+     *
+     * What you type appears in the console a moment later, and typing it in a
+     * different face makes the echo look like somebody else said it. It is also
+     * the field where character alignment matters most to the person using it:
+     * counting arguments, matching quotes, spotting the space in `get all from
+     * chest`.
+     */
+    font-family: var(--aetos-font-mono);
     font-size: inherit;
-    line-height: 1.5;
+    line-height: var(--aetos-line-height);
 }
 
 /*
@@ -649,16 +764,21 @@ body {
     width: var(--aetos-column);
 }
 
-/* --- Wide: keep the reading line sane -----------------------------------
+/* --- Keep the reading line sane, at every size --------------------------
  *
- * On a very large monitor the extra width goes to the side columns, not into
- * an unreadably long line of game text. A 200-character line is worse to read
- * than a 100-character one, so the console is capped and centred.
+ * A12: this was `[data-aetos-size="wide"]` only, and measurement found that a
+ * 1920x1080 monitor is `desktop`, not `wide` -- so the cap never fired on the
+ * commonest large screen and the console ran to 127 characters. Unconditional
+ * and in `ch`, so it is the *line* that is bounded rather than the window.
+ *
+ * The composer is capped with it so the input stays aligned under the
+ * transcript rather than running the full width beneath a narrower column.
  */
-.aetos-root[data-aetos-size="wide"] .aetos-console,
-.aetos-root[data-aetos-size="wide"] .aetos-composer {
-    max-width: 120ch;
-    margin: 0 auto;
+.aetos-console,
+.aetos-composer {
+    max-width: var(--aetos-measure);
+    margin-left: auto;
+    margin-right: auto;
     width: 100%;
 }
 
@@ -678,6 +798,20 @@ body {
 
 .aetos-root[data-aetos-short="true"] .aetos-widget__title {
     margin-bottom: 2px;
+}
+
+/* --- The target floor, on every pointer ---------------------------------
+ *
+ * A12. These rules used to live only inside the `pointer: coarse` block below,
+ * which is how the token spent its whole life as a no-op on a mouse.
+ */
+.aetos-list__button,
+.aetos-hotbar__button,
+.aetos-menu__item,
+.aetos-send,
+.aetos-statusbar__button,
+.aetos-input {
+    min-height: var(--aetos-target);
 }
 
 /* --- Touch input --------------------------------------------------------
@@ -1991,12 +2125,24 @@ body {
 
 .aetos-settings__heading {
     margin: 0 0 4px;
-    font-size: 1rem;
+    /* `em`, not `rem`.  A12.
+       Text size is applied as `--aetos-scale`, a multiplier on the client's
+       own font-size. `rem` resolves against the browser root, which that
+       multiplier deliberately never touches -- so a heading sized in `rem`
+       stays put while everything around it grows. Measured at 150%: the
+       group headings in the accessibility panel were *smaller* than the
+       option labels beneath them, in the panel where the setting lives. */
+    font-size: 1.15em;
 }
 
 .aetos-settings__detail {
     margin: 0 0 8px;
-    color: var(--aetos-text-dim);
+    /* A12: was `var(--aetos-text-dim)`, a token defined nowhere in the
+       client. With no fallback the declaration is invalid at computed-value
+       time, so these have always rendered at full strength -- and for an
+       explanatory sentence that is the right answer, so it is now said
+       rather than inherited by accident. */
+    color: var(--aetos-text);
     font-size: 0.9em;
 }
 

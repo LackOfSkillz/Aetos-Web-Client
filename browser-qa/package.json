@@ -8,7 +8,8 @@
     "postinstall": "node -e \"console.log('axe-core installed. See qa-axe.js for how it is served to the lab client.')\"",
     "a11y": "node a11y/run.js",
     "a11y:quiet": "node a11y/run.js --quiet",
-    "a11y:nvda": "node a11y/nvda.js"
+    "a11y:nvda": "node a11y/nvda.js",
+    "a11y:shots": "node a11y/shots.js"
   },
   "dependencies": {
     "axe-core": "^4.13.0"

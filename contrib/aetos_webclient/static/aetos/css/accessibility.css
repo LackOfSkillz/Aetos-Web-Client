@@ -318,27 +318,131 @@
 
 .aetos-a11y-panel__heading {
     margin: 0 0 4px;
-    font-size: 1rem;
+    /* `em`, not `rem`.  A12.
+       Text size is applied as `--aetos-scale`, a multiplier on the client's
+       own font-size. `rem` resolves against the browser root, which that
+       multiplier deliberately never touches -- so a heading sized in `rem`
+       stays put while everything around it grows. Measured at 150%: the
+       group headings in the accessibility panel were *smaller* than the
+       option labels beneath them, in the panel where the setting lives. */
+    font-size: 1.25em;
 }
 
 .aetos-a11y-panel__detail {
     margin: 0;
-    color: var(--aetos-text-dim);
+    /* A12: was `var(--aetos-text-dim)`, a token defined nowhere in the
+       client. With no fallback the declaration is invalid at computed-value
+       time, so these have always rendered at full strength -- and for an
+       explanatory sentence that is the right answer, so it is now said
+       rather than inherited by accident. */
+    color: var(--aetos-text);
     font-size: 0.9em;
 }
 
 /*
- * A grid that becomes one column when there is not room for two.
+ * Named groups side by side; the controls inside each one stack.  A12.
+ *
+ * The flat version put all eleven controls into a single `auto-fit` grid, which
+ * measured **five columns** on a 1920px screen with no headings between them --
+ * so the reading order zig-zagged across the full width and there was nothing
+ * to tell you where you were in the list. COGA asks for no more than about
+ * seven options in a section; four sections of four or fewer, each with a
+ * heading, is what that looks like.
  *
  * `auto-fit` with a `minmax` floor rather than a breakpoint, so it also does
  * the right thing when the text is scaled up rather than the window scaled
  * down -- which is the case a width breakpoint gets wrong.
  */
-.aetos-a11y-panel__options {
+.aetos-a11y-panel__groups {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
-    gap: var(--aetos-space);
+    /* `em`, so a column grows with the text it holds. In `rem` an 18rem
+       column stays 288px while 250% text renders at 40px inside it, which
+       is about seven characters a line -- the UI1 lesson, in a grid. */
+    grid-template-columns: repeat(auto-fit, minmax(min(18em, 100%), 1fr));
+    gap: calc(var(--aetos-space) * 2);
     margin: var(--aetos-space) 0;
+}
+
+.aetos-a11y-panel__group-heading {
+    margin: 0 0 var(--aetos-space);
+    padding-bottom: 4px;
+    /* Larger than the labels it heads. It was smaller -- see the note on
+       `__heading` for why `rem` did that. */
+    font-size: 1.1em;
+    border-bottom: 1px solid var(--aetos-border);
+}
+
+/* Stacked, always. A group holds at most four controls, and a column of four
+   short rows is read in one movement; two columns of two is not. */
+.aetos-a11y-panel__options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--aetos-space);
+}
+
+/* ----------------------------------------------------------------------
+ * The starting-point chooser.  A12.
+ *
+ * Shown once, in place of the options, to somebody who has turned accessible
+ * mode on and has never been asked what would help. Deliberately large and
+ * deliberately few: this is the first thing a person meets after asking for
+ * help, and it should not look like a settings screen.
+ * ---------------------------------------------------------------------- */
+
+.aetos-a11y-panel__choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(22em, 100%), 1fr));
+    /* Three across at most, so five choices read as 3 + 2 rather than
+       leaving a single orphan card on a second row. */
+    max-width: 74em;
+    gap: var(--aetos-space);
+    margin: var(--aetos-space) 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.aetos-a11y-panel__choice {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    height: 100%;
+    /* Generous, because this is the one control on screen and a large target
+       costs nothing here. Well clear of the 24px floor rather than at it. */
+    padding: calc(var(--aetos-space) * 1.25);
+    text-align: left;
+    color: var(--aetos-text);
+    background: var(--aetos-bg);
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
+    font: inherit;
+    cursor: pointer;
+}
+
+.aetos-a11y-panel__choice:hover {
+    border-color: var(--aetos-accent);
+}
+
+.aetos-a11y-panel__choice:focus-visible {
+    outline: 2px solid var(--aetos-focus);
+    outline-offset: 2px;
+}
+
+.aetos-a11y-panel__choice-label {
+    font-weight: 600;
+}
+
+.aetos-a11y-panel__choice-detail {
+    /* A12: was `var(--aetos-text-dim)`, a token defined nowhere in the
+       client. With no fallback the declaration is invalid at computed-value
+       time, so these have always rendered at full strength -- and for an
+       explanatory sentence that is the right answer, so it is now said
+       rather than inherited by accident. */
+    color: var(--aetos-text);
+    /* Not `0.9em`: this is the sentence that explains the choice, and shrinking
+       explanatory text is how it stops being read by the people who need it. */
+    font-size: 1em;
+    line-height: var(--aetos-line-height);
 }
 
 /*
@@ -374,17 +478,100 @@
     margin-left: 8px;
 }
 
+/*
+ * A12: this was 1.25rem, and the comment above it said "a target big enough to
+ * hit without fine pointing (A.57)". Measured, it was 20x20 -- under WCAG
+ * 2.5.8's 24px, and passing the criterion only through the spacing exception,
+ * which is to say by being far from its neighbours rather than by being big
+ * enough. That is the fourth comment in this project to assert a target floor
+ * the rendered element did not have.
+ */
 .aetos-a11y-panel__checkbox {
-    /* A target big enough to hit without fine pointing (A.57). */
-    width: 1.25rem;
-    height: 1.25rem;
+    width: var(--aetos-target);
+    height: var(--aetos-target);
 }
 
-.aetos-a11y-panel__select,
-.aetos-a11y-panel__range {
-    min-height: 2.25rem;
+.aetos-a11y-panel__select {
+    /*
+     * `font: inherit`, because a native <select> does not.  A12.
+     *
+     * Left alone it renders at the browser's own default size no matter what
+     * the client's text scale says -- so at 150% the dropdowns were visibly
+     * smaller than every word around them, including the label directly above
+     * them. The one control whose *purpose* is choosing an accommodation should
+     * not be the one control that ignores the accommodation.
+     */
+    font: inherit;
+    min-height: var(--aetos-target);
+    padding: 4px 6px;
+    color: var(--aetos-text);
+    background: var(--aetos-bg);
+    border: 1px solid var(--aetos-border);
+    border-radius: var(--aetos-radius);
     max-width: 100%;
 }
+
+/* ----------------------------------------------------------------------
+ * Sliders, everywhere.  A12, WCAG 2.5.8.
+ *
+ * Every range in the client measured 177x16 -- a 16px-tall thing to catch and
+ * drag, which is the hardest gesture the interface asks for and the one most
+ * likely to be asked of somebody with a tremor. Six of them are the volume
+ * sliders in the Sound widget; one is the text-size control in the
+ * accessibility panel, which is to say the control somebody reaches for
+ * *because* they are having difficulty.
+ *
+ * Keyed on the element rather than on a class, deliberately. The first version
+ * of this styled `.aetos-a11y-panel__range` only, and left the six volume
+ * sliders exactly as they were -- a fix that lands on one instance of a defect
+ * and calls the class of defect fixed.
+ *
+ * Height on the input alone only grows the box; the *thumb* is what gets
+ * grabbed, so it is sized explicitly for both engines. `::-webkit-slider-thumb`
+ * additionally needs `appearance: none` on the input, or the rule is ignored
+ * outright.
+ * ---------------------------------------------------------------------- */
+
+.aetos-root input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-height: var(--aetos-target);
+    max-width: 100%;
+    background: transparent;
+}
+
+.aetos-root input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--aetos-border);
+}
+
+.aetos-root input[type="range"]::-moz-range-track {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--aetos-border);
+}
+
+.aetos-root input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: var(--aetos-target);
+    height: var(--aetos-target);
+    /* Centre the thumb on a 6px track: half the thumb, less half the track. */
+    margin-top: calc((6px - var(--aetos-target)) / 2);
+    border-radius: 50%;
+    background: var(--aetos-accent);
+    border: 2px solid var(--aetos-bg);
+}
+
+.aetos-root input[type="range"]::-moz-range-thumb {
+    width: var(--aetos-target);
+    height: var(--aetos-target);
+    border-radius: 50%;
+    background: var(--aetos-accent);
+    border: 2px solid var(--aetos-bg);
+}
+
 
 .aetos-a11y-panel__value {
     font-variant-numeric: tabular-nums;
@@ -393,7 +580,12 @@
 .aetos-a11y-panel__always {
     margin: 4px 0 0;
     padding-left: 1.25rem;
-    color: var(--aetos-text-dim);
+    /* A12: was `var(--aetos-text-dim)`, a token defined nowhere in the
+       client. With no fallback the declaration is invalid at computed-value
+       time, so these have always rendered at full strength -- and for an
+       explanatory sentence that is the right answer, so it is now said
+       rather than inherited by accident. */
+    color: var(--aetos-text);
 }
 
 /* ----------------------------------------------------------------------

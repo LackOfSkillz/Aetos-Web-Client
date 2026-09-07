@@ -123,12 +123,24 @@ class TestTheComposerIsInTheFrame(TestCase):
 
     def test_the_composer_follows_the_console_reading_width(self):
         """
-        The console is capped at 120ch and centred on a wide monitor. A composer
-        that ran the full width under it would not line up with the frame it is
-        part of.
+        A composer that ran the full width under a capped console would not line
+        up with the frame it is part of.
+
+        A12 rewrote what this asserts, and the reason is the pattern this
+        project keeps meeting: the original asserted the *mechanism*
+        (`[data-aetos-size="wide"]`) rather than the property in its own name.
+        That mechanism turned out never to fire on a 1920x1080 monitor, which
+        computes as `desktop` -- so the test passed for a milestone while the
+        thing it describes was not happening on the commonest large screen.
+
+        The cap is now unconditional and measured in characters, so the two
+        share one token and there is no width at which they can disagree.
 
         """
-        self.assertIn('.aetos-root[data-aetos-size="wide"] .aetos-composer', CSS)
+        for selector in (".aetos-console,\n.aetos-composer {",):
+            block = CSS[CSS.index(selector) :]
+            block = block[: block.index("\n}")]
+            self.assertIn("max-width: var(--aetos-measure)", block)
 
 
 class TestOneFrame(TestCase):

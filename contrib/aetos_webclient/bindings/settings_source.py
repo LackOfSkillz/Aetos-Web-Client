@@ -92,9 +92,7 @@ def provider_for(slot):
         cycle.
 
     """
-    from evennia.contrib.base_systems.aetos_webclient.bindings import (
-        bound_providers,
-    )
+    from evennia.contrib.base_systems.aetos_webclient.bindings import bound_providers
 
     factory = bound_providers.PROVIDERS.get(slot)
     return factory() if factory else None

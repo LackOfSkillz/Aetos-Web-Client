@@ -11,10 +11,75 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Changed — accessible mode now does something when you turn it on (A12)
+
+Gary, with all 288 automated accessibility checks passing, NVDA announcing the
+mode switch correctly and axe clean across 144 scans:
+
+> *"this doesnt feel accessible to me, but I dont have this particular challenge
+> so its hard for me to tell, but what we have now 'feels' like we are way off
+> the mark"*
+
+He was right. Every gate this project owned measured **machine-readable
+correctness** — name, role, state, reachability. Nothing measured **legibility,
+density or effort**, which is what a sighted person with low vision, dyslexia,
+ADHD or a tremor actually meets. Measured against WCAG 2.5.8 the client passed
+too, with twelve controls under 24×24, all of them inside the spacing exception.
+
+The finding that mattered most: **accessible mode and standard mode rendered
+byte-identically.** Not a bug in the masking — the mode masks preferences, and
+every governed preference defaults to its standard value, so there was nothing
+to mask. But it meant flipping the switch changed nothing on screen, and the
+route to an accessible client ran through 242 words and eleven technical
+decisions in a vocabulary nobody had been taught.
+
+- **Five starting points, asked once**, in a person's words rather than a
+  specification's — "Hard to see small text", "Too much going on". A preset is a
+  bulk write of ordinary preferences, so `effective()` is untouched and never
+  learns presets exist. "Let me choose each setting myself" is a recorded answer,
+  not a dismissal, so the question never comes back.
+- **Two typefaces.** Proportional for the client's prose; monospace for the
+  console, the map and the command input, where the server aligned text by
+  counting characters. `visual.typeface` puts prose back, because the evidence
+  splits: Vision Australia and APA Style say avoid monospace for long passages,
+  and Rello & Baeza-Yates found it *improved* reading for dyslexic readers.
+- **Options grouped** into four named sections of four or fewer, against eleven
+  in one five-column grid — W3C COGA asks for about seven per section.
+- **A 24px target floor on every pointer.** `--aetos-target` was `0px` unless
+  the pointer was coarse, and the rules using it lived inside that media query,
+  so it had always been a no-op on a mouse. Every slider thumb 16px → 24px.
+- **The reading line bounded in characters**, unconditionally: 127 → 84.
+
+Four further defects the work turned up: axe had **never scanned the
+accessibility panel** (it was in none of the nine overlays the check opens);
+`--aetos-text-dim` was used four times and defined nowhere; three headings were
+sized in `rem`, which the client's text scale deliberately never touches, so at
+150% the panel's group headings were smaller than their own labels; and
+`<select>` does not inherit `font`, so the dropdowns ignored the scale.
+
+### Added — a gate for the axis that had none (A12)
+
+`npm run a11y` grew a **`legibility`** check: line length, leading, target size
+without the spacing exception, and how many decisions are on screen at once,
+across three viewports × two scales × two modes. **288 → 368 checks**, 0 failed.
+
+Two mistakes in writing it, both caught by running it. It measured whatever was
+on screen, and the panel is never open in an ordinary view — so the density
+assertion never ran once across thirty-six views while printing "ok". And
+`MIN_TARGET` reached only the failure *message*, with `< 24` hardcoded in the
+page function, so changing the threshold changed nothing. **A threshold that
+does not reach the measurement is a comment**, and it reads like a guard.
+
+See [`notes/a12-accessible-ux-research.md`](notes/a12-accessible-ux-research.md),
+which also records two measurements in its own first draft that were wrong.
+
 ### Submitted — the upstream pull request (M32)
 
 [evennia/evennia#3981](https://github.com/evennia/evennia/pull/3981). 154 files,
 confined entirely to `evennia/contrib/base_systems/aetos_webclient/`.
+
+**Converted to draft the same day**, before any reviewer had commented, so that
+A12 lands before the client is read cold.
 
 Submitted with its gaps stated rather than with claims that cannot be evidenced.
 The description says plainly what is **not** validated — refreshable braille on

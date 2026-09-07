@@ -81,6 +81,12 @@
 
             root.setAttribute("data-aetos-stimulation", visual.stimulation || "standard");
             root.setAttribute("data-aetos-contrast", visual.contrast || "standard");
+            /*
+             * A12. Governs the client's own prose only -- the console, the map
+             * and the command input take the monospace face in CSS regardless,
+             * because the server aligned that text by counting characters.
+             */
+            root.setAttribute("data-aetos-typeface", visual.typeface || "proportional");
 
             var scale = parseFloat(visual.scale);
             if (isFinite(scale) && scale !== 1) {
