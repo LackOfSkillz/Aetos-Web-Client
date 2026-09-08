@@ -78,6 +78,117 @@
             }());
         }
 
+        /*
+         * Stop announcing into a tab nobody is looking at.  A16.
+         *
+         * A MUD sits in a background tab for hours. A live region keeps firing
+         * while it does, so a screen reader reading somebody's email gets
+         * interrupted by a room description from a game they are not currently
+         * playing. Heydon Pickering's Notifications article is explicit about
+         * this and it is one of the few live-region rules with a concrete
+         * remedy: swap the region's role and `aria-live` off while the document
+         * is hidden, and put them back when it returns.
+         *
+         * WHAT THIS DOES NOT DO. It does not queue. Announcements that happen
+         * while the tab is hidden are simply not announced -- which is the
+         * point. Replaying them on return would be the "backlog burst" failure:
+         * somebody comes back to the tab and is read twenty minutes of combat.
+         * Nothing is lost either way; the console holds the whole transcript
+         * and the history widget can be searched, which is the condition
+         * Heydon puts on dropping notifications at all.
+         *
+         * SPEECH IS DELIBERATELY NOT SILENCED. `speech.js` is driven from the
+         * announcer's `write()`, which still runs -- only the region attributes
+         * change. That asymmetry is intentional: a screen reader user with the
+         * tab in the background is reading a *different window* and must not be
+         * interrupted, whereas somebody using Aetos's own read-aloud has very
+         * likely backgrounded the tab **in order to listen**. Silencing that
+         * would break the main reason the feature exists.
+         *
+         * The original attributes are captured rather than assumed. The two
+         * regions are not symmetrical -- the polite one is
+         * `role="status" aria-live="polite"` and the urgent one is `role="alert"`
+         * with no `aria-live` at all -- so restoring a hardcoded pair would
+         * quietly give the urgent region an attribute it never had.
+         */
+        (function () {
+            var regions = [settings.politeRegion, settings.urgentRegion];
+            var original = [];
+            var silenced = false;
+
+            regions.forEach(function (region) {
+                original.push(region
+                    ? {
+                        role: region.getAttribute("role"),
+                        live: region.getAttribute("aria-live")
+                    }
+                    : null);
+            });
+
+            function restore(region, was) {
+                /*
+                 * Cleared on the way back too, and this was a real bug.
+                 *
+                 * Messages that arrive while the tab is hidden are still
+                 * *written* -- only the region attributes are off, and speech
+                 * still runs from the same write. So on return the region holds
+                 * the last thing that happened while nobody was looking, and
+                 * making it live again can announce that stale line out of
+                 * nowhere. Measured: the region came back holding "A cold
+                 * hall." from a message sent minutes earlier.
+                 *
+                 * Cleared BEFORE the role is restored, so the clearing itself
+                 * happens while the region is still inert.
+                 */
+                region.textContent = "";
+                if (was.role === null) {
+                    region.removeAttribute("role");
+                } else {
+                    region.setAttribute("role", was.role);
+                }
+                if (was.live === null) {
+                    region.removeAttribute("aria-live");
+                } else {
+                    region.setAttribute("aria-live", was.live);
+                }
+            }
+
+            function apply(hidden) {
+                if (hidden === silenced) {
+                    return;
+                }
+                silenced = hidden;
+                regions.forEach(function (region, index) {
+                    if (!region) {
+                        return;
+                    }
+                    if (hidden) {
+                        /*
+                         * Cleared as well as silenced. A region that still
+                         * holds its last message can have that message
+                         * re-announced when the role is restored, depending on
+                         * how the assistive technology treats the change --
+                         * which would be a stale line read out of nowhere.
+                         */
+                        region.textContent = "";
+                        region.setAttribute("role", "none");
+                        region.setAttribute("aria-live", "off");
+                    } else {
+                        restore(region, original[index]);
+                    }
+                });
+            }
+
+            if (typeof document.addEventListener === "function") {
+                document.addEventListener("visibilitychange", function () {
+                    apply(!!document.hidden);
+                });
+                // The tab may already be in the background at boot -- opened in
+                // a new tab, or restored by the browser on start-up.
+                apply(!!document.hidden);
+            }
+        }());
+
         var focus = window.AetosFocusManager
             ? window.AetosFocusManager.create({
                 root: settings.root || document,

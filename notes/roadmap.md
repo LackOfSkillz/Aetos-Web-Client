@@ -119,6 +119,26 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M29  Compatibility matrix
 [~] M30  Accessibility review  -- WITHDRAWN, see Addendum A below
 [ ] M31  Release candidate
+[x] A16  A backgrounded tab does not talk -- 2026-09-08
+         From research into Heydon Pickering's Notifications
+         article. A MUD sits in a background tab for hours and the
+         live region kept firing, so a screen reader reading
+         somebody's email was interrupted by a room description
+         from a game they were not playing.
+         Both regions take role="none"/aria-live="off" while
+         document.hidden, restored to their ORIGINAL attributes --
+         the two are not symmetrical and a hardcoded pair would
+         have given the urgent region an aria-live it never had.
+         Nothing is queued for replay. Speech is deliberately NOT
+         silenced: somebody using read-aloud has probably
+         backgrounded the tab in order to listen.
+         First version came back holding a stale line; found by
+         measuring. 380 -> 386 suite checks.
+         NOT built, and why: link-vs-text contrast (axe misses it,
+         but <a> is not on the sanitiser allowlist so game text
+         cannot produce a link at all).
+         See notes/a16-a-backgrounded-tab-does-not-talk.md.
+
 [x] A15  The client reads the game aloud -- 2026-09-07
          Gary: "I have the reading turned on but it doesnt read
          out loud" -- and, asked directly, "No, I turned the option
@@ -741,6 +761,26 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (all five slots; equality after the normaliser is the gate,
          and an `order` field that would have done nothing was cut
          before it shipped)
+[x] A16  A backgrounded tab does not talk -- 2026-09-08
+         From research into Heydon Pickering's Notifications
+         article. A MUD sits in a background tab for hours and the
+         live region kept firing, so a screen reader reading
+         somebody's email was interrupted by a room description
+         from a game they were not playing.
+         Both regions take role="none"/aria-live="off" while
+         document.hidden, restored to their ORIGINAL attributes --
+         the two are not symmetrical and a hardcoded pair would
+         have given the urgent region an aria-live it never had.
+         Nothing is queued for replay. Speech is deliberately NOT
+         silenced: somebody using read-aloud has probably
+         backgrounded the tab in order to listen.
+         First version came back holding a stale line; found by
+         measuring. 380 -> 386 suite checks.
+         NOT built, and why: link-vs-text contrast (axe misses it,
+         but <a> is not on the sanitiser allowlist so game text
+         cannot produce a link at all).
+         See notes/a16-a-backgrounded-tab-does-not-talk.md.
+
 [x] A15  The client reads the game aloud -- 2026-09-07
          Gary: "I have the reading turned on but it doesnt read
          out loud" -- and, asked directly, "No, I turned the option
@@ -1409,6 +1449,26 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [ ] M21..M29
 [ ] A8   Assistive-technology validation
 [ ] M31  Release candidate
+[x] A16  A backgrounded tab does not talk -- 2026-09-08
+         From research into Heydon Pickering's Notifications
+         article. A MUD sits in a background tab for hours and the
+         live region kept firing, so a screen reader reading
+         somebody's email was interrupted by a room description
+         from a game they were not playing.
+         Both regions take role="none"/aria-live="off" while
+         document.hidden, restored to their ORIGINAL attributes --
+         the two are not symmetrical and a hardcoded pair would
+         have given the urgent region an aria-live it never had.
+         Nothing is queued for replay. Speech is deliberately NOT
+         silenced: somebody using read-aloud has probably
+         backgrounded the tab in order to listen.
+         First version came back holding a stale line; found by
+         measuring. 380 -> 386 suite checks.
+         NOT built, and why: link-vs-text contrast (axe misses it,
+         but <a> is not on the sanitiser allowlist so game text
+         cannot produce a link at all).
+         See notes/a16-a-backgrounded-tab-does-not-talk.md.
+
 [x] A15  The client reads the game aloud -- 2026-09-07
          Gary: "I have the reading turned on but it doesnt read
          out loud" -- and, asked directly, "No, I turned the option

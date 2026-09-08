@@ -207,6 +207,115 @@ async function run(page) {
     );
 
     /*
+     * A backgrounded tab does not talk.  A16.
+     *
+     * A MUD sits in a background tab for hours, and a live region keeps firing
+     * while it does -- so a screen reader reading somebody's email gets
+     * interrupted by a room description from a game they are not currently
+     * playing. Heydon Pickering's Notifications article gives the remedy:
+     * swap `role` and `aria-live` off while `document.hidden`, and restore
+     * them on return.
+     *
+     * `document.hidden` is redefined rather than genuinely backgrounding the
+     * tab, because Playwright has no way to background a page without also
+     * suspending the timers this check depends on.
+     */
+    const background = await page.evaluate(async () => {
+        const polite = document.getElementById("aetos-announcer");
+        const urgent = document.getElementById("aetos-announcer-urgent");
+        const before = {
+            politeRole: polite.getAttribute("role"),
+            politeLive: polite.getAttribute("aria-live"),
+            urgentRole: urgent.getAttribute("role"),
+            urgentLive: urgent.getAttribute("aria-live"),
+        };
+
+        const setHidden = (value) => {
+            Object.defineProperty(document, "hidden", {
+                configurable: true,
+                get: () => value,
+            });
+            Object.defineProperty(document, "visibilityState", {
+                configurable: true,
+                get: () => (value ? "hidden" : "visible"),
+            });
+            document.dispatchEvent(new Event("visibilitychange"));
+        };
+
+        setHidden(true);
+        await new Promise((r) => setTimeout(r, 120));
+        const hidden = {
+            politeRole: polite.getAttribute("role"),
+            politeLive: polite.getAttribute("aria-live"),
+            urgentRole: urgent.getAttribute("role"),
+            urgentLive: urgent.getAttribute("aria-live"),
+        };
+
+        // A message arriving while nobody is looking.
+        window.Aetos.emitter.emit("text", ["A cold hall, while you were away."]);
+        await new Promise((r) => setTimeout(r, 300));
+
+        setHidden(false);
+        await new Promise((r) => setTimeout(r, 120));
+        const restored = {
+            politeRole: polite.getAttribute("role"),
+            politeLive: polite.getAttribute("aria-live"),
+            urgentRole: urgent.getAttribute("role"),
+            urgentLive: urgent.getAttribute("aria-live"),
+            politeText: polite.textContent,
+        };
+        return { before, hidden, restored };
+    });
+
+    results.push(
+        background.hidden.politeRole === "none"
+            && background.hidden.politeLive === "off"
+            && background.hidden.urgentRole === "none"
+            ? { status: "ok", what: "a backgrounded tab stops announcing" }
+            : {
+                status: "FAIL",
+                what: `still live while hidden: ${JSON.stringify(background.hidden)}`,
+            }
+    );
+
+    /*
+     * Restored exactly as they were, not to a hardcoded pair.
+     *
+     * The two regions are not symmetrical: polite is `role="status"
+     * aria-live="polite"`, urgent is `role="alert"` with no `aria-live` at all.
+     * Restoring an assumed pair would quietly give the urgent region an
+     * attribute it never had.
+     */
+    results.push(
+        background.restored.politeRole === background.before.politeRole
+            && background.restored.politeLive === background.before.politeLive
+            && background.restored.urgentRole === background.before.urgentRole
+            && background.restored.urgentLive === background.before.urgentLive
+            ? { status: "ok", what: "and both regions come back exactly as they were" }
+            : {
+                status: "FAIL",
+                what: `restored wrong: ${JSON.stringify(background.restored)} `
+                    + `was ${JSON.stringify(background.before)}`,
+            }
+    );
+
+    /*
+     * And comes back empty.
+     *
+     * Messages arriving while hidden are still *written* -- only the attributes
+     * are off -- so without clearing, the region returns holding the last thing
+     * that happened while nobody was looking, and making it live again can
+     * announce that stale line out of nowhere. Found by measuring the first
+     * version of the fix, which had exactly this bug.
+     */
+    results.push(!background.restored.politeText
+        ? { status: "ok", what: "and empty, so nothing stale is read on return" }
+        : {
+            status: "FAIL",
+            what: `came back holding "${background.restored.politeText.slice(0, 40)}"`,
+        });
+
+    /*
      * Announcing the absence of news. A reconnect re-sends state, and a client
      * that announced all of it would say everything again on every drop -- which
      * on a flaky connection is the worst experience this client can produce for

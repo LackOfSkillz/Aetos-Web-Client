@@ -42,7 +42,14 @@ from django.test import TestCase
 
 from evennia.contrib.base_systems.aetos_webclient import AETOS_STATIC_DIR
 
-from .test_accessibility_panel import CSS, PANEL, PREFS, _function, _governed_paths
+from .test_accessibility_panel import (
+    CSS,
+    PANEL,
+    PREFS,
+    _code_only,
+    _function,
+    _governed_paths,
+)
 
 SHELL_CSS = (Path(AETOS_STATIC_DIR) / "aetos" / "css" / "aetos.css").read_text(encoding="utf-8")
 
@@ -934,3 +941,127 @@ class TestTheClientReadsTheGameAloud(TestCase):
         """
         entry = PREFS[PREFS.index('path: "speech.enabled"') :][:900]
         self.assertIn("revertsInStandardMode: false", entry)
+
+
+class TestABackgroundedTabDoesNotTalk(TestCase):
+    """
+    A16. From Heydon Pickering's Notifications article, which is the one piece
+    of live-region guidance with a concrete remedy rather than a principle.
+
+    A MUD sits in a background tab for hours, and a live region keeps firing
+    while it does -- so a screen reader reading somebody's email is interrupted
+    by a room description from a game they are not currently playing.
+
+    """
+
+    ACCESS = (
+        Path(AETOS_STATIC_DIR) / "aetos" / "js" / "accessibility" / "accessibility.js"
+    ).read_text(encoding="utf-8")
+
+    def _block(self):
+        """
+        The visibility handler, with its comments removed.
+
+        Stripped, because every one of the first three assertions in this class
+        failed against its own explanation: the block `push`es the original
+        attributes, and the comment inside `restore` uses the word "speech" to
+        explain why speech is *not* silenced. Asserting a string is absent from
+        source that documents that very string is a trap this project has now
+        met often enough to have a helper for it.
+
+        Returns:
+            str: JavaScript, no comments.
+
+        """
+        start = self.ACCESS.index('document.addEventListener("visibilitychange"')
+        block = self.ACCESS[self.ACCESS.rindex("(function () {", 0, start) : start + 400]
+        return _code_only(block)
+
+    def test_the_regions_are_silenced_while_the_document_is_hidden(self):
+        block = self._block()
+        self.assertIn('setAttribute("role", "none")', block)
+        self.assertIn('setAttribute("aria-live", "off")', block)
+
+    def test_the_original_attributes_are_captured_rather_than_assumed(self):
+        """
+        The two regions are not symmetrical: polite is `role="status"
+        aria-live="polite"`, urgent is `role="alert"` with no `aria-live` at
+        all. Restoring an assumed pair would quietly give the urgent region an
+        attribute it never had.
+
+        """
+        block = self._block()
+        self.assertIn('getAttribute("role")', block)
+        self.assertIn('getAttribute("aria-live")', block)
+
+    def test_a_state_it_was_already_in_is_restored_by_removal(self):
+        block = self._block()
+        self.assertIn('removeAttribute("aria-live")', block)
+        self.assertIn('removeAttribute("role")', block)
+
+    def test_it_checks_the_state_at_boot_and_not_only_on_change(self):
+        """
+        A tab can be in the background from the start -- opened in a new tab, or
+        restored by the browser on start-up -- and `visibilitychange` never
+        fires for that.
+
+        """
+        block = self._block()
+        self.assertIn("apply(!!document.hidden)", block)
+
+    def test_nothing_is_queued_for_replay(self):
+        """
+        Replaying on return would read twenty minutes of combat to somebody who
+        just came back to the tab. Nothing is lost either way: the console holds
+        the transcript and the history widget can search it, which is the
+        condition Heydon puts on dropping notifications at all.
+
+        """
+        block = self._block()
+        # Not "push(" -- the block legitimately pushes the *original attributes*
+        # it has to restore. What must not exist is a store of message text.
+        for queueing in ("backlog", "deferred", "queue", "replay", "pending"):
+            self.assertNotIn(queueing, block)
+        self.assertNotIn("textContent =", block.split("function restore")[0])
+
+    def test_speech_is_deliberately_not_silenced_with_them(self):
+        """
+        The asymmetry is the point. A screen reader user with the tab in the
+        background is reading a *different window* and must not be interrupted.
+        Somebody using Aetos's own read-aloud has very likely backgrounded the
+        tab in order to listen, and silencing that would break the main reason
+        the feature exists.
+
+        Structural rather than incidental: speech is driven from the announcer's
+        `write()`, which still runs -- only the region attributes change.
+
+        """
+        block = self._block()
+        self.assertNotIn("speech", block)
+        self.assertIn(
+            "speak(message, { urgent: !!urgent })",
+            (Path(AETOS_STATIC_DIR) / "aetos" / "js" / "accessibility" / "announcer.js").read_text(
+                encoding="utf-8"
+            ),
+        )
+
+    def test_the_regions_come_back_empty(self):
+        """
+        Messages arriving while hidden are still *written* -- only the
+        attributes are off -- so without clearing, the region returns holding
+        the last thing that happened while nobody was looking, and making it
+        live again can announce that stale line out of nowhere.
+
+        Measured on the first version of this fix, which had exactly that bug:
+        the region came back holding a message sent while the tab was hidden.
+
+        """
+        start = self.ACCESS.index("function restore(region, was)")
+        window = _code_only(self.ACCESS[start : start + 1400])
+        self.assertIn('region.textContent = ""', window)
+        # Cleared before the role is restored, so the clearing itself happens
+        # while the region is still inert.
+        self.assertLess(
+            window.index('region.textContent = ""'),
+            window.index('setAttribute("role", was.role)'),
+        )

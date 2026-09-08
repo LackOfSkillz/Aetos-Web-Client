@@ -11,6 +11,33 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Fixed — a backgrounded tab no longer announces into a screen reader (A16)
+
+A MUD sits in a background tab for hours, and the live region kept firing while it
+did — so a screen reader reading somebody's email was interrupted by a room
+description from a game they were not currently playing.
+
+Both live regions now take `role="none"` / `aria-live="off"` while
+`document.hidden`, and are restored on return. From Heydon Pickering's
+*Notifications* article, which notes that some screen reader and browser pairings
+already do this themselves, but "you can't rely on all your users having these
+setups and — where they don't — the experience is very off-putting."
+
+- **The original attributes are captured, not assumed.** The two regions are not
+  symmetrical: polite is `role="status" aria-live="polite"`, urgent is
+  `role="alert"` with no `aria-live` at all. A hardcoded restore would have given
+  the urgent region an attribute it never had.
+- **Nothing is queued.** Replaying on return would read twenty minutes of combat
+  to somebody who just came back. The console holds the transcript regardless.
+- **Speech is deliberately not silenced.** Somebody using Aetos's own read-aloud
+  has very likely backgrounded the tab *in order to listen*.
+- **The regions come back empty.** Messages arriving while hidden are still
+  written, so without clearing, the region returned holding a stale line that
+  could be announced out of nowhere on restore. Found by measuring the first
+  version of the fix.
+
+See [`notes/a16-a-backgrounded-tab-does-not-talk.md`](notes/a16-a-backgrounded-tab-does-not-talk.md).
+
 ### Added — the client reads the game aloud (A15)
 
 Gary, after the announcer was wired up: *"ok I have the reading turned on but it
