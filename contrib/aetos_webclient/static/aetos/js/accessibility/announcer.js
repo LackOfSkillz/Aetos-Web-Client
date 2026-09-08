@@ -133,6 +133,9 @@
         var reviewing = false;
         var deferred = [];
 
+        //: Optional speech renderer. Null unless the client wired one up.
+        var speak = services.speak || null;
+
         var lastPolite = null;
         var lastUrgent = null;
         var history = [];
@@ -221,7 +224,30 @@
             return priority;
         }
 
-        function write(region, message, lastRef) {
+        /**
+         * Put a message into a live region, and speak it if speech is on.
+         *
+         * A15. The speech hook is here, at the moment the announcer has already
+         * decided a message should be heard, rather than as a second subscriber
+         * somewhere else. Everything above this line -- category, priority,
+         * per-category preferences, announcement mode, quiet mode, review mode,
+         * burst aggregation -- is decision-making, and duplicating any of it for
+         * a second output would guarantee the two eventually disagreed about
+         * what a player asked for.
+         *
+         * Speech is therefore a *renderer* of the announcer's output, exactly as
+         * the live region is. It knows nothing about categories.
+         *
+         * @param {HTMLElement} region The live region to write to.
+         * @param {string} message What to say.
+         * @param {string} lastRef The previous message written here.
+         * @param {boolean} urgent Whether this interrupts.
+         * @returns {string} The message, as the new `lastRef`.
+         */
+        function write(region, message, lastRef, urgent) {
+            if (speak) {
+                speak(message, { urgent: !!urgent });
+            }
             if (!region) {
                 return lastRef;
             }
@@ -335,15 +361,15 @@
             var spoken = settledSummary ? settledSummary + " " + message : message;
 
             if (URGENT_PRIORITIES.indexOf(priority) !== -1) {
-                lastUrgent = write(urgentRegion, spoken, lastUrgent);
+                lastUrgent = write(urgentRegion, spoken, lastUrgent, true);
                 if (settledSummary) {
                     // The tail of a burst is not urgent even when the message
                     // that ended it is, so it goes to the polite region too
                     // rather than riding an interruption.
-                    lastPolite = write(politeRegion, settledSummary, lastPolite);
+                    lastPolite = write(politeRegion, settledSummary, lastPolite, false);
                 }
             } else {
-                lastPolite = write(politeRegion, spoken, lastPolite);
+                lastPolite = write(politeRegion, spoken, lastPolite, false);
             }
             return priority;
         }
@@ -379,7 +405,7 @@
             if (ending) {
                 aggregating = false;
             }
-            lastPolite = write(politeRegion, message, lastPolite);
+            lastPolite = write(politeRegion, message, lastPolite, false);
             return message;
         }
 
@@ -434,6 +460,8 @@
         return {
             announce: announce,
             resolve: resolve,
+            //: Attach or replace the speech renderer. Passing null detaches it.
+            setSpeaker: function (renderer) { speak = renderer || null; },
             flushBurstSummary: function () { return flushBurstSummary(now(), true); },
             isFlooding: function () {
                 return burstStartedAt !== null &&

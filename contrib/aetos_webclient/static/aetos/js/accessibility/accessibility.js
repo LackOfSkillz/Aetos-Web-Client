@@ -34,13 +34,49 @@
             ? window.AetosAccessibilityPreferences.create({ storage: storage })
             : null;
 
+        /*
+         * The client's own voice.  A15.
+         *
+         * Built before the announcer so it can be handed straight in as a
+         * renderer. It is not a second announcement channel: everything about
+         * *whether* to say something is decided in the announcer, and speech
+         * only turns a decided message into sound.
+         */
+        var speech = window.AetosSpeech
+            ? window.AetosSpeech.create({ preferences: preferences })
+            : null;
+
         var announcer = window.AetosAnnouncementManager
             ? window.AetosAnnouncementManager.create({
                 politeRegion: settings.politeRegion,
                 urgentRegion: settings.urgentRegion,
-                preferences: preferences
+                preferences: preferences,
+                speak: speech ? speech.speak : null
             })
             : null;
+
+        /*
+         * Arm speech on the first gesture of the session.
+         *
+         * Browsers refuse audio until the player has interacted with the page,
+         * and speaking before that produces no sound while leaving some
+         * synthesisers in a state where the *next* utterance is dropped too.
+         *
+         * `once`-style teardown by hand rather than the option, because the
+         * published floor includes browsers without it. Capture phase so a
+         * handler that stops propagation cannot prevent the arming.
+         */
+        if (speech) {
+            (function () {
+                function arm() {
+                    speech.unlock();
+                    document.removeEventListener("pointerdown", arm, true);
+                    document.removeEventListener("keydown", arm, true);
+                }
+                document.addEventListener("pointerdown", arm, true);
+                document.addEventListener("keydown", arm, true);
+            }());
+        }
 
         var focus = window.AetosFocusManager
             ? window.AetosFocusManager.create({
@@ -164,6 +200,7 @@
         return {
             preferences: preferences,
             announcer: announcer,
+            speech: speech,
             focus: focus,
             shortcuts: shortcuts,
             announce: announce,

@@ -45,6 +45,7 @@ const CHECKS = {
     reflow: require("./checks/reflow"),
     legibility: require("./checks/legibility"),
     dragging: require("./checks/dragging"),
+    speech: require("./checks/speech"),
     focus: require("./checks/focus"),
     readiness: require("./checks/readiness"),
 };

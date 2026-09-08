@@ -11,6 +11,53 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Added — the client reads the game aloud (A15)
+
+Gary, after the announcer was wired up: *"ok I have the reading turned on but it
+doesnt read out loud"* — and, asked whether a screen reader was running: *"No — I
+turned the option on in Aetos and expected it to speak."*
+
+**The client was behaving exactly as designed, and the design was wrong.** Every
+accessibility decision here assumed "announce" means "hand it to assistive
+technology", so Aetos wrote to an ARIA live region and left the speaking to a
+screen reader. Correct for somebody running NVDA; silence for everybody else. The
+setting's own label — *"what is spoken aloud"* — promised speech the client never
+produced.
+
+That assumption is wrong about the population. The people who want text read to
+them are far more numerous than the people running a screen reader: dyslexia, low
+vision that never involved setting up assistive technology, tired eyes at the end
+of a session, or simply wanting to listen. Telling all of them to install NVDA is
+not an accessibility answer.
+
+`speech.js` uses `window.speechSynthesis` — part of the platform at the published
+floor. No dependency, no CDN, nothing downloaded and nothing sent anywhere; the
+voices are the ones the machine already has.
+
+- **A renderer, not a second channel.** The hook sits inside the announcer's
+  `write()`, where the decision to say something has already been made. Category,
+  priority, per-category preferences, quiet mode, review mode and burst
+  aggregation stay upstream, and `speech.js` mentions none of them.
+- **Off by default**, and it must stay so: a client that starts talking is
+  alarming, and for a screen reader user it is two voices over the same text.
+  Aetos cannot detect a screen reader and **must never try** — that is
+  fingerprinting, and A.72 forbids it — so the overlap is handled by saying so in
+  the control's description.
+- **A gesture arms it**, because browsers refuse audio until the player has
+  interacted; pending requests are discarded rather than queued, or a queue would
+  empty in one burst on the first click.
+- **Turning it off stops it mid-sentence.** Speech that cannot be stopped is worse
+  than no speech.
+
+New `speech` check (**375 → 380**): silent when off, speaks when on, markup
+stripped, the chosen rate used, and stopping works.
+
+This is the fourth defect in a row that every automated gate called correct and
+no person could use — after A0's scrolling region, A13's slider and A14's
+announcements. Gary found all four by using the client.
+
+See [`notes/a15-reading-the-game-aloud.md`](notes/a15-reading-the-game-aloud.md).
+
 ### Fixed — game output was never announced at all (A14)
 
 Gary: *"when I turn screen reader on and then go back to the game and type look

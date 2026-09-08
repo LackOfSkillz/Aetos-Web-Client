@@ -772,3 +772,165 @@ class TestAStartingPointPutsYouAtAKnownPlace(TestCase):
         keys = re.findall(r'"(\w+\.\w+)"', _preset_block())
         for untouched in ("braille.compactStatus", "keyboard.singleKeyShortcuts"):
             self.assertNotIn(untouched, keys)
+
+
+class TestTheClientReadsTheGameAloud(TestCase):
+    """
+    A15. Gary turned on the setting called "How much is announced", played, and
+    heard nothing: *"ok I have the reading turned on but it doesnt read out
+    loud"*.
+
+    The client was behaving exactly as designed, and the design was wrong. Aetos
+    wrote announcements into an ARIA live region and left the speaking to a
+    screen reader -- correct for somebody running NVDA, silence for everybody
+    else, and the setting's own wording promised speech the client never
+    produced.
+
+    The population who want text read to them is far larger than the population
+    running a screen reader: dyslexia, low vision without assistive technology,
+    tired eyes at the end of a long session, or simply wanting to listen.
+    Telling all of them to install NVDA is not an accessibility answer.
+
+    """
+
+    SPEECH = (Path(AETOS_STATIC_DIR) / "aetos" / "js" / "accessibility" / "speech.js").read_text(
+        encoding="utf-8"
+    )
+    ACCESS = (
+        Path(AETOS_STATIC_DIR) / "aetos" / "js" / "accessibility" / "accessibility.js"
+    ).read_text(encoding="utf-8")
+
+    def test_it_uses_the_platform_rather_than_a_dependency(self):
+        """
+        `speechSynthesis` is part of every browser at the published floor. The
+        contrib ships no audio, downloads nothing, and sends nothing anywhere.
+
+        """
+        self.assertIn("speechSynthesis", self.SPEECH)
+        for forbidden in ("http://", "https://", "import ", "require("):
+            self.assertNotIn(forbidden, self.SPEECH)
+
+    def test_it_is_off_until_somebody_asks(self):
+        """
+        A client that starts talking is alarming, and for a screen reader user
+        it is two voices over the same text.
+
+        """
+        block = PREFS[PREFS.index("        speech: {") :][:400]
+        self.assertIn("enabled: false", block)
+
+    def test_it_does_not_try_to_detect_a_screen_reader(self):
+        """
+        A.72 forbids it: detection is fingerprinting, and a player must never
+        have to disclose a disability to play. So the overlap with a screen
+        reader is handled by saying so in the control's own description rather
+        than by guessing.
+
+        """
+        for sniff in ("userAgent", "navigator.plugins", "isScreenReader"):
+            self.assertNotIn(sniff, self.SPEECH)
+        entry = PREFS[PREFS.index('path: "speech.enabled"') :][:800]
+        self.assertIn("if you already use a screen reader", entry)
+
+    def test_speech_renders_the_announcers_decisions_rather_than_making_its_own(self):
+        """
+        Category, priority, per-category preferences, announcement mode, quiet
+        mode, review mode and burst aggregation are all decided in the
+        announcer. Duplicating any of that here would guarantee the two
+        eventually disagreed about what a player asked for.
+
+        """
+        for policy in ("category", "quietMode", "announcementMode", "FLOOD", "reviewing"):
+            self.assertNotIn(policy, self.SPEECH)
+
+    def test_the_hook_is_where_the_decision_was_already_made(self):
+        announcer = (
+            Path(AETOS_STATIC_DIR) / "aetos" / "js" / "accessibility" / "announcer.js"
+        ).read_text(encoding="utf-8")
+        self.assertIn("if (speak) {", announcer)
+        self.assertIn("speak(message, { urgent: !!urgent })", announcer)
+
+    def test_urgent_messages_interrupt_and_the_rest_queue(self):
+        """
+        The same rule as the two live regions, for the same reason: a channel
+        that interrupts constantly stops being an interruption.
+
+        """
+        body = self.SPEECH[self.SPEECH.index("function speak(message, options)") :][:1400]
+        self.assertIn("settings.urgent", body)
+        self.assertIn("synth.cancel()", body)
+
+    def test_there_is_a_way_to_stop_it(self):
+        """
+        Speech that cannot be stopped is worse than no speech.
+
+        """
+        self.assertIn("function stop()", self.SPEECH)
+        self.assertIn("stop: stop", self.SPEECH)
+
+    def test_turning_it_off_stops_it_mid_sentence(self):
+        """
+        Otherwise switching it off lets the current utterance run to the end,
+        which reads as the control not working -- at exactly the moment somebody
+        wants the talking to stop.
+
+        """
+        body = self.SPEECH[self.SPEECH.index("function watchPreferences()") :][:700]
+        self.assertIn("stop()", body)
+
+    def test_it_waits_for_a_gesture_before_speaking(self):
+        """
+        Browsers refuse audio until the player has interacted with the page, and
+        speaking before that leaves some synthesisers dropping the next
+        utterance too.
+
+        """
+        self.assertIn("function unlock()", self.SPEECH)
+        self.assertIn("!permitted", self.SPEECH)
+        self.assertIn("speech.unlock()", self.ACCESS)
+
+    def test_pending_speech_is_discarded_rather_than_queued_before_that(self):
+        """
+        A queue would empty itself in one burst the moment somebody clicked,
+        reading out everything that had happened since the page loaded.
+
+        """
+        body = self.SPEECH[self.SPEECH.index("function speak(message, options)") :][:400]
+        self.assertIn("return false", body)
+
+    def test_a_failing_synthesiser_does_not_take_the_announcer_with_it(self):
+        """
+        Degrade, never raise: this runs in a websocket-driven client and the
+        speech call sits inside the announcer's write path.
+
+        """
+        self.assertIn("catch (err)", self.SPEECH)
+
+    def test_a_missing_voice_falls_back_rather_than_refusing(self):
+        """
+        Profiles move between machines and language packs get removed. Silence
+        is the failure this whole module exists to fix, so it would be a strange
+        way to report a missing voice.
+
+        """
+        body = self.SPEECH[self.SPEECH.index("function chosenVoice()") :][:1200]
+        self.assertIn("return null", body)
+
+    def test_the_voice_is_stored_by_name_rather_than_by_index(self):
+        """
+        Voice lists differ between machines, so an index would silently select a
+        different voice on another one.
+
+        """
+        block = PREFS[PREFS.index("        speech: {") :][:600]
+        self.assertIn("voice: null", block)
+
+    def test_it_survives_the_mode_switch(self):
+        """
+        Somebody who asked the client to read to them has not asked for that to
+        stop when they look at the standard interface -- which would be the same
+        class of defect as quiet mode silencing the game.
+
+        """
+        entry = PREFS[PREFS.index('path: "speech.enabled"') :][:900]
+        self.assertIn("revertsInStandardMode: false", entry)

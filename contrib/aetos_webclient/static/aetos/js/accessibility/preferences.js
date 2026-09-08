@@ -121,6 +121,30 @@
             reviewModeBehavior: "pause-normal"
         },
 
+        /*
+         * Aetos reading aloud, by itself.  A15.
+         *
+         * Distinct from everything in `screenReader` above, which describes what
+         * is handed to *your* assistive technology. This is the client's own
+         * voice, for the much larger group of people who want text read to them
+         * and do not run a screen reader.
+         *
+         * Off by default, and it must stay that way. A client that starts
+         * talking on load is alarming, and for somebody running a screen reader
+         * it would be two voices over each other. Aetos cannot detect a screen
+         * reader and must never try (A.72), so the only honest default is
+         * silence plus a clearly named control.
+         */
+        speech: {
+            enabled: false,
+            rate: 1.0,
+            volume: 1.0,
+            // The voice's name, or null for whatever the browser picks. A name
+            // rather than an index: voice lists differ between machines and an
+            // index would silently select a different voice on another one.
+            voice: null
+        },
+
         braille: {
             // "HP 82/100" rather than "Health, 82 out of 100" (A11Y-BRL-002).
             compactStatus: true,
@@ -383,6 +407,31 @@
             detail: "Captions stay on screen regardless."
         },
         {
+            path: "speech.enabled",
+            /*
+             * Not reverted by standard mode.
+             *
+             * Somebody who has asked the client to read to them has not asked
+             * for that to stop when they look at the standard interface, and
+             * silently muting it would be the same class of defect as quiet
+             * mode silencing the game.
+             */
+            revertsInStandardMode: false,
+            kind: "boolean",
+            label: "Read the game aloud",
+            detail: "Aetos reads new game text using your computer's own "
+                + "voice. Leave this off if you already use a screen reader, "
+                + "or you will hear everything twice."
+        },
+        {
+            path: "speech.rate",
+            revertsInStandardMode: false,
+            kind: "range",
+            label: "Reading speed",
+            detail: "How fast the game is read aloud. Only applies when "
+                + "reading aloud is on."
+        },
+        {
             path: "visual.typeface",
             /*
              * Offered in both modes, for the same reason text size is: the
@@ -441,6 +490,8 @@
         {
             label: "Speech and other ways in",
             paths: [
+                "speech.enabled",
+                "speech.rate",
                 "screenReader.announcementMode",
                 "aac.enabled",
                 "pointer.gestures"
@@ -475,6 +526,8 @@
     var SCALE_MAX = 2.5;
 
     var RANGES = {
+        "speech.rate": [0.5, 2.5],
+        "speech.volume": [0, 1],
         // The scale bounds by reference, not by repetition: an earlier draft
         // of this table wrote 2.0 here and silently narrowed a range that had
         // been 2.5 since A0.
@@ -493,6 +546,7 @@
             null, "low-vision", "calm", "screen-reader", "motor", "custom"
         ],
         "visual.typeface": ["proportional", "monospace"],
+        "speech.enabled": [true, false],
         "screenReader.announcementMode": ["selective", "all", "minimal"],
         "screenReader.announceResources": ["never", "thresholds", "always"],
         "screenReader.reviewModeBehavior": ["pause-normal", "pause-all", "pause-none"],

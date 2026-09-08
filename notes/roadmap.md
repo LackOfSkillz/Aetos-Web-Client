@@ -119,6 +119,25 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M29  Compatibility matrix
 [~] M30  Accessibility review  -- WITHDRAWN, see Addendum A below
 [ ] M31  Release candidate
+[x] A15  The client reads the game aloud -- 2026-09-07
+         Gary: "I have the reading turned on but it doesnt read
+         out loud" -- and, asked directly, "No, I turned the option
+         on in Aetos and expected it to speak."
+         The client was behaving as designed and the design was
+         wrong. Every accessibility decision assumed "announce"
+         means "hand it to assistive technology", so Aetos wrote to
+         a live region and said nothing itself. Silence for anyone
+         not running a screen reader -- which is most of the people
+         who want text read to them.
+         speech.js, on window.speechSynthesis: no dependency, no
+         CDN, nothing leaves the machine. A renderer of the
+         announcer's decisions, not a second channel. Off by
+         default; never detects a screen reader (A.72).
+         Fourth defect running that every gate called correct and
+         no person could use.
+         375 -> 380 suite checks.
+         See notes/a15-reading-the-game-aloud.md.
+
 [x] A14  Game output was never announced -- 2026-09-07
          Gary: "when I turn screen reader on and then go back to
          the game and type look nothing is read to me."
@@ -722,6 +741,25 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (all five slots; equality after the normaliser is the gate,
          and an `order` field that would have done nothing was cut
          before it shipped)
+[x] A15  The client reads the game aloud -- 2026-09-07
+         Gary: "I have the reading turned on but it doesnt read
+         out loud" -- and, asked directly, "No, I turned the option
+         on in Aetos and expected it to speak."
+         The client was behaving as designed and the design was
+         wrong. Every accessibility decision assumed "announce"
+         means "hand it to assistive technology", so Aetos wrote to
+         a live region and said nothing itself. Silence for anyone
+         not running a screen reader -- which is most of the people
+         who want text read to them.
+         speech.js, on window.speechSynthesis: no dependency, no
+         CDN, nothing leaves the machine. A renderer of the
+         announcer's decisions, not a second channel. Off by
+         default; never detects a screen reader (A.72).
+         Fourth defect running that every gate called correct and
+         no person could use.
+         375 -> 380 suite checks.
+         See notes/a15-reading-the-game-aloud.md.
+
 [x] A14  Game output was never announced -- 2026-09-07
          Gary: "when I turn screen reader on and then go back to
          the game and type look nothing is read to me."
@@ -1371,6 +1409,25 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [ ] M21..M29
 [ ] A8   Assistive-technology validation
 [ ] M31  Release candidate
+[x] A15  The client reads the game aloud -- 2026-09-07
+         Gary: "I have the reading turned on but it doesnt read
+         out loud" -- and, asked directly, "No, I turned the option
+         on in Aetos and expected it to speak."
+         The client was behaving as designed and the design was
+         wrong. Every accessibility decision assumed "announce"
+         means "hand it to assistive technology", so Aetos wrote to
+         a live region and said nothing itself. Silence for anyone
+         not running a screen reader -- which is most of the people
+         who want text read to them.
+         speech.js, on window.speechSynthesis: no dependency, no
+         CDN, nothing leaves the machine. A renderer of the
+         announcer's decisions, not a second channel. Off by
+         default; never detects a screen reader (A.72).
+         Fourth defect running that every gate called correct and
+         no person could use.
+         375 -> 380 suite checks.
+         See notes/a15-reading-the-game-aloud.md.
+
 [x] A14  Game output was never announced -- 2026-09-07
          Gary: "when I turn screen reader on and then go back to
          the game and type look nothing is read to me."
