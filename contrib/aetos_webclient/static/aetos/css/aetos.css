@@ -774,8 +774,23 @@ body {
  * The composer is capped with it so the input stays aligned under the
  * transcript rather than running the full width beneath a narrower column.
  */
-.aetos-console,
-.aetos-composer {
+/*
+ * A17: the cap moved from the contents to the FRAME.
+ *
+ * Capping `.aetos-console` and `.aetos-composer` bounded the reading line
+ * correctly and looked wrong doing it: the frame is `.aetos-widget--console`,
+ * so the border went on spanning the whole window while the text sat in an
+ * 80-character column in the middle of it. At 175% text that is a narrow ribbon
+ * of words floating in a very large empty box, with the Send button stranded
+ * far from the right-hand edge it appears to belong to.
+ *
+ * Capping the frame instead means the box hugs the column it contains, which is
+ * what UI1 meant by the console being the one framed object on the page. The
+ * line length is bounded by the same token either way -- slightly under 80
+ * characters now, because the frame's padding is inside the cap, and 80 is a
+ * maximum rather than a target.
+ */
+.aetos-widget--console {
     max-width: var(--aetos-measure);
     margin-left: auto;
     margin-right: auto;
@@ -1886,8 +1901,33 @@ body {
     display: none;
 }
 
-/* The grid lives on the workspace, not the root. */
-[data-aetos-focus-mode="true"] .aetos-workspace {
+/*
+ * The grid lives on the workspace, not the root.
+ *
+ * A17: given enough specificity to actually win.
+ *
+ * The first attempt at this fix was itself wrong, and wrong in a way worth
+ * recording: it scoped the selector through `.aetos-root[data-aetos-focus-mode]`,
+ * but the attribute is set on `document.documentElement` -- `<html>` -- so that
+ * selector matched nothing at all and changed nothing. Caught by re-measuring
+ * rather than by reading it back.
+ *
+ * It was `[data-aetos-focus-mode="true"] .aetos-workspace` -- specificity
+ * (0,2,0) -- against the responsive templates at
+ * `.aetos-root[data-aetos-size="tablet"] .aetos-workspace`, which is (0,3,0)
+ * and therefore won. So focus mode collapsed the grid to one column only at
+ * the sizes that had no template of their own.
+ *
+ * Invisible at ordinary text sizes and obvious at large ones, because the
+ * breakpoints are measured in text: at 175% a 1600px window computes as
+ * "tablet", the tablet template restored a `--aetos-column` sidebar track, and
+ * focus mode dutifully hid the region inside it -- leaving a dead 339px column
+ * and a console frame that looked badly off-centre for no visible reason.
+ *
+ * Measured: main started at x=339 in a 1600px viewport with every side region
+ * `display: none`.
+ */
+:root[data-aetos-focus-mode="true"] .aetos-root .aetos-workspace {
     grid-template-areas: "main";
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);

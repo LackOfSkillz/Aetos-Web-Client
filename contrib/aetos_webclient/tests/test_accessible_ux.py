@@ -335,9 +335,27 @@ class TestTheClientIsLegibleAndNotOnlyCorrect(TestCase):
 
         """
         self.assertIn("--aetos-measure: 80ch", SHELL_CSS)
-        block = _block(SHELL_CSS, ".aetos-console,\n.aetos-composer {")
+        # A17 moved the cap from the contents to the frame -- see
+        # `test_the_frame_hugs_the_column_it_contains` below for why.
+        block = _block(SHELL_CSS, "\n.aetos-widget--console {\n    max-width:")
         self.assertIn("max-width: var(--aetos-measure)", block)
         self.assertNotIn('data-aetos-size="wide"', block)
+
+    def test_the_frame_hugs_the_column_it_contains(self):
+        """
+        A17. Capping `.aetos-console` bounded the reading line correctly and
+        looked wrong doing it: the frame is `.aetos-widget--console`, so the
+        border went on spanning the whole window while the text sat in an
+        80-character column in the middle of it. At 175% text that is a ribbon
+        of words floating in a very large empty box, with the Send button
+        stranded far from the edge it appears to belong to.
+
+        Measured after the change: a 1285px frame around a 1283px console.
+
+        """
+        block = _block(SHELL_CSS, "\n.aetos-widget--console {\n    max-width:")
+        self.assertIn("margin-left: auto", block)
+        self.assertIn("margin-right: auto", block)
 
     def test_there_is_a_target_floor_on_every_pointer_and_not_only_touch(self):
         """
@@ -635,9 +653,45 @@ class TestDrillingIntoOneSetting(TestCase):
         A button reading only "Text size" tells a screen reader user nothing
         about the state, and the state is half the reason the tile exists.
 
+        A17 composes that name from the visible text with `aria-labelledby`
+        rather than an `aria-label` string. Two reasons, both Heydon
+        Pickering's and both previously ignored here: `aria-label` is skipped by
+        machine translation, so a player reading the client in another language
+        would meet an English accessible name on every tile; and a label
+        assembled from ids cannot drift from what is on screen, which matters
+        most for voice control, where somebody says what they see.
+
+        Verified against Chrome's own accessibility tree, which computes
+        "Text size 175%" for the first tile.
+
         """
         body = _function("function tileFor(entry)", "function valueText")
-        self.assertIn('"aria-label", entry.label + ", " + valueText(entry)', body)
+        self.assertIn('"aria-labelledby", name.id + " " + value.id', body)
+        self.assertNotIn('setAttribute("aria-label"', body)
+
+    def test_the_summary_chips_do_not_say_more_than_they_show(self):
+        """
+        The chip's visible text already names the setting and its value, and it
+        is a button -- the same affordance a sighted person infers from the way
+        it is drawn. An `aria-label` reading "Change Contrast, currently High
+        contrast" was more words for the same information, untranslated, and a
+        parity break rather than an addition.
+
+        """
+        body = _function("function renderSummary()", "function buildHub")
+        self.assertNotIn('setAttribute(\n                    "aria-label"', body)
+        self.assertNotIn('"aria-label"', body)
+
+    def test_the_strip_stands_down_while_the_panel_is_open(self):
+        """
+        The panel lists every one of these settings and its value a few pixels
+        below. Leaving the strip up duplicates the whole thing -- twice the
+        reading for somebody going through it with a screen reader. It exists to
+        answer "what is on" *without* opening anything.
+
+        """
+        body = _function("function renderSummary()", "function buildHub")
+        self.assertIn("!active.length || isOpen()", body)
 
     def test_choices_are_all_visible_rather_than_behind_a_dropdown(self):
         """
@@ -1065,3 +1119,112 @@ class TestABackgroundedTabDoesNotTalk(TestCase):
             window.index('region.textContent = ""'),
             window.index('setAttribute("role", was.role)'),
         )
+
+
+class TestTheSettingsDoNotTakeTheWholeScreen(TestCase):
+    """
+    A17. Gary, with the panel open at 175% text:
+
+    The options filled roughly seventy per cent of the viewport and the console
+    was a three-line sliver at the bottom, which defeats the reason the panel is
+    inline in the first place. A9's argument still holds -- somebody adjusting
+    contrast or text size should be able to watch the game text change while
+    they do it, and a modal covering the thing you are adjusting *for* is a
+    worse design. But it was pushing rather than sharing.
+
+    """
+
+    def test_the_panel_is_bounded_and_scrolls_its_own_overflow(self):
+        block = _block(CSS, ".aetos-a11y-panel {")
+        self.assertIn("max-height:", block)
+        self.assertIn("overflow-y: auto", block)
+
+    def test_it_is_not_a_dialog(self):
+        """
+        Still inline. The whole point is watching the client change underneath
+        the control you are moving.
+
+        """
+        self.assertNotIn('"dialog"', PANEL)
+        self.assertNotIn("aria-modal", PANEL)
+
+    def test_a_scrollable_panel_is_focusable_and_a_fitting_one_is_not(self):
+        """
+        `tabindex="0"` on a scroll container buys native arrow-key, Page Up and
+        Page Down scrolling with no key handler, and the panel is already a
+        labelled `role="region"` so focusing it announces what it is.
+
+        Only while it overflows: a tab stop that does nothing is, in Heydon
+        Pickering's reading, a WCAG 2.4.3 Focus Order failure -- and an
+        irritation in anybody's.
+
+        """
+        body = _function("function markScrollable()", "function attach(")
+        self.assertIn("host.scrollHeight > host.clientHeight", body)
+        self.assertIn('host.setAttribute("tabindex", "0")', body)
+        self.assertIn('host.removeAttribute("tabindex")', body)
+
+    def test_it_is_recomputed_on_every_render(self):
+        """
+        Whether it overflows depends on the text size, the viewport and which
+        screen the panel is showing -- all of which change without a reload.
+
+        """
+        body = _function("function render()", "function markScrollable")
+        self.assertIn("markScrollable()", body)
+
+
+class TestFocusModeActuallyCollapsesTheGrid(TestCase):
+    """
+    A17, and a specificity bug that was invisible at ordinary text sizes.
+
+    Focus mode hides the side regions and collapses the workspace grid to a
+    single column. The collapse rule was `[data-aetos-focus-mode="true"]
+    .aetos-workspace` -- specificity (0,2,0) -- against the responsive templates
+    at `.aetos-root[data-aetos-size="tablet"] .aetos-workspace`, which is (0,3,0)
+    and therefore won.
+
+    So focus mode collapsed the grid only at the sizes that had no template of
+    their own. Because the breakpoints are measured in text, a 1600px window at
+    175% computes as "tablet" -- the tablet template restored a `--aetos-column`
+    sidebar track, focus mode dutifully hid the region *inside* it, and what was
+    left was a dead 339px column and a console frame that looked badly
+    off-centre for no visible reason.
+
+    Measured before: main region at x=339 with every side region `display:
+    none`. After: x=10, and the frame centred with 233px either side.
+
+    """
+
+    def test_the_collapse_rule_outranks_the_responsive_templates(self):
+        collapse = SHELL_CSS.index('[data-aetos-focus-mode="true"] .aetos-root .aetos-workspace')
+        tablet = SHELL_CSS.index('.aetos-root[data-aetos-size="tablet"] .aetos-workspace')
+        # Higher specificity, and later in the file, so it wins either way.
+        self.assertGreater(collapse, tablet)
+
+    def test_it_is_scoped_from_the_element_that_carries_the_attribute(self):
+        """
+        The first attempt at this fix scoped the selector through
+        `.aetos-root[data-aetos-focus-mode]`, but the attribute is set on
+        `document.documentElement` -- so that selector matched nothing at all
+        and changed nothing. Caught by re-measuring rather than by reading it
+        back.
+
+        """
+        self.assertIn(
+            ':root[data-aetos-focus-mode="true"] .aetos-root .aetos-workspace',
+            SHELL_CSS,
+        )
+        self.assertNotIn('.aetos-root[data-aetos-focus-mode="true"]', SHELL_CSS)
+
+    def test_the_attribute_really_is_set_on_the_document_element(self):
+        """
+        If this ever moves onto `.aetos-root`, the selector above stops matching
+        and focus mode silently stops collapsing the grid again.
+
+        """
+        access = (
+            Path(AETOS_STATIC_DIR) / "aetos" / "js" / "accessibility" / "accessibility.js"
+        ).read_text(encoding="utf-8")
+        self.assertIn('root.setAttribute("data-aetos-focus-mode"', access)
+        self.assertIn("settings.root || document.documentElement", access)

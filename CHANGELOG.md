@@ -11,6 +11,43 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Changed — the accessibility screens, against the research (A17)
+
+Gary, with screenshots of the client at 175% text: *"apply what you have learned
+from our research and lets really make this accessible, within great ui/ux
+practices."*
+
+- **The settings no longer take the whole screen.** At 175% they filled about
+  seventy per cent of the viewport and left the console a three-line sliver —
+  which defeats the reason the panel is inline rather than a dialog. Bounded to
+  half the viewport, scrolling its own overflow, and **focusable only while it
+  overflows**: `tabindex="0"` on a scroll container buys arrow-key and Page
+  Up/Down scrolling for free, and a tab stop that does nothing is a 2.4.3 Focus
+  Order failure.
+- **The console frame hugs the column it contains.** The 80ch cap was on the
+  contents while the border spanned the whole window, leaving a ribbon of text in
+  a large empty box with the Send button stranded short of the edge.
+- **A specificity bug, invisible at ordinary text sizes.** Focus mode's grid
+  collapse was `[data-aetos-focus-mode="true"] .aetos-workspace` (0,2,0) against
+  `.aetos-root[data-aetos-size="tablet"] .aetos-workspace` (0,3,0), so it only
+  worked at sizes with no responsive template. Breakpoints are measured in text,
+  so a 1600px window at 175% is "tablet" — the tablet template restored a sidebar
+  track, focus mode hid the region *inside* it, and a dead 339px column was left.
+  Main region moved from x=339 to x=10; the frame is now centred with 233px
+  either side.
+- **Accessible names are composed from visible text.** Tiles use
+  `aria-labelledby` pointing at the two spans already on screen rather than an
+  `aria-label` string: `aria-label` is skipped by machine translation, and a name
+  assembled from ids cannot drift from what a voice-control user reads aloud.
+  Verified against Chrome's accessibility tree.
+- **The summary chips lost their `aria-label`** — "Change Contrast, currently
+  High contrast" was more words for the same information and a parity break — and
+  **the strip stands down while the panel is open**, since the panel lists every
+  one of those settings a few pixels below.
+
+See [`notes/a17-applying-the-research.md`](notes/a17-applying-the-research.md),
+which also records what was considered and deliberately not done.
+
 ### Fixed — a backgrounded tab no longer announces into a screen reader (A16)
 
 A MUD sits in a background tab for hours, and the live region kept firing while it

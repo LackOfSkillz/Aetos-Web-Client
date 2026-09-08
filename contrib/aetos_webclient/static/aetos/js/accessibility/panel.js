@@ -440,11 +440,21 @@
             summaryHost.textContent = "";
 
             var active = activeSettings();
-            // Nothing to say, so nothing on screen. A permanent strip reading
-            // "no accommodations" would be a line of the client's own furniture
-            // spent telling people about the absence of a thing.
-            summaryHost.hidden = !active.length;
-            if (!active.length) {
+            /*
+             * Nothing to say, so nothing on screen. A permanent strip reading
+             * "no accommodations" would be a line of the client's own furniture
+             * spent telling people about the absence of a thing.
+             *
+             * A17 adds the second condition: hidden while the options are open.
+             * The panel lists every one of these settings and its value a few
+             * pixels below, so leaving the strip up duplicates the whole thing
+             * -- twice the reading for somebody going through it with a screen
+             * reader, and a row of the panel's own space spent repeating what
+             * the panel says. It exists to answer "what is on" *without*
+             * opening anything.
+             */
+            summaryHost.hidden = !active.length || isOpen();
+            if (summaryHost.hidden) {
                 return;
             }
 
@@ -467,10 +477,18 @@
                  * something that reads like a stutter.
                  */
                 button.textContent = entry.label + ": " + valueText(entry);
-                button.setAttribute(
-                    "aria-label",
-                    "Change " + entry.label + ", currently " + valueText(entry)
-                );
+                /*
+                 * No `aria-label`.  A17.
+                 *
+                 * It used to read "Change Contrast, currently High contrast",
+                 * which is more words for the same information and, being an
+                 * attribute rather than a text node, was not translated. The
+                 * visible text already names the setting and its value, and the
+                 * element is a button -- which is exactly the affordance a
+                 * sighted person infers from the way it is drawn. Telling a
+                 * screen reader user something extra here would break parity
+                 * rather than add to it.
+                 */
                 button.addEventListener("click", function () {
                     if (!isOpen()) {
                         optionsShown = true;
@@ -579,23 +597,39 @@
             button.type = "button";
             button.className = "aetos-a11y-tile";
 
+            var slug = entry.path.replace(/\./g, "-");
+
             var name = document.createElement("span");
             name.className = "aetos-a11y-tile__name";
+            name.id = "aetos-a11y-tile-name-" + slug;
             name.textContent = entry.label;
 
             var value = document.createElement("span");
             value.className = "aetos-a11y-tile__value";
+            value.id = "aetos-a11y-tile-value-" + slug;
             value.textContent = valueText(entry);
 
             /*
-             * The accessible name carries both halves.
+             * The accessible name is composed from the visible text.  A17.
              *
-             * A button reading only "Text size" tells a screen reader user
-             * nothing about the state, and the state is half the reason the tile
-             * exists. "Text size, 200 percent" is what a sighted person gets
-             * from looking at it.
+             * It carries both halves, because a button reading only "Text size"
+             * tells a screen reader user nothing about the state, and the state
+             * is half the reason the tile exists.
+             *
+             * `aria-labelledby` pointing at the two spans rather than an
+             * `aria-label` string, for two reasons Heydon Pickering makes and
+             * this project had ignored:
+             *
+             *   - **`aria-label` is not translated.** Machine translation
+             *     services work on text nodes and skip the attribute, so a
+             *     player reading the client in another language would get an
+             *     English accessible name on every tile. `aria-labelledby`
+             *     points at real text, which does get translated.
+             *   - **Parity.** An `aria-label` can drift from what is on screen;
+             *     two ids cannot. That matters most for voice control, where
+             *     somebody says what they *see* to activate a control.
              */
-            button.setAttribute("aria-label", entry.label + ", " + valueText(entry));
+            button.setAttribute("aria-labelledby", name.id + " " + value.id);
 
             button.appendChild(name);
             button.appendChild(value);
@@ -1017,6 +1051,42 @@
             }
 
             buildUnconditional(host);
+            markScrollable();
+        }
+
+        /*
+         * A scrollable panel is focusable; a panel that fits is not.  A17.
+         *
+         * At a large text size eleven settings do not fit on one screen, and
+         * that is correct -- it is what reflow means. What was missing is that
+         * the overflow was neither operable nor announced: a sighted mouse user
+         * saw three groups of four with nothing to say a fourth existed, and
+         * nobody could scroll the region directly.
+         *
+         * `tabindex="0"` on a scroll container buys native arrow-key, Page Up
+         * and Page Down scrolling with no key handler at all, and because the
+         * panel is already a `role="region"` with a label, focusing it
+         * announces "Accessibility options, region" -- so the stop explains
+         * itself.
+         *
+         * Only while it actually overflows, which is Heydon Pickering's rule
+         * from Data Tables: a tab stop that does nothing is a WCAG 2.4.3 Focus
+         * Order failure in his reading, and an irritation in anybody's. Tabbing
+         * to a container you cannot scroll is exactly that.
+         */
+        function markScrollable() {
+            if (!host) {
+                return;
+            }
+            // Reading `scrollHeight` forces layout, so this is accurate
+            // immediately after the render that built the content.
+            var overflowing = host.scrollHeight > host.clientHeight + 1;
+            if (overflowing) {
+                host.setAttribute("tabindex", "0");
+            } else {
+                host.removeAttribute("tabindex");
+            }
+            return overflowing;
         }
 
         /*

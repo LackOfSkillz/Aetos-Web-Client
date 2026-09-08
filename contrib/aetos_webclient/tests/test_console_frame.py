@@ -136,11 +136,19 @@ class TestTheComposerIsInTheFrame(TestCase):
         The cap is now unconditional and measured in characters, so the two
         share one token and there is no width at which they can disagree.
 
+        A17 moved the cap up one level again, to the frame itself. Capping the
+        contents bounded the line correctly and looked wrong doing it: the
+        border spanned the window while the text sat in a column in the middle
+        of it, and the composer's Send button was stranded well short of the
+        edge it appears to belong to. Capping `.aetos-widget--console` means the
+        box hugs the column it contains, which is what UI1 meant by the console
+        being the one framed object on the page.
+
         """
-        for selector in (".aetos-console,\n.aetos-composer {",):
-            block = CSS[CSS.index(selector) :]
-            block = block[: block.index("\n}")]
-            self.assertIn("max-width: var(--aetos-measure)", block)
+        block = CSS[CSS.index("\n.aetos-widget--console {\n    max-width:") :]
+        block = block[: block.index("\n}")]
+        self.assertIn("max-width: var(--aetos-measure)", block)
+        self.assertIn("margin-left: auto", block)
 
 
 class TestOneFrame(TestCase):

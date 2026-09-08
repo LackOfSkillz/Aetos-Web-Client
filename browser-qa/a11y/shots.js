@@ -54,8 +54,17 @@ async function main() {
     await open();
     await shot("1-chooser.png");
 
-    // 2. the hub -- every setting as a tile, with its value on it
-    await page.evaluate(() => window.Aetos.accessibilityPanel.choose("low-vision"));
+    // 2. the hub -- every setting as a tile, with its value on it, at the
+    //    settings Gary was actually using when he asked for this pass.
+    await page.evaluate(() => {
+        window.Aetos.accessibilityPanel.choose("low-vision");
+        window.Aetos.accessibility.preferences.update({
+            visual: { scale: 1.75 },
+            cognitive: { focusMode: true },
+            screenReader: { announcementMode: "minimal" },
+            aac: { enabled: true },
+        });
+    });
     await page.waitForTimeout(700);
     await open();
     await shot("2-hub.png");

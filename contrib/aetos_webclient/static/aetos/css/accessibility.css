@@ -314,6 +314,26 @@
     padding: var(--aetos-space) calc(var(--aetos-space) * 2);
     background: var(--aetos-panel);
     border-bottom: 2px solid var(--aetos-border);
+
+    /*
+     * The settings never take the whole screen.  A17.
+     *
+     * The panel is inline rather than a dialog on purpose -- A9's reasoning
+     * still holds: somebody adjusting contrast or text size should be able to
+     * watch the game text change while they do it, and a modal covering the
+     * thing you are adjusting *for* is a worse design.
+     *
+     * But it was pushing rather than sharing. At 175% text the options filled
+     * about seventy per cent of the viewport and the console was a three-line
+     * sliver at the bottom, which defeats the reason it is inline at all.
+     *
+     * Half the viewport, and the panel scrolls its own overflow. A scrollbar
+     * here is the lesser evil: the alternative is squeezing the game to
+     * nothing, and unlike UI1's "scroll bar maze" this is one bounded region
+     * that only exists while the settings are open.
+     */
+    max-height: 50vh;
+    overflow-y: auto;
 }
 
 .aetos-a11y-panel__heading {

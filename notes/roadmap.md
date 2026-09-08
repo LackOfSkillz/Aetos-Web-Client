@@ -119,6 +119,29 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M29  Compatibility matrix
 [~] M30  Accessibility review  -- WITHDRAWN, see Addendum A below
 [ ] M31  Release candidate
+[x] A17  Applying the research to the a11y screens -- 2026-09-08
+         Gary, with screenshots at 175% text: "apply what you have
+         learned from our research and lets really make this
+         accessible, within great ui/ux practices."
+         The settings no longer take the whole screen (bounded to
+         half the viewport, scrolling its own overflow, and
+         focusable only WHILE it overflows -- Heydon's Data Tables
+         rule, since a tab stop that does nothing is a 2.4.3 fail).
+         The console frame now hugs its column: the 80ch cap was on
+         the contents while the border spanned the window.
+         SPECIFICITY BUG: focus mode's grid collapse was (0,2,0)
+         against the tablet template's (0,3,0), so it only worked
+         at sizes with no responsive template. Breakpoints are
+         measured in text, so 1600px at 175% is "tablet" -- leaving
+         a dead 339px column. My first fix was itself wrong: it
+         scoped through .aetos-root, but the attribute is on <html>.
+         Caught by re-measuring.
+         Tile names now composed with aria-labelledby from visible
+         text (aria-label is not translated, and cannot drift).
+         Summary chips lost their aria-label; the strip stands down
+         while the panel is open.
+         See notes/a17-applying-the-research.md.
+
 [x] A16  A backgrounded tab does not talk -- 2026-09-08
          From research into Heydon Pickering's Notifications
          article. A MUD sits in a background tab for hours and the
@@ -761,6 +784,29 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (all five slots; equality after the normaliser is the gate,
          and an `order` field that would have done nothing was cut
          before it shipped)
+[x] A17  Applying the research to the a11y screens -- 2026-09-08
+         Gary, with screenshots at 175% text: "apply what you have
+         learned from our research and lets really make this
+         accessible, within great ui/ux practices."
+         The settings no longer take the whole screen (bounded to
+         half the viewport, scrolling its own overflow, and
+         focusable only WHILE it overflows -- Heydon's Data Tables
+         rule, since a tab stop that does nothing is a 2.4.3 fail).
+         The console frame now hugs its column: the 80ch cap was on
+         the contents while the border spanned the window.
+         SPECIFICITY BUG: focus mode's grid collapse was (0,2,0)
+         against the tablet template's (0,3,0), so it only worked
+         at sizes with no responsive template. Breakpoints are
+         measured in text, so 1600px at 175% is "tablet" -- leaving
+         a dead 339px column. My first fix was itself wrong: it
+         scoped through .aetos-root, but the attribute is on <html>.
+         Caught by re-measuring.
+         Tile names now composed with aria-labelledby from visible
+         text (aria-label is not translated, and cannot drift).
+         Summary chips lost their aria-label; the strip stands down
+         while the panel is open.
+         See notes/a17-applying-the-research.md.
+
 [x] A16  A backgrounded tab does not talk -- 2026-09-08
          From research into Heydon Pickering's Notifications
          article. A MUD sits in a background tab for hours and the
@@ -1449,6 +1495,29 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [ ] M21..M29
 [ ] A8   Assistive-technology validation
 [ ] M31  Release candidate
+[x] A17  Applying the research to the a11y screens -- 2026-09-08
+         Gary, with screenshots at 175% text: "apply what you have
+         learned from our research and lets really make this
+         accessible, within great ui/ux practices."
+         The settings no longer take the whole screen (bounded to
+         half the viewport, scrolling its own overflow, and
+         focusable only WHILE it overflows -- Heydon's Data Tables
+         rule, since a tab stop that does nothing is a 2.4.3 fail).
+         The console frame now hugs its column: the 80ch cap was on
+         the contents while the border spanned the window.
+         SPECIFICITY BUG: focus mode's grid collapse was (0,2,0)
+         against the tablet template's (0,3,0), so it only worked
+         at sizes with no responsive template. Breakpoints are
+         measured in text, so 1600px at 175% is "tablet" -- leaving
+         a dead 339px column. My first fix was itself wrong: it
+         scoped through .aetos-root, but the attribute is on <html>.
+         Caught by re-measuring.
+         Tile names now composed with aria-labelledby from visible
+         text (aria-label is not translated, and cannot drift).
+         Summary chips lost their aria-label; the strip stands down
+         while the panel is open.
+         See notes/a17-applying-the-research.md.
+
 [x] A16  A backgrounded tab does not talk -- 2026-09-08
          From research into Heydon Pickering's Notifications
          article. A MUD sits in a background tab for hours and the
