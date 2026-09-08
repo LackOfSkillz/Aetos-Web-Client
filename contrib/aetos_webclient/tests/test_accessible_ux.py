@@ -661,3 +661,114 @@ class TestDrillingIntoOneSetting(TestCase):
         """
         self.assertNotIn(":has(", _without_comments(CSS))
         self.assertNotIn(":has(", _without_comments(SHELL_CSS))
+
+
+class TestQuietIsNotDeaf(TestCase):
+    """
+    A14b. Gary, with the announcer wired up and a screen reader on:
+    *"ok I have the reading turned on but it doesnt read out loud"*.
+
+    Quiet mode dropped `normal` priority as well as `background`, and every line
+    of ordinary game text arrives under the category `other`, which is `normal`.
+    So "fewer interruptions" silenced the game itself.
+
+    Invisible to a sighted player: the console is right there and nothing appears
+    to be lost. Total silence for somebody listening, because the console is
+    deliberately `aria-live="off"` and announcements are the only channel they
+    have. The setting's own description -- *"Nothing is lost, it is still in the
+    log"* -- is true only if you can read the log, which is precisely the
+    assumption this client should never make.
+
+    The comment above the rule said "quiet is not deaf" while the rule made it
+    deaf. A claim in a comment is not a property of the code, which this project
+    has now learned five separate times.
+
+    """
+
+    ANNOUNCER = (
+        Path(AETOS_STATIC_DIR) / "aetos" / "js" / "accessibility" / "announcer.js"
+    ).read_text(encoding="utf-8")
+
+    def _quiet_rule(self):
+        start = self.ANNOUNCER.index('preferenceValue("cognitive.quietMode"')
+        return self.ANNOUNCER[start : start + 260]
+
+    def test_quiet_mode_does_not_suppress_ordinary_game_output(self):
+        rule = self._quiet_rule()
+        self.assertIn('priority === "background"', rule)
+        self.assertNotIn('priority === "normal"', rule)
+
+    def test_ordinary_game_text_is_still_normal_priority(self):
+        """
+        The fix is in the quiet rule, not in reclassifying game text as
+        important -- which would have made it outrank a tell.
+
+        """
+        block = self.ANNOUNCER[self.ANNOUNCER.index("var CATEGORY_PRIORITY = {") :][:600]
+        self.assertIn('other: "normal"', block)
+        self.assertIn('tell: "important"', block)
+
+    def test_the_setting_no_longer_promises_speech_the_client_does_not_produce(self):
+        """
+        The description read "What is spoken aloud or sent to a braille
+        display", which reads as a promise that Aetos speaks. It does not: it
+        writes to a live region and a screen reader voices it. With no screen
+        reader running the setting appears to do nothing, and the person most
+        likely to meet that is somebody setting up assistive technology for the
+        first time.
+
+        """
+        entry = PREFS[PREFS.index('path: "screenReader.announcementMode"') :][:900]
+        self.assertIn("Aetos does not speak by itself", entry)
+
+
+class TestAStartingPointPutsYouAtAKnownPlace(TestCase):
+    """
+    A14b. Presets were purely additive, so picking "Too much going on" and then
+    "I use a screen reader" left `quietMode` on from the first -- and quiet mode
+    silenced every line of game output, so the second preset produced a client
+    that said nothing at all.
+
+    Nobody chose that combination and nothing on screen explained it.
+
+    """
+
+    def _apply_preset(self):
+        return _prefs_function("function applyPreset(name)", "return {")
+
+    def test_applying_one_writes_every_key_any_preset_touches(self):
+        body = self._apply_preset()
+        self.assertIn("PRESET_KEYS.forEach", body)
+        self.assertIn("DEFAULTS[parts[0]][parts[1]]", body)
+
+    def test_the_chosen_presets_values_win_over_those_defaults(self):
+        """
+        Order matters: defaults first, then the preset's own values on top.
+
+        """
+        body = self._apply_preset()
+        self.assertLess(
+            body.index("PRESET_KEYS.forEach"),
+            body.index("Object.keys(preset.values)"),
+        )
+
+    def test_the_key_list_is_derived_rather_than_maintained_by_hand(self):
+        """
+        A list written beside the table is a list somebody forgets to update
+        when they add a value to a preset -- which brings back exactly the
+        leftover-setting bug it exists to prevent.
+
+        """
+        self.assertIn("var PRESET_KEYS = (function ()", PREFS)
+        self.assertIn("PRESETS.forEach", PREFS)
+
+    def test_it_does_not_clear_preferences_no_preset_has_an_opinion_about(self):
+        """
+        A preference somebody set by hand is theirs. Clearing it would make
+        picking a starting point a destructive act, which is the opposite of
+        what "you can change any of it afterwards" promises.
+
+        """
+        keys = re.findall(r'"(\w+\.\w+)"', _preset_block())
+        for untouched in ("braille.compactStatus", "keyboard.singleKeyShortcuts"):
+            self.assertNotIn(untouched, keys)

@@ -111,6 +111,72 @@ Any assertion of the form *"X must not happen"* needs a positive one beside it
 saying the thing under test happened at all. Otherwise it is measuring an empty
 room and reporting a pass.
 
+## A14b — and then quiet mode silenced it again
+
+Gary, with the wiring in and a screen reader on:
+
+> *"ok I have the reading turned on but it doesnt read out loud"*
+
+Two more, both real, and the first is the better find.
+
+### Quiet mode was deaf
+
+```js
+if (quietMode) {
+    if (priority === "normal" || priority === "background") { return null; }
+}
+```
+
+Directly above it, in the source: *"quiet is not deaf."*
+
+Every line of game text arrives under the category `other`, which is `normal`.
+So **"fewer interruptions" silenced the game itself.** Invisible to a sighted
+player -- the console is right there and nothing appears lost. Total silence for
+somebody listening, because the console is deliberately `aria-live="off"` and
+announcements are the only channel they have.
+
+The setting's own description says *"Nothing is lost -- it is still in the
+log."* That is true only if you can read the log, which is exactly the
+assumption this client should never make.
+
+Quiet now drops `background` only -- resource ticks, inventory, media, the
+incidental chatter people actually mean by interruptions. Combat keeps its own
+control, which is a choice a player makes rather than a side effect.
+
+**A claim in a comment is not a property of the code.** Fifth time.
+
+### Presets were additive, so they accumulated
+
+Picking *"Too much going on"* and then *"I use a screen reader"* left
+`quietMode: true` from the first. The second preset therefore produced a client
+that said nothing at all — a combination nobody chose and nothing on screen
+explained.
+
+Applying a preset now writes **every key any preset touches**: to the chosen
+preset's value, or back to its default. The key list is derived from the table
+rather than maintained beside it, so adding a value to a preset cannot forget to
+join it. Preferences no preset has an opinion about are left alone — clearing
+those would make picking a starting point a destructive act.
+
+Measured, running the exact sequence:
+
+```text
+calm then screen-reader   before: (silence)          after: "The chamber is cold."
+quiet mode on             before: (silence)          after: "The chamber is cold."
+quietMode after both      before: true               after: false
+```
+
+### And the label promised speech we do not produce
+
+*"What is spoken aloud or sent to a braille display"* reads as a promise that
+Aetos speaks. It does not: it writes to a live region and a screen reader voices
+it. With no screen reader running the setting appears to do nothing, and the
+person most likely to meet that is somebody setting up assistive technology for
+the first time.
+
+Now: *"Passed to your screen reader or braille display, which reads it. Aetos
+does not speak by itself."*
+
 ## What is still not verified
 
 That **NVDA speaks it**. The client now writes the right text to the right

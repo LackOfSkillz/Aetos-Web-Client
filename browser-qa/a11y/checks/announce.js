@@ -177,6 +177,36 @@ async function run(page) {
         });
 
     /*
+     * ...and still is, with quiet mode on.  A14b.
+     *
+     * Quiet mode dropped `normal` priority as well as `background`, and every
+     * line of ordinary game text arrives as `other`, which is `normal`. So
+     * "fewer interruptions" silenced the game.
+     *
+     * Invisible to a sighted player -- the console is right there and nothing
+     * appears lost. Total silence for somebody listening, because the console is
+     * deliberately `aria-live="off"` and announcements are their only channel.
+     * The setting's own promise, "nothing is lost, it is still in the log", is
+     * only true if you can read the log.
+     */
+    const quiet = await capture(page, () => {
+        window.Aetos.accessibility.preferences.update({ cognitive: { quietMode: true } });
+        const pipeline = window.Aetos.pipeline;
+        if (pipeline && pipeline.ingest) {
+            pipeline.ingest({ category: "text", text: "The chamber is cold." });
+        }
+    });
+    results.push(quiet.polite.length > 0
+        ? { status: "ok", what: "quiet mode quietens interruptions, not the game" }
+        : {
+            status: "FAIL",
+            what: "quiet mode silenced ordinary game output -- quiet is not deaf",
+        });
+    await page.evaluate(() =>
+        window.Aetos.accessibility.preferences.update({ cognitive: { quietMode: false } })
+    );
+
+    /*
      * Announcing the absence of news. A reconnect re-sends state, and a client
      * that announced all of it would say everything again on every drop -- which
      * on a flaky connection is the worst experience this client can produce for

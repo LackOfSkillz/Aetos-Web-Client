@@ -327,7 +327,16 @@
             revertsInStandardMode: true,
             kind: "enum",
             label: "How much is announced",
-            detail: "What is spoken aloud or sent to a braille display."
+            /*
+             * A14b: this used to say "What is spoken aloud or sent to a braille
+             * display", which reads as a promise that Aetos speaks. It does not.
+             * It writes to a live region and a screen reader voices it, so with
+             * no screen reader running the setting appears to do nothing at all
+             * -- and the person most likely to be confused by that is somebody
+             * setting up assistive technology for the first time.
+             */
+            detail: "Passed to your screen reader or braille display, which "
+                + "reads it. Aetos does not speak by itself."
         },
         {
             path: "cognitive.quietMode",
@@ -588,6 +597,28 @@
             values: {}
         }
     ];
+
+    /*
+     * Every preference any preset has an opinion about.  A14b.
+     *
+     * Derived from the table rather than listed beside it, so adding a value to
+     * a preset cannot forget to add it here -- which would bring back exactly
+     * the leftover-setting bug this exists to prevent.
+     */
+    var PRESET_KEYS = (function () {
+        var keys = [];
+        PRESETS.forEach(function (preset) {
+            Object.keys(preset.values).forEach(function (group) {
+                Object.keys(preset.values[group]).forEach(function (key) {
+                    var path = group + "." + key;
+                    if (keys.indexOf(path) === -1) {
+                        keys.push(path);
+                    }
+                });
+            });
+        });
+        return keys;
+    }());
 
     function presetNamed(name) {
         for (var i = 0; i < PRESETS.length; i++) {
@@ -886,7 +917,40 @@
             if (!preset) {
                 return Promise.resolve(get());
             }
-            var patch = clone(preset.values);
+
+            /*
+             * A starting point puts you at a known place.  A14b.
+             *
+             * Presets used to be purely additive: they wrote their own values
+             * and left everything else alone. Which means picking "Too much
+             * going on" and then "I use a screen reader" left `quietMode` on
+             * from the first -- and quiet mode silenced every line of game
+             * output, so the second preset produced a client that said nothing
+             * at all. Nobody chose that combination and nothing on screen
+             * explained it.
+             *
+             * So every key any preset touches is written on every apply: to the
+             * chosen preset's value, or back to its default. Switching starting
+             * points now means what it says, rather than accumulating the
+             * sediment of the ones before it.
+             *
+             * Only the keys presets touch. A preference somebody set by hand
+             * and no preset has an opinion about is theirs, and clearing it
+             * would make picking a starting point a destructive act.
+             */
+            var patch = {};
+            PRESET_KEYS.forEach(function (path) {
+                var parts = path.split(".");
+                patch[parts[0]] = patch[parts[0]] || {};
+                patch[parts[0]][parts[1]] = DEFAULTS[parts[0]][parts[1]];
+            });
+            Object.keys(preset.values).forEach(function (group) {
+                patch[group] = patch[group] || {};
+                Object.keys(preset.values[group]).forEach(function (key) {
+                    patch[group][key] = preset.values[group][key];
+                });
+            });
+
             patch.shell = patch.shell || {};
             patch.shell.preset = preset.name;
             return update(patch);
@@ -938,6 +1002,7 @@
         GOVERNED: GOVERNED,
         SECTIONS: SECTIONS,
         PRESETS: PRESETS,
+        PRESET_KEYS: PRESET_KEYS,
         presetNamed: presetNamed,
         UNCONDITIONAL: UNCONDITIONAL,
         VERSION: VERSION,

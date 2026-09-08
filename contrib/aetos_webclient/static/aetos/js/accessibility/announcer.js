@@ -186,11 +186,34 @@
                 }
             }
 
-            // Quiet Mode suppresses interruptions without touching the
-            // transcript (A.48). Important and critical still get through --
-            // quiet is not deaf.
+            /*
+             * Quiet Mode suppresses interruptions without touching the
+             * transcript (A.48). Important and critical still get through --
+             * quiet is not deaf.
+             *
+             * A14b: it *was* deaf, and the line above was the claim it broke.
+             *
+             * Quiet mode dropped `normal` as well as `background`, and `other`
+             * -- the category every line of ordinary game text arrives under --
+             * is `normal`. So turning on "fewer interruptions" silenced the
+             * game itself.
+             *
+             * For a sighted player that was invisible: the console is right
+             * there and nothing appears to be lost. For somebody listening it
+             * was total silence, because the console is deliberately
+             * `aria-live="off"` and announcements are the only channel they
+             * have. The setting's own description -- "Nothing is lost, it is
+             * still in the log" -- is only true if you can read the log, which
+             * is exactly the assumption this client should not be making.
+             *
+             * So: `background` only. That is the incidental chatter people mean
+             * by interruptions -- resource ticks, inventory changes, media
+             * events -- and it leaves the game audible. Combat is already off
+             * by default through `announceCombat`, which is the right control
+             * for that and is one a player chose.
+             */
             if (preferenceValue("cognitive.quietMode", false)) {
-                if (priority === "normal" || priority === "background") {
+                if (priority === "background") {
                     return null;
                 }
             }

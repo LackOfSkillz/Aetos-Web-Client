@@ -565,11 +565,29 @@ class TestComfortModes(TestCase):
         A.48. Quiet is about interruption, not information. Somebody who asked
         a direct question still gets an answer.
 
+        A14b tightened this, and the old assertion was working against the
+        docstring above it. It required `priority === "normal"` to appear in the
+        quiet rule -- that is, it pinned the behaviour where quiet mode
+        suppressed ordinary game output, which is information rather than
+        interruption.
+
+        That was not academic. Every line of game text arrives under the
+        category `other`, which is `normal`, so quiet mode silenced the game. A
+        sighted player never noticed, because the console is right there; for
+        somebody listening it was total silence, because the console is
+        deliberately `aria-live="off"`. Gary found it by turning a screen reader
+        on and hearing nothing.
+
+        Quiet now drops `background` -- resource ticks, inventory, media -- and
+        nothing else. Combat has its own control, which is a choice a player
+        makes rather than a side effect of asking for fewer interruptions.
+
         """
         announcer = _read("accessibility/announcer.js")
         start = announcer.index('preferenceValue("cognitive.quietMode", false)')
         window = announcer[start : announcer.index("return priority;", start)]
-        self.assertIn('priority === "normal"', window)
+        self.assertIn('priority === "background"', window)
+        self.assertNotIn('priority === "normal"', window)
         self.assertNotIn('priority === "important"', window)
 
     def test_nothing_the_game_sends_can_set_a_comfort_mode(self):
