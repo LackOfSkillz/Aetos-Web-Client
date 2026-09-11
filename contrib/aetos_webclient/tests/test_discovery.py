@@ -194,7 +194,7 @@ class TestTheStaticScanNeverRunsTheGame(TestCase):
             "    def at_object_creation(self):\n"
             "        self.db.hp = 100\n"
         )
-        found = static_scan.scan_source(source, "hostile.py")
+        found, _, _ = static_scan.scan_source(source, "hostile.py")
         self.assertEqual([c.expression for c in found], ["db.hp"])
 
     def test_a_file_that_does_not_parse_is_reported_rather_than_swallowed(self):
@@ -216,7 +216,7 @@ class TestTheStaticScanFindsWhatGamesActuallyWrite(TestCase):
     """
 
     def test_it_finds_a_plain_assignment(self):
-        found = static_scan.scan_source("self.db.hp = 100\n", "characters.py")
+        found, _, _ = static_scan.scan_source("self.db.hp = 100\n", "characters.py")
         self.assertEqual(found[0].expression, "db.hp")
         self.assertEqual(found[0].kind, "number")
 
@@ -227,10 +227,14 @@ class TestTheStaticScanFindsWhatGamesActuallyWrite(TestCase):
         more optimistic one.
 
         """
-        self.assertNotIn("confidence=", _source("static_scan.py"))
+        source = _source("static_scan.py")
+        outside_actions = (
+            source[: source.index("def _action_from")] + source[source.index("def scan_source") :]
+        )
+        self.assertNotIn("confidence=", outside_actions)
 
     def test_it_finds_the_attributes_add_form(self):
-        found = static_scan.scan_source('self.attributes.add("mana", 50)\n', "characters.py")
+        found, _, _ = static_scan.scan_source('self.attributes.add("mana", 50)\n', "characters.py")
         self.assertEqual(found[0].expression, "db.mana")
         self.assertEqual(found[0].kind, "number")
 
@@ -240,11 +244,11 @@ class TestTheStaticScanFindsWhatGamesActuallyWrite(TestCase):
         small wrongness that makes a generated block need checking line by line.
 
         """
-        found = static_scan.scan_source("self.db.is_ghost = True\n", "characters.py")
+        found, _, _ = static_scan.scan_source("self.db.is_ghost = True\n", "characters.py")
         self.assertEqual(found[0].kind, "boolean")
 
     def test_the_evidence_names_a_line_a_developer_can_go_and_look_at(self):
-        found = static_scan.scan_source("\n\nself.db.hp = 1\n", "typeclasses/characters.py")
+        found, _, _ = static_scan.scan_source("\n\nself.db.hp = 1\n", "typeclasses/characters.py")
         self.assertIn("typeclasses/characters.py:3", found[0].evidence)
 
     def test_it_ignores_a_receiver_that_is_probably_not_the_character(self):
@@ -254,8 +258,8 @@ class TestTheStaticScanFindsWhatGamesActuallyWrite(TestCase):
         shorter report.
 
         """
-        self.assertEqual(static_scan.scan_source("obj.db.hp = 1\n", "cmd.py"), [])
-        self.assertEqual(static_scan.scan_source("room.db.hp = 1\n", "cmd.py"), [])
+        self.assertEqual(static_scan.scan_source("obj.db.hp = 1\n", "cmd.py")[0], [])
+        self.assertEqual(static_scan.scan_source("room.db.hp = 1\n", "cmd.py")[0], [])
 
     def test_it_ignores_a_computed_attribute_key(self):
         """
@@ -265,7 +269,7 @@ class TestTheStaticScanFindsWhatGamesActuallyWrite(TestCase):
 
         """
         self.assertEqual(
-            static_scan.scan_source("self.attributes.add(name, 1)\n", "characters.py"), []
+            static_scan.scan_source("self.attributes.add(name, 1)\n", "characters.py")[0], []
         )
 
     def test_it_does_not_claim_three_levels(self):
@@ -276,7 +280,8 @@ class TestTheStaticScanFindsWhatGamesActuallyWrite(TestCase):
         afternoon.
 
         """
-        self.assertEqual(static_scan.scan_source("self.db.stats.hp = 1\n", "c.py"), [])
+        found, _, _ = static_scan.scan_source("self.db.stats.hp = 1\n", "c.py")
+        self.assertEqual([c.expression for c in found], ["db.stats"])
 
     def test_a_broken_file_does_not_stop_the_others(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -285,7 +290,7 @@ class TestTheStaticScanFindsWhatGamesActuallyWrite(TestCase):
             (typeclasses / "characters.py").write_text("self.db.hp = 10\n", encoding="utf-8")
             (typeclasses / "broken.py").write_text("def nope(:\n", encoding="utf-8")
 
-            found, problems = static_scan.scan_files(gamedir=tmp)
+            found, _, problems = static_scan.scan_files(gamedir=tmp)
 
         self.assertEqual([c.expression for c in found], ["db.hp"])
         self.assertEqual(len(problems), 1)
@@ -296,7 +301,7 @@ class TestTheStaticScanFindsWhatGamesActuallyWrite(TestCase):
             world = Path(tmp) / "world" / "rules"
             world.mkdir(parents=True)
             (world / "combat.py").write_text("self.db.hp = 1\n", encoding="utf-8")
-            found, _ = static_scan.scan_files(gamedir=tmp)
+            found, _, _ = static_scan.scan_files(gamedir=tmp)
         self.assertTrue(found)
         self.assertNotIn("\\", found[0].evidence)
 

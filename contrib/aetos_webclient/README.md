@@ -341,7 +341,10 @@ evennia aetos discover
 
 reads your typeclass source -- parsed, never imported, so running it cannot have
 side effects -- the attributes of characters that already exist, and the
-Character typeclass and commands Evennia has loaded for them. It prints a
+Character typeclass and commands Evennia has loaded for them. In source it
+recognises `self.db.hp = 100`, `attributes.add("hp", 100)`,
+`hp = AttributeProperty(100)`, reads like `character.db.mana`, and your own
+`Command` classes. It prints a
 suggested `AETOS_BINDINGS` block with the evidence for every line. It changes
 nothing and never writes to your settings; you paste what you want.
 
@@ -359,6 +362,11 @@ entries are printed **commented out**, so pasting the block unchanged activates
 only what discovery could justify. A value and its ceiling are paired by
 structure -- `oxygen` with `oxygen_capacity`, `hull_integrity` with
 `hull_capacity` -- not from a list of fantasy stat names.
+
+It is bounded, and says when a bound was hit rather than truncating quietly: it
+will tell you how many files it did not scan, and name any file it skipped for
+being too large. A source file whose *name* looks like it holds credentials --
+`world/api_keys.py` -- is skipped without being read.
 
 Two things it deliberately will not do. Attributes whose names look like
 credentials (`password`, `token`, `api_key` and similar) are never read, printed

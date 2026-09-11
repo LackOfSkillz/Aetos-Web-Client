@@ -432,13 +432,36 @@ class CandidateSet:
 
     def add_action(self, action):
         """
-        Record an action candidate. The first one with a given key wins.
+        Record an action candidate, keeping the stronger evidence.
 
         Args:
             action (ActionCandidate): The command found.
 
+        Notes:
+            A command found in a live command set and the same command found in
+            source are one action with two pieces of evidence. The *stronger*
+            claim wins whichever arrived first: a class in a file says the
+            command exists, and a loaded command set says a character actually
+            has it. Taking the first would make the result depend on scan order.
+
         """
-        self.actions.setdefault(action.key, action)
+        existing = self.actions.get(action.key)
+        if existing is None:
+            self.actions[action.key] = action
+            return
+
+        rank = {level: index for index, level in enumerate(CONFIDENCE)}
+        stronger, weaker = (
+            (action, existing)
+            if rank.get(action.confidence, 9) < rank.get(existing.confidence, 9)
+            else (existing, action)
+        )
+        self.actions[action.key] = replace(
+            stronger,
+            evidence="%s; %s" % (stronger.evidence, weaker.evidence),
+            reasons=tuple(dict.fromkeys(stronger.reasons + weaker.reasons)),
+            warnings=tuple(dict.fromkeys(stronger.warnings + weaker.warnings)),
+        )
 
     def _pairable(self, candidate):
         """

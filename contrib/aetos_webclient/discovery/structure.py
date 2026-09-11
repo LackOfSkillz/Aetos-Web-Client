@@ -203,7 +203,20 @@ def handler_notes(klass):
     return notes
 
 
-def _restricted(lockstring, hierarchy, floor):
+def permission_hierarchy():
+    """
+    The game's permission levels and the floor an ordinary account sits at.
+
+    Returns:
+        tuple: `(levels lowest-first in lower case, index of the default)`.
+
+    """
+    hierarchy = [level.lower() for level in (getattr(settings, "PERMISSION_HIERARCHY", []) or [])]
+    default = (getattr(settings, "PERMISSION_ACCOUNT_DEFAULT", "Player") or "Player").lower()
+    return hierarchy, (hierarchy.index(default) if default in hierarchy else 0)
+
+
+def restricted(lockstring, hierarchy, floor):
     """
     Whether a command's `cmd` lock needs more than an ordinary player has.
 
@@ -319,7 +332,7 @@ def game_commands(cmdsets, hierarchy=None, default_level=None):
                 continue
             if key in found or key in staff:
                 continue
-            if _restricted(getattr(command, "locks", ""), hierarchy, floor):
+            if restricted(getattr(command, "locks", ""), hierarchy, floor):
                 staff.add(key)
                 continue
 

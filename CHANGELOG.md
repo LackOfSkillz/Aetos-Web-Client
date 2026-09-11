@@ -11,6 +11,35 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Added — the static pass reads what the runtime pass cannot (D4)
+
+A brand-new game has a typeclass and no characters; a game mid-edit has source
+that will not import. The two passes fail in opposite conditions, so neither is
+offered alone.
+
+- **The rest of Addendum B.23's patterns**: `hp = AttributeProperty(100)`
+  declarations, *reads* of `character.db.mana` (weaker evidence than an
+  assignment, and the evidence line says so), and
+  `class CmdAttack(Command): key = "attack"` — which is where a game with no
+  characters yet keeps its commands. Commands found only in source are always
+  `LOW`: the class existing is not the same as a character having it.
+- **`character.stats.get("health")` is recognised in order to be refused**
+  (B.66). Discovery names the handler and points at a provider rather than
+  inventing a binding that cannot resolve.
+- **Ceilings on files, file size, total bytes and tree size** (B.53, B.56), each
+  of which *names what it left out* instead of truncating silently.
+- **A source file whose name looks like a credential is skipped unread** —
+  `world/api_keys.py` is ordinary Python in an approved root, and its name is the
+  only warning available before reading it.
+- **Fixed:** an action found in source and the same action found on a live
+  character kept whichever arrived first, so the weaker static evidence won by
+  accident of ordering. The stronger claim now wins and the evidence is joined.
+- **Fixed:** inside a Command, `self` is the command, so `self.args` and
+  `self.caller` were being reported as the game's own handlers with advice to
+  write a provider for them.
+
+See [`notes/d4-static-discovery.md`](notes/d4-static-discovery.md).
+
 ### Added — discovery reads live characters properly, and explains itself (D3)
 
 `evennia aetos discover` now does what Addendum B asks of its runtime and

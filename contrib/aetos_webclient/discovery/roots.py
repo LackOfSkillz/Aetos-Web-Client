@@ -34,6 +34,8 @@ import os
 
 from django.conf import settings
 
+from evennia.contrib.base_systems.aetos_webclient.discovery import redaction
+
 #: Directories inside the game directory that discovery may read, relative to it.
 #:
 #: Named rather than walked. `typeclasses/` is where the Character lives and is
@@ -70,6 +72,23 @@ SKIP_DIRECTORIES = frozenset(
         "site-packages",
     }
 )
+
+
+#: The most files one run will read.
+#:
+#: Addendum B.56 asks for ceilings and, more importantly, for the scan to *say*
+#: when it hits one. A game with more Python files than this has a vendored tree
+#: in an approved root, and the report says how many were left.
+MAX_FILES = 2000
+
+#: The largest single file read, in bytes.
+#:
+#: A 512KB Python file is generated, minified or a data table. Parsing it costs
+#: seconds and its candidates are not the ones anybody wanted.
+MAX_FILE_BYTES = 512 * 1024
+
+#: The most source read in one run, in bytes.
+MAX_TOTAL_BYTES = 20 * 1024 * 1024
 
 
 class ScanRootError(Exception):
@@ -195,3 +214,82 @@ def approved_files(gamedir=None, roots=APPROVED_ROOTS):
                 found.append(path)
 
     return sorted(found)
+
+
+def select_files(
+    gamedir=None,
+    roots=APPROVED_ROOTS,
+    max_files=MAX_FILES,
+    max_file_bytes=MAX_FILE_BYTES,
+    max_total_bytes=MAX_TOTAL_BYTES,
+):
+    """
+    The files to read, bounded, with a note about everything left out.
+
+    Args:
+        gamedir (str, optional): The game directory.
+        roots (tuple, optional): Root directory names.
+        max_files (int, optional): Ceiling on how many files are read.
+        max_file_bytes (int, optional): Ceiling on one file's size.
+        max_total_bytes (int, optional): Ceiling on the total read.
+
+    Returns:
+        tuple: `(paths, problems)`.
+
+    Notes:
+        **Nothing is left out silently** (B.56). A scan that quietly truncates
+        teaches a developer that the attribute they were looking for does not
+        exist, which is worse than a slow scan and much worse than an error.
+
+        A source file whose *name* looks like it holds credentials is skipped
+        unread. It is ordinary Python inside an approved root, so the walk would
+        otherwise read `world/api_keys.py` and quote lines from it into a report
+        somebody pastes into an issue. The name is the only warning available
+        before reading, which is B.46's reasoning applied to a file.
+
+    """
+    paths = approved_files(gamedir, roots)
+    base = os.path.realpath(gamedir) if gamedir else game_directory()
+    chosen, problems = [], []
+    sensitive, oversized = [], []
+    total = 0
+    stopped_at = None
+
+    for index, path in enumerate(paths):
+        # Named the way the report names everything else: relative to the
+        # game directory, forward slashes. `huge.py` in a note is a file the
+        # developer then has to go and find.
+        name = os.path.relpath(path, base).replace(os.sep, "/")
+        if redaction.is_sensitive(os.path.splitext(os.path.basename(path))[0]):
+            sensitive.append(name)
+            continue
+        try:
+            size = os.path.getsize(path)
+        except OSError:  # pragma: no cover - defensive
+            size = 0
+        if size > max_file_bytes:
+            oversized.append(name)
+            continue
+        if len(chosen) >= max_files or (chosen and total + size > max_total_bytes):
+            stopped_at = index
+            break
+        chosen.append(path)
+        total += size
+
+    if stopped_at is not None:
+        problems.append(
+            "Discovery stopped after scanning %d files (%d KB). %d files were not "
+            "scanned. Raise the ceiling in discovery/roots.py if that is wrong."
+            % (len(chosen), total // 1024, len(paths) - stopped_at)
+        )
+    if oversized:
+        problems.append(
+            "Not read, larger than %d KB: %s"
+            % (max_file_bytes // 1024, ", ".join(sorted(oversized)))
+        )
+    if sensitive:
+        problems.append(
+            "Not read, because the file name looks like it holds credentials: %s"
+            % ", ".join(sorted(sensitive))
+        )
+    return chosen, problems

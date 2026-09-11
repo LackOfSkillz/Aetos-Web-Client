@@ -171,11 +171,13 @@ class Command(BaseCommand):
 
         if not options.get("runtime_only"):
             try:
-                candidates, issues = static_scan.scan_files()
+                candidates, actions, issues = static_scan.scan_files()
             except ScanRootError as error:
                 raise CommandError(str(error))
             for candidate in candidates:
                 found.add(candidate)
+            for action in actions:
+                found.add_action(action)
             problems.extend(issues)
 
         if not options.get("static_only"):

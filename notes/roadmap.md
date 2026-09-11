@@ -119,6 +119,25 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M29  Compatibility matrix
 [~] M30  Accessibility review  -- WITHDRAWN, see Addendum A below
 [ ] M31  Release candidate
+[x] D4   Static AST discovery -- 2026-09-11
+         The rest of B.23's patterns: AttributeProperty declarations,
+         reads (weaker than assignments, and said so), Command
+         classes as actions (always LOW -- source says the class
+         exists, not that a character has it), and handler calls
+         recognised in order to be REFUSED with provider advice.
+         Ceilings per B.53/B.56 -- files, file size, total bytes,
+         AST nodes -- each naming what was left out rather than
+         truncating silently. A source file whose NAME looks like a
+         credential is skipped unread.
+         add_action now keeps the stronger claim: static runs first,
+         so its LOW would have beaten the live command set's MEDIUM.
+         LAB FOUND: `self.args` and `self.caller` reported as game
+         handlers with advice to write a provider for them -- inside
+         a Command, `self` is the command. Fixed twice over (scoped
+         walk + Evennia's own member names), and the mutation check
+         showed the overlap honestly.
+         1679 -> 1708 py. See notes/d4-static-discovery.md.
+
 [x] D3   Runtime + structural discovery -- 2026-09-11
          Representative character (--character, --typeclass with
          subclasses), live values rendered without running their
@@ -811,6 +830,25 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (all five slots; equality after the normaliser is the gate,
          and an `order` field that would have done nothing was cut
          before it shipped)
+[x] D4   Static AST discovery -- 2026-09-11
+         The rest of B.23's patterns: AttributeProperty declarations,
+         reads (weaker than assignments, and said so), Command
+         classes as actions (always LOW -- source says the class
+         exists, not that a character has it), and handler calls
+         recognised in order to be REFUSED with provider advice.
+         Ceilings per B.53/B.56 -- files, file size, total bytes,
+         AST nodes -- each naming what was left out rather than
+         truncating silently. A source file whose NAME looks like a
+         credential is skipped unread.
+         add_action now keeps the stronger claim: static runs first,
+         so its LOW would have beaten the live command set's MEDIUM.
+         LAB FOUND: `self.args` and `self.caller` reported as game
+         handlers with advice to write a provider for them -- inside
+         a Command, `self` is the command. Fixed twice over (scoped
+         walk + Evennia's own member names), and the mutation check
+         showed the overlap honestly.
+         1679 -> 1708 py. See notes/d4-static-discovery.md.
+
 [x] D3   Runtime + structural discovery -- 2026-09-11
          Representative character (--character, --typeclass with
          subclasses), live values rendered without running their
@@ -1249,7 +1287,7 @@ D-track   developer integration            D0 next, independent
 [ ] D1   Safe AETOS_BINDINGS foundation
 [ ] D2   Declarative provider suite
 [x] D3   Runtime + structural discovery      -- 1679 py, 2026-09-11
-[ ] D4   Static AST discovery
+[x] D4   Static AST discovery                -- 1708 py, 2026-09-11
 [ ] D5   Interactive setup wizard + generation
 [ ] D6   Hardening, docs and integration validation   (with M27, M28)
 ```
@@ -1549,6 +1587,25 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [ ] M21..M29
 [ ] A8   Assistive-technology validation
 [ ] M31  Release candidate
+[x] D4   Static AST discovery -- 2026-09-11
+         The rest of B.23's patterns: AttributeProperty declarations,
+         reads (weaker than assignments, and said so), Command
+         classes as actions (always LOW -- source says the class
+         exists, not that a character has it), and handler calls
+         recognised in order to be REFUSED with provider advice.
+         Ceilings per B.53/B.56 -- files, file size, total bytes,
+         AST nodes -- each naming what was left out rather than
+         truncating silently. A source file whose NAME looks like a
+         credential is skipped unread.
+         add_action now keeps the stronger claim: static runs first,
+         so its LOW would have beaten the live command set's MEDIUM.
+         LAB FOUND: `self.args` and `self.caller` reported as game
+         handlers with advice to write a provider for them -- inside
+         a Command, `self` is the command. Fixed twice over (scoped
+         walk + Evennia's own member names), and the mutation check
+         showed the overlap honestly.
+         1679 -> 1708 py. See notes/d4-static-discovery.md.
+
 [x] D3   Runtime + structural discovery -- 2026-09-11
          Representative character (--character, --typeclass with
          subclasses), live values rendered without running their
