@@ -11,6 +11,36 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Added — discovery reads live characters properly, and explains itself (D3)
+
+`evennia aetos discover` now does what Addendum B asks of its runtime and
+structural passes.
+
+- **`--character #12` reads one representative** a developer chooses (B.20);
+  `--typeclass` samples a typeclass *and its subclasses*. D0 matched the exact
+  path, so a game whose characters use a subclass read nobody.
+- **Every suggestion is `HIGH`, `MEDIUM` or `LOW`** and says what was found,
+  where, why, and what accepting it would put on screen (B.28, B.33). `LOW` is
+  printed commented out, so pasting the block unchanged activates only what
+  discovery could justify.
+- **Credentials are never read, printed or suggested** (B.46). The decision is
+  made on the attribute's name, before its value is loaded.
+- **Pairing works for games that are not fantasy** (B.65): `hull_integrity` /
+  `hull_capacity`, `oxygen` / `oxygen_capacity`, `max_hp`, and by structure alone
+  when two readings support it.
+- **A structural pass** reads the Character typeclass, its `AttributeProperty`
+  fields, and the game's own commands as candidate actions. A game's own
+  *handler* produces advice to write a provider, never a binding (B.66).
+- **Fixed:** D0 filed every kind under `resources`, so a text attribute became a
+  bar that never draws. Numbers, flags and game objects now go to the slot that
+  can use them.
+- **Fixed:** under a management command Evennia's flat API was not initialised,
+  a game's command set failed to import, and Evennia silently substituted an
+  empty one, so discovery reported no commands. It now initialises Evennia the
+  way the launcher does, and reports a substituted error set out loud.
+
+See [`notes/d3-runtime-discovery.md`](notes/d3-runtime-discovery.md).
+
 ### Changed — the accessibility screens, against the research (A17)
 
 Gary, with screenshots of the client at 175% text: *"apply what you have learned

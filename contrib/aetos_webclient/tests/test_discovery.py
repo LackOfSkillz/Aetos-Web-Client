@@ -219,7 +219,15 @@ class TestTheStaticScanFindsWhatGamesActuallyWrite(TestCase):
         found = static_scan.scan_source("self.db.hp = 100\n", "characters.py")
         self.assertEqual(found[0].expression, "db.hp")
         self.assertEqual(found[0].kind, "number")
-        self.assertEqual(found[0].confidence, "likely")
+
+    def test_the_scan_does_not_decide_confidence(self):
+        """
+        D3: confidence is decided once, from every scan, by the confidence
+        engine. D0's scans each stamped their own guess and the merge kept the
+        more optimistic one.
+
+        """
+        self.assertNotIn("confidence=", _source("static_scan.py"))
 
     def test_it_finds_the_attributes_add_form(self):
         found = static_scan.scan_source('self.attributes.add("mana", 50)\n', "characters.py")
@@ -531,7 +539,7 @@ class TestMergingAndPairing(TestCase):
     def test_a_maximum_is_paired_with_the_value_it_bounds(self):
         found = self._pair()
         self.assertEqual(found.candidates["db.hp"].maximum, "db.hp_max")
-        self.assertEqual(found.candidates["db.hp"].confidence, "likely")
+        self.assertEqual(found.candidates["db.hp"].pairing, "name")
 
     def test_a_paired_maximum_is_not_also_listed_on_its_own(self):
         """
@@ -606,13 +614,37 @@ class TestTheReportIsPastable(TestCase):
     """
 
     def _report(self):
+        """
+        A pair written in source *and* carried by live characters.
+
+        D0's version had the pair in source only. Under B.28 that is LOW --
+        "name appears only in source" -- and LOW is printed commented out, so it
+        would no longer be in the evaluated block. The live readings are what
+        make it selectable, which is the point of the runtime pass.
+
+        """
         found = CandidateSet()
         found.add(Candidate("db.hp", "hp", "static", "typeclasses/characters.py:12", "number"))
         found.add(
             Candidate("db.hp_max", "hp_max", "static", "typeclasses/characters.py:13", "number")
         )
-        found.add(Candidate("db.gold", "gold", "runtime", "on 4 of 4 characters sampled", "number"))
+        live = tuple((who, 80) for who in range(1, 5))
+        ceiling = tuple((who, 100) for who in range(1, 5))
+        found.add(
+            Candidate("db.hp", "hp", "runtime", "on 4 of 4", "number", observed=live, count=4)
+        )
+        found.add(
+            Candidate(
+                "db.hp_max", "hp_max", "runtime", "on 4 of 4", "number", observed=ceiling, count=4
+            )
+        )
+        found.add(
+            Candidate(
+                "db.gold", "gold", "runtime", "on 4 of 4 characters sampled", "number", count=4
+            )
+        )
         found.pair_maximums()
+        found.assess(sampled=4)
         return report.render(found)
 
     def test_the_output_is_valid_python(self):
@@ -774,5 +806,9 @@ class TestTheModelSaysWhatItIs(TestCase):
         """
         A number invites arithmetic on evidence that does not support it.
 
+        D0 had two words, `likely` and `possible`. D3 adopts Addendum B.28's
+        three, because B.28 attaches a rule to the lowest -- not selected by
+        default -- and two levels cannot say "shown but not selected".
+
         """
-        self.assertEqual(set(candidates_module.CONFIDENCE), {"likely", "possible"})
+        self.assertEqual(candidates_module.CONFIDENCE, ("HIGH", "MEDIUM", "LOW"))

@@ -340,9 +340,32 @@ evennia aetos discover
 ```
 
 reads your typeclass source -- parsed, never imported, so running it cannot have
-side effects -- and the attributes of characters that already exist, then prints
-a suggested `AETOS_BINDINGS` block with the evidence for every line. It changes
+side effects -- the attributes of characters that already exist, and the
+Character typeclass and commands Evennia has loaded for them. It prints a
+suggested `AETOS_BINDINGS` block with the evidence for every line. It changes
 nothing and never writes to your settings; you paste what you want.
+
+```
+evennia aetos discover --character #12
+```
+
+reads one character you choose instead of a sample of the newest. Worth doing:
+a character mid-way through your game carries what a fresh one does not.
+`--typeclass` samples a different typeclass, and its subclasses.
+
+Every suggestion is marked `HIGH`, `MEDIUM` or `LOW`, and says what was found,
+where, why it might matter, and what accepting it would put on screen. `LOW`
+entries are printed **commented out**, so pasting the block unchanged activates
+only what discovery could justify. A value and its ceiling are paired by
+structure -- `oxygen` with `oxygen_capacity`, `hull_integrity` with
+`hull_capacity` -- not from a list of fantasy stat names.
+
+Two things it deliberately will not do. Attributes whose names look like
+credentials (`password`, `token`, `api_key` and similar) are never read, printed
+or suggested; the report shows `<redacted>` in their place. And values behind a
+handler -- `character.stats.get("health")` -- are never turned into a binding,
+because a binding cannot call anything. Discovery names the handler and points
+you at a provider instead.
 
 ### Providers -- how to expose your game's data
 

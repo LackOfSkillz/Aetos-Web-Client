@@ -119,6 +119,28 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M29  Compatibility matrix
 [~] M30  Accessibility review  -- WITHDRAWN, see Addendum A below
 [ ] M31  Release candidate
+[x] D3   Runtime + structural discovery -- 2026-09-11
+         Representative character (--character, --typeclass with
+         subclasses), live values rendered without running their
+         code, HIGH/MEDIUM/LOW with reasons (LOW printed commented
+         out, per B.28), credentials refused by NAME before the
+         value is read (B.46), and a structural pass: lineage,
+         AttributeProperty, game handlers -> provider advice (B.66),
+         commands -> actions.
+         D0 BUG: every kind went into `resources`, so a text
+         attribute became a bar that never draws.
+         LAB FOUND: Evennia substitutes an empty `_CMDSET_ERROR`
+         set when a cmdset will not import, so discovery reported
+         a game with commands as having none -- the launcher does
+         not call evennia._init() before a Django command. Also:
+         a two-argument command offered as a target action, the
+         target's health offered as the player's, a pair "found"
+         from one reading. All four fixed.
+         MUTATION-CHECKED: 10 breakages, all caught -- after three
+         tests were found passing for the wrong reason, including a
+         credential test whose alarm the scan itself swallowed.
+         1606 -> 1679 py. See notes/d3-runtime-discovery.md.
+
 [x] A17  Applying the research to the a11y screens -- 2026-09-08
          Gary, with screenshots at 175% text: "apply what you have
          learned from our research and lets really make this
@@ -230,7 +252,12 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
          New `legibility` check: 288 -> 368 suite checks.
          See notes/a12-accessible-ux-research.md.
 
-[x] M32  Upstream PR -- OPEN AS DRAFT 2026-09-07
+[x] M32  Upstream PR -- READY FOR REVIEW 2026-09-11
+         Re-opened after A12-A17 landed, at ce83a1e24: 1606 py
+         tests and 386 suite checks re-run on that exact head
+         first. Description's counts were stale (1541/368) and
+         were corrected before it left draft.
+         Was: OPEN AS DRAFT 2026-09-07
          evennia/evennia#3981, opened 154 files / +54,980, then
          converted to draft the same day so A12 lands before any
          reviewer reads it cold. Nobody had commented.
@@ -784,6 +811,28 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (all five slots; equality after the normaliser is the gate,
          and an `order` field that would have done nothing was cut
          before it shipped)
+[x] D3   Runtime + structural discovery -- 2026-09-11
+         Representative character (--character, --typeclass with
+         subclasses), live values rendered without running their
+         code, HIGH/MEDIUM/LOW with reasons (LOW printed commented
+         out, per B.28), credentials refused by NAME before the
+         value is read (B.46), and a structural pass: lineage,
+         AttributeProperty, game handlers -> provider advice (B.66),
+         commands -> actions.
+         D0 BUG: every kind went into `resources`, so a text
+         attribute became a bar that never draws.
+         LAB FOUND: Evennia substitutes an empty `_CMDSET_ERROR`
+         set when a cmdset will not import, so discovery reported
+         a game with commands as having none -- the launcher does
+         not call evennia._init() before a Django command. Also:
+         a two-argument command offered as a target action, the
+         target's health offered as the player's, a pair "found"
+         from one reading. All four fixed.
+         MUTATION-CHECKED: 10 breakages, all caught -- after three
+         tests were found passing for the wrong reason, including a
+         credential test whose alarm the scan itself swallowed.
+         1606 -> 1679 py. See notes/d3-runtime-discovery.md.
+
 [x] A17  Applying the research to the a11y screens -- 2026-09-08
          Gary, with screenshots at 175% text: "apply what you have
          learned from our research and lets really make this
@@ -895,7 +944,12 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          New `legibility` check: 288 -> 368 suite checks.
          See notes/a12-accessible-ux-research.md.
 
-[x] M32  Upstream PR -- OPEN AS DRAFT 2026-09-07
+[x] M32  Upstream PR -- READY FOR REVIEW 2026-09-11
+         Re-opened after A12-A17 landed, at ce83a1e24: 1606 py
+         tests and 386 suite checks re-run on that exact head
+         first. Description's counts were stale (1541/368) and
+         were corrected before it left draft.
+         Was: OPEN AS DRAFT 2026-09-07
          evennia/evennia#3981, opened 154 files / +54,980, then
          converted to draft the same day so A12 lands before any
          reviewer reads it cold. Nobody had commented.
@@ -1194,7 +1248,7 @@ D-track   developer integration            D0 next, independent
 [ ] D0   Discovery architecture spike           <-- next on the D-track
 [ ] D1   Safe AETOS_BINDINGS foundation
 [ ] D2   Declarative provider suite
-[ ] D3   Runtime + structural discovery
+[x] D3   Runtime + structural discovery      -- 1679 py, 2026-09-11
 [ ] D4   Static AST discovery
 [ ] D5   Interactive setup wizard + generation
 [ ] D6   Hardening, docs and integration validation   (with M27, M28)
@@ -1495,6 +1549,28 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [ ] M21..M29
 [ ] A8   Assistive-technology validation
 [ ] M31  Release candidate
+[x] D3   Runtime + structural discovery -- 2026-09-11
+         Representative character (--character, --typeclass with
+         subclasses), live values rendered without running their
+         code, HIGH/MEDIUM/LOW with reasons (LOW printed commented
+         out, per B.28), credentials refused by NAME before the
+         value is read (B.46), and a structural pass: lineage,
+         AttributeProperty, game handlers -> provider advice (B.66),
+         commands -> actions.
+         D0 BUG: every kind went into `resources`, so a text
+         attribute became a bar that never draws.
+         LAB FOUND: Evennia substitutes an empty `_CMDSET_ERROR`
+         set when a cmdset will not import, so discovery reported
+         a game with commands as having none -- the launcher does
+         not call evennia._init() before a Django command. Also:
+         a two-argument command offered as a target action, the
+         target's health offered as the player's, a pair "found"
+         from one reading. All four fixed.
+         MUTATION-CHECKED: 10 breakages, all caught -- after three
+         tests were found passing for the wrong reason, including a
+         credential test whose alarm the scan itself swallowed.
+         1606 -> 1679 py. See notes/d3-runtime-discovery.md.
+
 [x] A17  Applying the research to the a11y screens -- 2026-09-08
          Gary, with screenshots at 175% text: "apply what you have
          learned from our research and lets really make this
@@ -1606,7 +1682,12 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
          New `legibility` check: 288 -> 368 suite checks.
          See notes/a12-accessible-ux-research.md.
 
-[x] M32  Upstream PR -- OPEN AS DRAFT 2026-09-07
+[x] M32  Upstream PR -- READY FOR REVIEW 2026-09-11
+         Re-opened after A12-A17 landed, at ce83a1e24: 1606 py
+         tests and 386 suite checks re-run on that exact head
+         first. Description's counts were stale (1541/368) and
+         were corrected before it left draft.
+         Was: OPEN AS DRAFT 2026-09-07
          evennia/evennia#3981, opened 154 files / +54,980, then
          converted to draft the same day so A12 lands before any
          reviewer reads it cold. Nobody had commented.

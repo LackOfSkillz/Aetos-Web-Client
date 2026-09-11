@@ -66,6 +66,23 @@ class Command(BaseCommand):
             ),
         )
         parser.add_argument(
+            "--character",
+            default=None,
+            help=(
+                "The representative character to read, as #12 or a name. Worth "
+                "naming one: a character mid-way through the game carries what a "
+                "fresh one does not. Without it, the newest characters are sampled."
+            ),
+        )
+        parser.add_argument(
+            "--typeclass",
+            default=None,
+            help=(
+                "Sample characters of this typeclass (and its subclasses) instead "
+                "of BASE_CHARACTER_TYPECLASS."
+            ),
+        )
+        parser.add_argument(
             "--static-only",
             action="store_true",
             default=False,
@@ -120,16 +137,37 @@ class Command(BaseCommand):
         # no subcommand -- and Django's own command discovery, which imports
         # every command module it finds -- does not pay for a database query or
         # a source walk.
+        from datetime import datetime
+
+        from django.conf import settings
+
+        import evennia
+
+        # The launcher calls this itself whenever the database exists -- it is
+        # what `evennia shell` gets -- but not before handing a command to
+        # Django. Without it the flat API (`evennia.default_cmds` and the rest)
+        # is still None, so a game's command set module fails to import and
+        # Evennia quietly substitutes an empty error set: discovery then reports
+        # a game with commands as having none. It builds the API and starts
+        # nothing -- no service, no port, no reactor. Idempotent.
+        evennia._init()
+
         from evennia.contrib.base_systems.aetos_webclient.discovery import (
             CandidateSet,
             ScanRootError,
             report,
             runtime_scan,
             static_scan,
+            structure,
         )
 
         found = CandidateSet()
         problems = []
+        characters = []
+        context = {
+            "gamedir": getattr(settings, "GAME_DIR", ""),
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        }
 
         if not options.get("runtime_only"):
             try:
@@ -141,12 +179,42 @@ class Command(BaseCommand):
             problems.extend(issues)
 
         if not options.get("static_only"):
-            candidates, issues = runtime_scan.scan_characters()
+            try:
+                characters = runtime_scan.select_characters(
+                    character=options.get("character"), typeclass=options.get("typeclass")
+                )
+            except runtime_scan.SelectionError as error:
+                raise CommandError(str(error))
+
+            candidates, issues = runtime_scan.scan_characters(characters)
             for candidate in candidates:
                 found.add(candidate)
             problems.extend(issues)
 
+            # Pass 2 reads the classes and command sets of characters Pass 1
+            # already fetched. With none, there is nothing loaded to read, and it
+            # does not go and load a typeclass to find out.
+            described = structure.inspect(characters)
+            for candidate in described["candidates"]:
+                found.add(candidate)
+            for action in described["actions"]:
+                found.add_action(action)
+            problems.extend(described["problems"])
+            context["lineages"] = described["lineages"]
+            context["commands_from"] = described["commands_from"]
+
+            named = [runtime_scan.describe(c) for c in characters[: runtime_scan.MAX_NAMED]]
+            if len(characters) > runtime_scan.MAX_NAMED:
+                named.append("and %d more" % (len(characters) - runtime_scan.MAX_NAMED))
+            context["characters"] = named
+
         found.pair_maximums()
+        found.assess(sampled=len(characters))
         self.stdout.write(
-            report.render(found, problems=problems, include_all=options.get("include_all"))
+            report.render(
+                found,
+                problems=problems,
+                include_all=options.get("include_all"),
+                context=context,
+            )
         )
