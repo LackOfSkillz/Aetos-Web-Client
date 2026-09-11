@@ -67,6 +67,30 @@ def _entry(path):
     return PREFS[start : PREFS.index("}", start)]
 
 
+def _code_only(source):
+    """
+    Source with its comments removed.
+
+    A guard that greps for a forbidden construct cannot tell an explanation from
+    an instruction, and the explanation is usually right next to it -- the
+    comment saying "`!!wanted` was removed because..." contains `!!wanted`.
+
+    That has now happened twice in one day, in two different files, so it is a
+    shape rather than an accident: any assertion of the form "this string must
+    not appear in the source" needs the comments gone first, or it fails the
+    moment somebody documents the fix.
+
+    Args:
+        source (str): JavaScript source.
+
+    Returns:
+        str: The same source with block and line comments stripped.
+
+    """
+    without_block = re.sub(r"/\*.*?\*/", "", source, flags=re.DOTALL)
+    return re.sub(r"^\s*//.*$", "", without_block, flags=re.MULTILINE)
+
+
 def _function(name, until):
     """
     Slice one function out of `panel.js`.
@@ -164,9 +188,45 @@ class TestTheSwitchAndTheOptionsAreSeparate(TestCase):
     """
 
     def test_switching_the_mode_does_not_open_the_options(self):
+        """
+        A12 narrowed this rule, and the test says exactly how far.
+
+        It used to be absolute: `setMode` never sets `optionsShown`. That was
+        right when the only thing behind the switch was a panel of eleven
+        technical choices, and wrong once measurement showed the alternative --
+        turning accessible mode on with no preset changes nothing whatsoever on
+        screen, because every governed preference already sits at its standard
+        value.
+
+        So the rule is now conditional, and the condition is the whole
+        protection: the panel may open **only** when the starting-point question
+        is owed, which happens at most once per profile. Asserting on the guard
+        rather than on its absence is what stops this quietly becoming "the
+        switch opens the panel again".
+
+        """
         body = _function("function setMode(wanted)", "function adjustTextSize")
-        self.assertNotIn("optionsShown = true", body)
+        opens = [line for line in body.splitlines() if "optionsShown = true" in line]
+        self.assertEqual(len(opens), 1, "setMode should open the panel in exactly one place")
+        # ...and that one place is guarded by the chooser being owed.
+        self.assertIn("if (next && needsChooser()) {", body)
+        # Still never steals focus. Moving focus on a mode switch was the
+        # original complaint and no part of A12 needs it.
         self.assertNotIn("focusFirst", body)
+
+    def test_the_chooser_is_owed_only_once_and_only_in_accessible_mode(self):
+        """
+        `null` is "never asked"; every other value is an answer.
+
+        Including `"custom"`, which is why choosing to set things up by hand has
+        to be a preset rather than a way of dismissing the question. A chooser
+        that reappears every session is an interruption, and interruptions are
+        the thing this panel exists to reduce.
+
+        """
+        body = _function("function needsChooser()", "function set(")
+        self.assertIn("isAccessible()", body)
+        self.assertIn('preferences.value("shell.preset") === null', body)
 
     def test_opening_the_options_does_not_change_the_mode(self):
         body = _function("function toggleOptions()", "function attach(")
@@ -428,6 +488,45 @@ class TestThereIsAlwaysAWayBack(TestCase):
         """
         return _function("function setMode(wanted)", "function adjustTextSize")
 
+    def test_setmode_understands_the_names_of_the_modes_it_sets(self):
+        """
+        `setMode("standard")` used to turn accessible mode ON.
+
+        The argument was coerced with `!!wanted`, so any non-empty string was
+        true -- and the two strings anybody would reach for are the names of the
+        two modes. A function called `setMode` that accepts "standard" and does
+        the opposite is this project's recurring defect wearing an API's
+        clothes.
+
+        **No player could hit it.** Every call site inside the client passes
+        nothing and toggles, which is why it survived A9, A10 and four
+        milestones after them. It was found by the A8 readiness probe -- the
+        first caller from outside the client -- falling into it on its first
+        run, which is what an outside caller would do.
+
+        """
+        body = _code_only(self._set_mode())
+        self.assertIn('wanted === "accessible" || wanted === "standard"', body)
+        self.assertNotIn("!!wanted", body, "the argument is still coerced")
+
+    def test_a_bare_call_still_toggles(self):
+        """
+        The behaviour every shipped call site depends on, so the fix must not
+        have moved it.
+
+        """
+        self.assertIn("wanted === undefined", self._set_mode())
+
+    def test_an_unrecognised_argument_is_refused_rather_than_guessed_at(self):
+        """
+        And refused with `null`, not `false`: a successful switch to standard
+        mode already returns `false`, and a caller cannot be asked to tell those
+        two apart.
+
+        """
+        body = self._set_mode()
+        self.assertIn("return null", body)
+
     def test_leaving_says_how_to_return(self):
         self.assertIn("Press Control Shift A", self._set_mode())
 
@@ -532,28 +631,100 @@ class TestThePanelIsItselfAccessible(TestCase):
         self.assertNotIn('"dialog"', PANEL)
 
     def test_every_control_is_a_native_element(self):
+        """
+        The rule is unchanged; A13 changed which native elements.
+
+        A0 chose native controls because they arrive already keyboard-operable,
+        already announced with their value, and already understood by every
+        assistive technology -- and a hand-built one starts at none of that.
+        That reasoning has nothing to do with `<select>` specifically.
+
+        A13 replaced the dropdowns and checkboxes with radio groups, because a
+        dropdown shows one option at a time in small text and hides the rest
+        behind an interaction -- which is the wrong control for somebody who
+        drilled in *because* reading small text is hard. A radio is not a step
+        away from the native-control rule; it is the same rule.
+
+        """
         for native in (
-            'input.type = "checkbox"',
+            'input.type = "radio"',
             'input.type = "range"',
-            'createElement("select")',
+            'createElement("fieldset")',
         ):
             self.assertIn(native, PANEL)
         self.assertNotIn('role="slider"', PANEL)
+        self.assertNotIn('role="radio"', PANEL)
 
     def test_the_explanation_describes_rather_than_names(self):
-        self.assertIn('control.setAttribute("aria-describedby", note.id)', PANEL)
+        """
+        The sentence explains the setting; it is not part of its name.
+
+        A13 moved this up a level: the explanation now describes the whole
+        `<fieldset>` rather than one control, because the detail screen has one
+        setting and several choices, and hanging the description off each choice
+        would repeat it once per radio.
+
+        """
+        self.assertIn('fieldset.setAttribute("aria-describedby", note.id)', PANEL)
 
     def test_changes_are_announced(self):
-        self.assertIn('announce(entry.label + ": " + (input.checked ? "on" : "off"))', PANEL)
+        self.assertIn('announce(entry.label + ": " + choice[1] + ".")', PANEL)
 
-    def test_it_re_renders_when_something_else_changes_a_preference(self):
-        self.assertIn("preferences.subscribe(function () { render(); })", PANEL)
+    def test_it_re_renders_for_changes_from_elsewhere_but_not_its_own(self):
+        """
+        A13, and this is the slider fix stated as a rule.
+
+        Gary: *"the text size slider is janky... for every increment I have to
+        reclick the slider and move in one click, wait one click wait."*
+
+        Every `input` event wrote a preference, every write notified
+        subscribers, and this panel's subscriber calls `render()`, which begins
+        `host.textContent = ""`. Dragging the slider destroyed the element being
+        dragged on the first pixel of movement, so the browser had nothing left
+        to send pointer events to.
+
+        The subscription still exists, and must: Settings, the command palette
+        and the keyboard shortcuts all change the same values, and a panel
+        showing stale state is worse than no panel. What it must not do is
+        repaint for a change it made itself.
+
+        """
+        self.assertIn("if (!applyingOwnChange)", PANEL)
+        self.assertIn("applyingOwnChange = true", PANEL)
+        # The guard is worthless if the flag is never lowered again, and a
+        # `finally` is what survives a throwing subscriber.
+        self.assertIn("} finally {", PANEL)
+        self.assertNotIn("preferences.subscribe(function () { render(); })", PANEL)
 
     def test_the_layout_reflows_for_scaled_text_and_not_only_narrow_windows(self):
-        block = CSS[CSS.index(".aetos-a11y-panel__options {") :]
+        """
+        The same requirement, one level up.
+
+        A12 split the flat option grid into named groups, so the container that
+        has to reflow is now `__groups`. The rule it is protecting is unchanged
+        and is the one UI1 established: a `minmax` floor rather than a width
+        breakpoint, because scaling the text up is a different layout and a
+        breakpoint measured in pixels gets it wrong.
+
+        """
+        block = CSS[CSS.index(".aetos-a11y-panel__groups {") :]
         block = block[: block.index("}")]
         self.assertIn("auto-fit", block)
         self.assertIn("minmax(", block)
+
+    def test_the_controls_in_a_group_stack_rather_than_forming_a_second_grid(self):
+        """
+        Groups sit side by side; their contents do not.
+
+        Measured before A12, the flat grid came out five columns wide on a
+        1920px screen, so the reading order zig-zagged across the whole display.
+        A group holds at most four short rows and a column of four is read in
+        one movement.
+
+        """
+        block = CSS[CSS.index(".aetos-a11y-panel__options {") :]
+        block = block[: block.index("}")]
+        self.assertIn("flex-direction: column", block)
 
 
 class TestTheSwitchIsFindable(TestCase):

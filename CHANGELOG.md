@@ -11,6 +11,787 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Added — the static pass reads what the runtime pass cannot (D4)
+
+A brand-new game has a typeclass and no characters; a game mid-edit has source
+that will not import. The two passes fail in opposite conditions, so neither is
+offered alone.
+
+- **The rest of Addendum B.23's patterns**: `hp = AttributeProperty(100)`
+  declarations, *reads* of `character.db.mana` (weaker evidence than an
+  assignment, and the evidence line says so), and
+  `class CmdAttack(Command): key = "attack"` — which is where a game with no
+  characters yet keeps its commands. Commands found only in source are always
+  `LOW`: the class existing is not the same as a character having it.
+- **`character.stats.get("health")` is recognised in order to be refused**
+  (B.66). Discovery names the handler and points at a provider rather than
+  inventing a binding that cannot resolve.
+- **Ceilings on files, file size, total bytes and tree size** (B.53, B.56), each
+  of which *names what it left out* instead of truncating silently.
+- **A source file whose name looks like a credential is skipped unread** —
+  `world/api_keys.py` is ordinary Python in an approved root, and its name is the
+  only warning available before reading it.
+- **Fixed:** an action found in source and the same action found on a live
+  character kept whichever arrived first, so the weaker static evidence won by
+  accident of ordering. The stronger claim now wins and the evidence is joined.
+- **Fixed:** inside a Command, `self` is the command, so `self.args` and
+  `self.caller` were being reported as the game's own handlers with advice to
+  write a provider for them.
+
+See [`notes/d4-static-discovery.md`](notes/d4-static-discovery.md).
+
+### Added — discovery reads live characters properly, and explains itself (D3)
+
+`evennia aetos discover` now does what Addendum B asks of its runtime and
+structural passes.
+
+- **`--character #12` reads one representative** a developer chooses (B.20);
+  `--typeclass` samples a typeclass *and its subclasses*. D0 matched the exact
+  path, so a game whose characters use a subclass read nobody.
+- **Every suggestion is `HIGH`, `MEDIUM` or `LOW`** and says what was found,
+  where, why, and what accepting it would put on screen (B.28, B.33). `LOW` is
+  printed commented out, so pasting the block unchanged activates only what
+  discovery could justify.
+- **Credentials are never read, printed or suggested** (B.46). The decision is
+  made on the attribute's name, before its value is loaded.
+- **Pairing works for games that are not fantasy** (B.65): `hull_integrity` /
+  `hull_capacity`, `oxygen` / `oxygen_capacity`, `max_hp`, and by structure alone
+  when two readings support it.
+- **A structural pass** reads the Character typeclass, its `AttributeProperty`
+  fields, and the game's own commands as candidate actions. A game's own
+  *handler* produces advice to write a provider, never a binding (B.66).
+- **Fixed:** D0 filed every kind under `resources`, so a text attribute became a
+  bar that never draws. Numbers, flags and game objects now go to the slot that
+  can use them.
+- **Fixed:** under a management command Evennia's flat API was not initialised,
+  a game's command set failed to import, and Evennia silently substituted an
+  empty one, so discovery reported no commands. It now initialises Evennia the
+  way the launcher does, and reports a substituted error set out loud.
+
+See [`notes/d3-runtime-discovery.md`](notes/d3-runtime-discovery.md).
+
+### Changed — the accessibility screens, against the research (A17)
+
+Gary, with screenshots of the client at 175% text: *"apply what you have learned
+from our research and lets really make this accessible, within great ui/ux
+practices."*
+
+- **The settings no longer take the whole screen.** At 175% they filled about
+  seventy per cent of the viewport and left the console a three-line sliver —
+  which defeats the reason the panel is inline rather than a dialog. Bounded to
+  half the viewport, scrolling its own overflow, and **focusable only while it
+  overflows**: `tabindex="0"` on a scroll container buys arrow-key and Page
+  Up/Down scrolling for free, and a tab stop that does nothing is a 2.4.3 Focus
+  Order failure.
+- **The console frame hugs the column it contains.** The 80ch cap was on the
+  contents while the border spanned the whole window, leaving a ribbon of text in
+  a large empty box with the Send button stranded short of the edge.
+- **A specificity bug, invisible at ordinary text sizes.** Focus mode's grid
+  collapse was `[data-aetos-focus-mode="true"] .aetos-workspace` (0,2,0) against
+  `.aetos-root[data-aetos-size="tablet"] .aetos-workspace` (0,3,0), so it only
+  worked at sizes with no responsive template. Breakpoints are measured in text,
+  so a 1600px window at 175% is "tablet" — the tablet template restored a sidebar
+  track, focus mode hid the region *inside* it, and a dead 339px column was left.
+  Main region moved from x=339 to x=10; the frame is now centred with 233px
+  either side.
+- **Accessible names are composed from visible text.** Tiles use
+  `aria-labelledby` pointing at the two spans already on screen rather than an
+  `aria-label` string: `aria-label` is skipped by machine translation, and a name
+  assembled from ids cannot drift from what a voice-control user reads aloud.
+  Verified against Chrome's accessibility tree.
+- **The summary chips lost their `aria-label`** — "Change Contrast, currently
+  High contrast" was more words for the same information and a parity break — and
+  **the strip stands down while the panel is open**, since the panel lists every
+  one of those settings a few pixels below.
+
+See [`notes/a17-applying-the-research.md`](notes/a17-applying-the-research.md),
+which also records what was considered and deliberately not done.
+
+### Fixed — a backgrounded tab no longer announces into a screen reader (A16)
+
+A MUD sits in a background tab for hours, and the live region kept firing while it
+did — so a screen reader reading somebody's email was interrupted by a room
+description from a game they were not currently playing.
+
+Both live regions now take `role="none"` / `aria-live="off"` while
+`document.hidden`, and are restored on return. From Heydon Pickering's
+*Notifications* article, which notes that some screen reader and browser pairings
+already do this themselves, but "you can't rely on all your users having these
+setups and — where they don't — the experience is very off-putting."
+
+- **The original attributes are captured, not assumed.** The two regions are not
+  symmetrical: polite is `role="status" aria-live="polite"`, urgent is
+  `role="alert"` with no `aria-live` at all. A hardcoded restore would have given
+  the urgent region an attribute it never had.
+- **Nothing is queued.** Replaying on return would read twenty minutes of combat
+  to somebody who just came back. The console holds the transcript regardless.
+- **Speech is deliberately not silenced.** Somebody using Aetos's own read-aloud
+  has very likely backgrounded the tab *in order to listen*.
+- **The regions come back empty.** Messages arriving while hidden are still
+  written, so without clearing, the region returned holding a stale line that
+  could be announced out of nowhere on restore. Found by measuring the first
+  version of the fix.
+
+See [`notes/a16-a-backgrounded-tab-does-not-talk.md`](notes/a16-a-backgrounded-tab-does-not-talk.md).
+
+### Added — the client reads the game aloud (A15)
+
+Gary, after the announcer was wired up: *"ok I have the reading turned on but it
+doesnt read out loud"* — and, asked whether a screen reader was running: *"No — I
+turned the option on in Aetos and expected it to speak."*
+
+**The client was behaving exactly as designed, and the design was wrong.** Every
+accessibility decision here assumed "announce" means "hand it to assistive
+technology", so Aetos wrote to an ARIA live region and left the speaking to a
+screen reader. Correct for somebody running NVDA; silence for everybody else. The
+setting's own label — *"what is spoken aloud"* — promised speech the client never
+produced.
+
+That assumption is wrong about the population. The people who want text read to
+them are far more numerous than the people running a screen reader: dyslexia, low
+vision that never involved setting up assistive technology, tired eyes at the end
+of a session, or simply wanting to listen. Telling all of them to install NVDA is
+not an accessibility answer.
+
+`speech.js` uses `window.speechSynthesis` — part of the platform at the published
+floor. No dependency, no CDN, nothing downloaded and nothing sent anywhere; the
+voices are the ones the machine already has.
+
+- **A renderer, not a second channel.** The hook sits inside the announcer's
+  `write()`, where the decision to say something has already been made. Category,
+  priority, per-category preferences, quiet mode, review mode and burst
+  aggregation stay upstream, and `speech.js` mentions none of them.
+- **Off by default**, and it must stay so: a client that starts talking is
+  alarming, and for a screen reader user it is two voices over the same text.
+  Aetos cannot detect a screen reader and **must never try** — that is
+  fingerprinting, and A.72 forbids it — so the overlap is handled by saying so in
+  the control's description.
+- **A gesture arms it**, because browsers refuse audio until the player has
+  interacted; pending requests are discarded rather than queued, or a queue would
+  empty in one burst on the first click.
+- **Turning it off stops it mid-sentence.** Speech that cannot be stopped is worse
+  than no speech.
+
+New `speech` check (**375 → 380**): silent when off, speaks when on, markup
+stripped, the chosen rate used, and stopping works.
+
+This is the fourth defect in a row that every automated gate called correct and
+no person could use — after A0's scrolling region, A13's slider and A14's
+announcements. Gary found all four by using the client.
+
+See [`notes/a15-reading-the-game-aloud.md`](notes/a15-reading-the-game-aloud.md).
+
+### Fixed — game output was never announced at all (A14)
+
+Gary: *"when I turn screen reader on and then go back to the game and type look
+nothing is read to me."*
+
+**No game output had ever been announced.** Not room descriptions, not tells, not
+anything the server sent.
+
+Every piece existed. The pipeline has had an `announce` stage since E0. The
+announcer has had categories, per-category preferences, priorities, flood control
+and review mode since A0. `screenReader.announceRoom` has defaulted to `true`
+throughout. Both live regions are in the template. The console is deliberately
+`aria-live="off"`, because `role="log"`'s implicit polite region would speak every
+line including combat spam.
+
+The only observer of the `announce` stage was **the capture recorder**. The stage
+ran, handed each event to a debugging tool, and stopped. The announcer was never
+given anything to decide about, and the console was told not to speak.
+
+Fixed with wiring and no new policy — category, priority, per-category
+preferences, quiet mode, review mode and burst aggregation stay the announcer's
+job. Verified with a realistic `look`: the full room description reaches the
+polite region as plain text, with the markup stripped.
+
+**Why five gates missed it, which is the part worth keeping.** The browser
+suite's `announce` check ingested five lines of game text and asserted only that
+none reached the *urgent* region. That was true — because none reached anywhere.
+
+> A negative assertion is satisfied by nothing happening at all.
+
+The Python tests failed the same way more quietly: `TestOutputIsNotALiveRegion`
+asserted the console is not a live region, an announcer region exists, and widgets
+can reach it. All true, each one end of a wire that was never joined. Nobody
+asserted that game output arrives at it. axe checks names, roles and states — all
+correct. NVDA could not have caught it either: Guidepup captures speech produced
+by its own navigation commands, not spontaneous live-region updates.
+
+Every gate measured the machinery; none measured the outcome. The rule this earns:
+**any "X must not happen" assertion needs a positive one beside it saying the
+thing under test happened at all.**
+
+`checks/announce.js` gained that positive assertion (**371 → 373 checks**), and
+`test_capture_replay.py`'s announce-stage test now asserts what it always meant —
+capture is registered *last* — which was only testable once a second observer
+existed.
+
+See [`notes/a14-game-output-was-never-announced.md`](notes/a14-game-output-was-never-announced.md).
+
+### Fixed — the text-size slider could not be dragged (A13)
+
+Gary: *"I try to slide it smoothly back and forth but the slider redraws every
+time... for every increment I have to reclick the slider and move in one click,
+wait one click wait."*
+
+Every `input` event wrote a preference, every write notified subscribers, and the
+panel's subscriber calls `render()`, which begins `host.textContent = ""`. The
+slider **destroyed the element being dragged** on the first pixel of movement.
+
+Measured with the fix reverted, across one twelve-step drag: **2 distinct values**
+(against 12), the value moving **backwards** from 1.0 to 0.9, and focus lost to
+the document. It went backwards because a rebuilt slider registers the pointer as
+a fresh click at the gesture's origin.
+
+**No automated gate could see this.** axe found a correctly named, correctly
+roled, correctly valued `<input type="range">`. The keyboard walk operated it,
+because arrow keys do not care whether an element survives a pointer gesture. The
+accessibility tree was right. NVDA read it correctly. Every check passed a control
+that could not be used with a mouse — the same shape as A0's scrolling region, and
+the second time this project has met it.
+
+The panel no longer repaints for writes it made itself. The subscription stays,
+because Settings, the palette and the shortcuts write the same preferences; the
+flag is lowered in a `finally`, because a stuck one would leave the panel
+permanently blind to outside changes.
+
+### Changed — the panel is tiles you drill into (A13)
+
+Gary: *"I liked the tiles and then opening a box for that specific setting so if
+you are visually impaired, its easy to see choices and drill down into those
+choices."*
+
+- **A hub of tiles**, each carrying its setting's name *and current value* —
+  "Text size / 150%". The value is what turns a settings screen into an answer to
+  "what is on", and the accessible name carries both halves.
+- **A detail screen per setting**, with every choice visible at once as a native
+  radio group. A `<select>` shows one option at a time in small text and hides the
+  rest — the wrong control for somebody who drilled in *because* small text is
+  hard. Radios keep A0's native-control rule: arrow-key operable and announced as
+  "2 of 4" with no ARIA.
+- **Three ways back**, where there had been none: out of a setting (the button is
+  first in the DOM, so Tab reaches it first), back to the starting points (which
+  changes no settings), and out of the panel (which returns to the hub).
+- **Steppers beside the slider**, so the one setting somebody may need before they
+  can see anything else does not require a drag.
+
+### Added — what is in use, with the panel closed (A13)
+
+Gary: *"once options are selected I dont see them on the main screen."*
+
+A strip under the status bar, only when there is something to say. Each item opens
+that setting. In standard mode it lists **only what is still applying**, which is
+the genuinely confusing case: somebody who switched back and kept their text size
+should see that their text size is still theirs and their contrast is not.
+
+Three further defects the work turned up: the strip was **outside every landmark**
+(axe's `region` rule caught it, and only at 250% text — the one view where a
+setting is off-default and the strip is on screen); `:has()` would have shipped
+against a Chrome 87 floor because **the compatibility gate only knows the features
+listed in its own table**; and a tile carried a comment claiming a 24px floor it
+did not declare.
+
+New `dragging` check — the first here to ask whether a gesture destroys its own
+target. **368 → 371 checks**, 0 failed.
+
+See [`notes/a13-tiles-and-drilling-down.md`](notes/a13-tiles-and-drilling-down.md).
+
+### Changed — accessible mode now does something when you turn it on (A12)
+
+Gary, with all 288 automated accessibility checks passing, NVDA announcing the
+mode switch correctly and axe clean across 144 scans:
+
+> *"this doesnt feel accessible to me, but I dont have this particular challenge
+> so its hard for me to tell, but what we have now 'feels' like we are way off
+> the mark"*
+
+He was right. Every gate this project owned measured **machine-readable
+correctness** — name, role, state, reachability. Nothing measured **legibility,
+density or effort**, which is what a sighted person with low vision, dyslexia,
+ADHD or a tremor actually meets. Measured against WCAG 2.5.8 the client passed
+too, with twelve controls under 24×24, all of them inside the spacing exception.
+
+The finding that mattered most: **accessible mode and standard mode rendered
+byte-identically.** Not a bug in the masking — the mode masks preferences, and
+every governed preference defaults to its standard value, so there was nothing
+to mask. But it meant flipping the switch changed nothing on screen, and the
+route to an accessible client ran through 242 words and eleven technical
+decisions in a vocabulary nobody had been taught.
+
+- **Five starting points, asked once**, in a person's words rather than a
+  specification's — "Hard to see small text", "Too much going on". A preset is a
+  bulk write of ordinary preferences, so `effective()` is untouched and never
+  learns presets exist. "Let me choose each setting myself" is a recorded answer,
+  not a dismissal, so the question never comes back.
+- **Two typefaces.** Proportional for the client's prose; monospace for the
+  console, the map and the command input, where the server aligned text by
+  counting characters. `visual.typeface` puts prose back, because the evidence
+  splits: Vision Australia and APA Style say avoid monospace for long passages,
+  and Rello & Baeza-Yates found it *improved* reading for dyslexic readers.
+- **Options grouped** into four named sections of four or fewer, against eleven
+  in one five-column grid — W3C COGA asks for about seven per section.
+- **A 24px target floor on every pointer.** `--aetos-target` was `0px` unless
+  the pointer was coarse, and the rules using it lived inside that media query,
+  so it had always been a no-op on a mouse. Every slider thumb 16px → 24px.
+- **The reading line bounded in characters**, unconditionally: 127 → 84.
+
+Four further defects the work turned up: axe had **never scanned the
+accessibility panel** (it was in none of the nine overlays the check opens);
+`--aetos-text-dim` was used four times and defined nowhere; three headings were
+sized in `rem`, which the client's text scale deliberately never touches, so at
+150% the panel's group headings were smaller than their own labels; and
+`<select>` does not inherit `font`, so the dropdowns ignored the scale.
+
+### Added — a gate for the axis that had none (A12)
+
+`npm run a11y` grew a **`legibility`** check: line length, leading, target size
+without the spacing exception, and how many decisions are on screen at once,
+across three viewports × two scales × two modes. **288 → 368 checks**, 0 failed.
+
+Two mistakes in writing it, both caught by running it. It measured whatever was
+on screen, and the panel is never open in an ordinary view — so the density
+assertion never ran once across thirty-six views while printing "ok". And
+`MIN_TARGET` reached only the failure *message*, with `< 24` hardcoded in the
+page function, so changing the threshold changed nothing. **A threshold that
+does not reach the measurement is a comment**, and it reads like a guard.
+
+See [`notes/a12-accessible-ux-research.md`](notes/a12-accessible-ux-research.md),
+which also records two measurements in its own first draft that were wrong.
+
+### Submitted — the upstream pull request (M32)
+
+[evennia/evennia#3981](https://github.com/evennia/evennia/pull/3981). 154 files,
+confined entirely to `evennia/contrib/base_systems/aetos_webclient/`.
+
+**Converted to draft the same day**, before any reviewer had commented, so that
+A12 lands before the client is read cold.
+
+Submitted with its gaps stated rather than with claims that cannot be evidenced.
+The description says plainly what is **not** validated — refreshable braille on
+hardware, the AAC review, JAWS and Orca — and does not claim voice control,
+which is not built.
+
+**Merging is Evennia's decision.** Their contrib guidelines say a PR is reviewed,
+may go through several iterations, and that not all can be accepted, because
+merging a contrib means the project takes on maintaining it.
+
+### Verified — real NVDA says the mode switch is a switch
+
+`npm run a11y:nvda` run against an unlocked desktop: 6 checks pass, 0 fail. The
+one that matters is that **the mode control is announced as a switch, not a
+button**, with its state and its name. A10 chose `role="switch"` over
+`aria-pressed` on the argument that a screen reader should say the state rather
+than the act; that is now measured rather than argued.
+
+Three assertions were removed as unmakeable, not left red. The client writes the
+right sentence into its live region (confirmed by reading the element), NVDA
+speaks it (confirmed by a person hearing it), and Guidepup's spoken-phrase log
+is empty for that window — it captures speech produced by its own navigation
+commands, not spontaneous live-region or focus announcements. A check that
+reports a defect the client does not have is worse than no check. That behaviour
+is covered deterministically by `checks/announce.js`, which reads the regions
+directly.
+
+### Fixed — a mistyped `AETOS_UI` threw out of every player's handshake
+
+`build_manifest()` has always documented that it raises `AetosManifestError`.
+With a malformed `AETOS_UI` it raised `AetosUIError` — a *sibling* class, not a
+subclass — and `aetos_hello` catches only the documented one. So the exception
+left the handshake unhandled and the player got a connection that neither
+completed nor explained itself, instead of the "server misconfiguration" reply
+the client is built to receive. The startup check had only warned.
+
+`build_manifest` now keeps its own documented contract. The fix is there rather
+than in a longer `except` clause at the call site, because a list of sibling
+exceptions to catch is a list that goes stale the next time somebody adds a
+validator.
+
+**Two tests were covering this and both were looking slightly the wrong way.**
+The handshake's misconfiguration test used `AETOS_AUTOMATION`, which happened to
+raise the one exception that was caught. And `test_ui_manifest` asserted that
+`build_manifest` raised `AetosUIError` and read that as "the handshake reports
+it" — pinning the mechanism one layer below the outcome, so it went on passing
+while the outcome was the opposite of its own docstring.
+
+Both now check the outcome: every Aetos setting a game can write is given a
+malformed value, and each must either degrade or produce a reply. Whatever a
+developer gets wrong, a player gets an answer.
+
+### Added — the licensing position is now enforceable rather than only argued
+
+`aac_mappings/README.md` says *"These files contain no artwork"*, and the whole
+reason Aetos ships no symbol set is that the licences do not allow it inside a
+BSD-3 tree — ARASAAC is NonCommercial, the aggregators are per-set. A mapping
+names a symbol; the picture is fetched by whoever installs the pack.
+
+That is a careful argument recorded in prose, and prose does not stop somebody
+dropping a PNG into the directory in a later milestone. If one arrived, the
+contrib would quietly become a mixed-licence tree and Evennia would be the one
+distributing it.
+
+So the contrib now ships text only, checked: no binary files, no base64 image
+payloads, and nothing in the mappings but identifiers. Not "no artwork" — no
+binaries at all, because the narrower rule needs somebody to judge what counts
+as artwork and the broader one does not.
+
+The first version of that check was stricter than the concern it protects and
+failed on the inline SVG favicon: sixteen pixels, one text character, authored
+here, no third party involved. A rule stricter than its own justification
+produces findings a reviewer rejects and teaches people to skip the output. It
+now forbids what actually distinguishes artwork from a drawn glyph — being
+encoded rather than written, or being large.
+
+### Added — `scripts/verify_install.py`, which installs Aetos the way the README says to
+
+The README's first promise is *"install it and you immediately get a better
+client on an ordinary Evennia game, with no changes to your game code"*, and the
+installation section is three lines somebody pastes into `settings.py`. That is
+the first thing every user does and it had never been tested end to end — the lab
+game has carried accumulated settings since Phase 0, so it could not say whether
+a *pristine* install works.
+
+It does. On a game created seconds earlier with nothing else configured: the
+client serves, Aetos wins the template race against Evennia's own webclient, the
+console and composer are on the page, the CSP is applied, **every feature flag is
+off** — the progressive-enhancement promise — no diagnostics payload leaks, and
+all nine provider slots resolve.
+
+It also checks the half that matters more: leaving out the input-handler line
+makes the startup checks say so (`aetos.W003`). A check that never fires is
+indistinguishable from one that does not work.
+
+The script never starts the server. Evennia's first `start` prompts for a
+superuser, and answering this question needs no account and no listening port —
+Django's test client fetches the page directly, which also makes it safe to run
+while the lab game is up. A test asserts the script pastes the README's block
+verbatim, because a verifier running slightly different lines would prove those
+lines work and say nothing about the ones people copy.
+
+### Added — guards for two things the upstream PR depends on
+
+**The contrib depends on nothing, and now something checks that.** The README's
+selling point is core-only dependencies — Python, Evennia, Django, browser APIs —
+and nothing verified it. An `import requests` added in a hurry would have
+shipped, and the first anybody would know is a game failing to start with an
+ImportError naming a package they never asked for. Checked by parsing, so an
+import hidden inside a function counts too.
+
+The single allowed exception is `black`, imported only from a test and only
+behind a `skipTest`, because the formatting check has to live where it will
+actually be run. A test asserts that exception stays test-only.
+
+**The README's opening shape is load-bearing.** Evennia generates this contrib's
+published page by splitting the README on blank lines: the second paragraph
+becomes the credits line and the third becomes the blurb in the contrib index
+everyone browses. No marker, no validation. A badge or a note near the top would
+silently become the description. Guarded — and the guard checks its own
+assumption against Evennia's generator, so if that parsing changes we are told
+rather than left with three tests that pass while guarding nothing.
+
+Good news for the diff: nothing upstream needs hand-editing to register a
+contrib, so the PR stays confined to this directory.
+
+### Fixed — the contrib was not formatted the way Evennia's CI demands
+
+Evennia runs `black --check`, and **twelve files would have been reformatted**.
+The PR would have failed CI on the first push.
+
+`AGENTS.md` says it plainly -- *"Don't manually format code. Run `make format`
+after editing"* -- and across the whole D-track and the UI work it was never run,
+because nothing failed when it was skipped. That is this project's recurring
+shape in a new place: a rule that reads as a guarantee and is enforced by nobody.
+
+Now formatted with black and isort, and guarded: a test runs black over every
+Python file in the contrib and fails naming the files it would change. Only this
+contrib is checked, because formatting somebody else's file to satisfy a test
+here would put changes in the PR diff that have nothing to do with Aetos.
+
+Verified by breaking the formatting deliberately and watching the guard fail,
+rather than trusting a green run on a test that had never been red.
+
+### Fixed — the README claimed the client honours an automation flag it ignores
+
+Found while preparing the upstream PR. `AETOS_AUTOMATION` is printed as a whole
+table under the sentence *"The client honours these"*, and
+`automationAllowed("voice")` has no caller anywhere in the client -- voice input
+is not built. A game reading that would have set `voice: False` believing it had
+forbidden something.
+
+The key stays, so setting it is not an error and the capability keeps its place,
+but the README now says plainly that it is reserved and does nothing. A test ties
+the two together in both directions: every automation key must be either
+consulted by the client or listed in `manifest.RESERVED_AUTOMATION`, and nothing
+listed as reserved may be consulted. When voice input lands, that test is what
+tells somebody the README sentence is now wrong the other way.
+
+### Added — `npm run a11y:nvda`, asserting on what a real screen reader says
+
+Drives actual NVDA through Guidepup and checks the words it speaks, which takes
+several questions the tester protocol puts to a person and makes them string
+comparisons: that the mode control is announced as a *switch* rather than a
+button (the reason `role="switch"` was chosen over `aria-pressed`), that its
+state and name are both spoken, and that leaving accessible mode is announced
+with the way back in it.
+
+A separate command from `npm run a11y`, because a screen reader reads the
+foreground window of a real desktop — headed browser, unlocked session — and the
+fast suite should not inherit that.
+
+**Not yet verified.** The machine was locked when it was written, so NVDA was
+reading the Windows lock screen; the check detects that and refuses rather than
+reporting failures that have nothing to do with the client. Its first run
+against an unlocked desktop is still outstanding.
+
+### Fixed — the new axe check had quietly stopped scanning the overlays
+
+It scanned the page in whatever state it was in — the default workspace, and
+nothing else — while the gate it replaced opened thirteen views. Moving axe into
+the runner would have swapped thirteen scans for one while the number in the
+report went up, because it now ran at four viewports. Dialogs are where
+accessibility defects concentrate, so it now opens nine overlays per view: 144
+axe scans across the matrix, all clean.
+
+### Added — `npm run a11y`, one command for the whole accessibility suite
+
+Four gates existed and every one was driven by hand: paste a script into a page,
+read JSON back. That is why axe spent its life measuring a single viewport. There
+is now one command, and it sweeps a matrix of viewport x text scale x mode --
+160 checks, 0 failures.
+
+Six of the eight checks are new ground:
+
+- **the accessibility tree Chrome computes**, rather than our hand-rolled idea of
+  what each element is named
+- **keyboard reachability and operation**, in every view rather than once by hand
+- **what the client writes to its live regions** -- our half of what a screen
+  reader says, tested deterministically without one: nothing announced twice,
+  gameplay never reaching the urgent region, and a reconnect not replaying old
+  news at somebody
+- **Windows High Contrast**, which measured a claim A10 had only ever argued:
+  with author colours discarded the switch's thumb still moves 16px, and focus is
+  shown by an outline (which forced colours keep) rather than a border colour
+  (which it does not)
+- **WCAG 1.4.10 as written** -- 320 CSS px, no two-dimensional scrolling, with
+  every control still present and usable
+- **focus not moving unless somebody moved it**, which for a client receiving
+  unprompted game output is the hard case
+
+Nothing here ships. `browser-qa/` is development-only and is not a dependency of
+the contrib.
+
+Every run ends by saying what it cannot do: whether any of this is bearable to
+use is `docs/a8-tester-protocol.md`, and it needs a person.
+
+### Fixed — `setMode("standard")` turned accessible mode on
+
+The argument was coerced with `!!wanted`, so the name of a mode was truthy and
+switched the client into the other one. No player could reach it: every call site
+inside the client passes nothing and toggles, which is how it survived A9, A10
+and four milestones after them. It was found by the first caller from outside the
+client falling into it immediately.
+
+`setMode` now understands `"accessible"` and `"standard"`, still toggles on a
+bare call, still accepts booleans, and refuses anything else with `null` rather
+than guessing.
+
+### Added — an A8 readiness gate (`browser-qa/qa-a8-readiness.js`)
+
+Walks the assistive-technology tester protocol task by task and checks that every
+destination exists, opens, is named, closes, and returns focus where it started.
+38 checks pass, none fail, at four viewports; 13 tasks need a logged-in character
+and 13 need a person's judgement, which is what the protocol reserves them for.
+
+It refuses to run against a hidden browser pane, where `innerWidth` is 0 and every
+layout measurement is meaningless — a way the QA harness had been able to report
+confident nonsense. It also restores the client's mode, contrast and text size
+afterwards, and reports whether it managed to.
+
+### Changed — the tester protocol says what has actually been demonstrated
+
+It claimed synthetic keystrokes never reached the page, so nobody had driven the
+client without a pointer. That was wrong; they reach it once the window has
+focus. The keyboard path is now walked rather than assumed — 33 focus stops,
+every one named, wrapping correctly — and the document says plainly that a
+number of stops is not a verdict on whether the journey is worth making.
+
+### Added — bindings for equipment, effects, target and actions (D2)
+
+The declarative path now covers all five slots, so a game can expose equipment
+slots, temporary effects, a current target and context actions from settings
+alone:
+
+```python
+AETOS_BINDINGS = {
+    "equipment": {"weapon": {"label": "Weapon", "value": "db.gear.weapon"}},
+    "effects": {"poison": {"label": "Poisoned", "value": "db.poison",
+                           "remaining": "db.poison_left", "kind": "harmful"}},
+    "target": {"name": {"label": "Target", "value": "db.target_name"},
+               "health": {"label": "Health", "value": "db.target_hp",
+                          "maximum": "db.target_max"}},
+    "actions": {"attack": {"label": "Attack", "command": "attack {target}"}},
+}
+```
+
+The gate is that **the client cannot tell which route supplied the data**: each
+payload is built twice, once from a binding and once from a hand-written
+provider, and compared after normalisation. A second code path into the client
+would be a second set of bugs, and the accessibility surface — thresholds,
+announcements, labels — is computed from the normalised shape.
+
+Four rules that look shared and are not: equipment keeps its empty slots while
+resources drop absent ones; an effect is active when its value is truthy, and
+zero is not; `target` has one reserved key, `name`, and no name means no target;
+and an action is an ordinary command with a single `{target}` placeholder —
+offering it never makes it legal.
+
+A binding still cannot declare thresholds, so a resource declared this way is
+never announced. That limit is now stated in the README rather than left to be
+found.
+
+### Removed — an `order` field that would have done nothing (D2)
+
+Dicts keep insertion order, so settings.py order is already screen order.
+Removed while it was still a draft, and generalised: a test now fails on any
+optional field the schema accepts that no provider reads.
+
+### Added — a resource bar from settings alone, with no Python (D1)
+
+`AETOS_BINDINGS` declares *where* a value lives, and Aetos fetches it:
+
+```python
+AETOS_BINDINGS = {
+    "resources": {
+        "health": {"label": "Health", "value": "db.hp", "maximum": "db.hp_max"},
+    },
+}
+```
+
+No provider class, no import path, no file. Proved live against the lab game's
+real database with its resources provider removed.
+
+A binding is a **path, not an expression**: `db.name`, or `db.name.child` for a
+key inside a stored dict, and nothing else. The second level is a *mapping
+lookup* rather than `getattr`, which is what makes it safe by construction — a
+dict lookup on a dict cannot run game code, and traversing an arbitrary object
+would run the game's `__getattr__`. A value that has to be computed still wants a
+provider, and the error message says so.
+
+Errors are written for somebody who did not want to write Python. `db.hp()` is
+told it looks like a method call; `db.stats[0]` is told to use `db.stats.hp`;
+`hp` is told that `db.` is where `character.db.hp = 50` puts things. A test
+asserts no message ever contains a regular expression.
+
+**Precedence is custom > binding > default**, and **a binding switches its own
+feature flag on** — though an explicit `AETOS_FEATURES` entry wins in both
+directions, so a game can still turn the widget off on purpose.
+
+`resources` is served this way today; the other four slots validate and are
+suggested by discovery, and follow.
+
+### Changed — the binding grammar moved out of the discovery tool (D1)
+
+D0 defined it in `discovery/`, which is a development-time source scanner.
+Leaving it there would have made the live client import that scanner in order to
+read a setting. The dependency now runs one way, and a test walks the imports to
+keep it that way.
+
+### Added — `evennia aetos discover` (D0)
+
+Putting a number on screen used to mean writing a provider class. The D-track's
+answer is `AETOS_BINDINGS`, a declaration in settings, and discovery writes the
+first draft of it by reading the game: the typeclass source, parsed with `ast`
+and never imported, and the attributes of characters that already exist. It
+prints a settings block with the evidence for each line beside it, and changes
+nothing.
+
+The open question was whether the command could exist at all
+(`questions.md` 4). It can, and needs nothing from Evennia: the launcher passes
+unrecognised operations to Django's management-command dispatch, and Aetos is
+already an installed app.
+
+D0 is a spike. It settles the entry point, the package boundary, the candidate
+model and the security model, and proves the two scans. The resolver is D1.
+
+### Fixed — the binding grammar accepted `db.__class__` (D0)
+
+Caught by its own test on the first run, which is the point of writing the
+rejection list from Addendum B.59 before the pattern. A dunder *is* an
+identifier — it starts with an underscore and continues with word characters —
+so an identifier whitelist admits every one of them, and `db.__class__` is the
+first step of every attribute-traversal escape there is. Each segment now
+carries `(?!__)`.
+
+### Changed — the composer moved into the console frame (UI1)
+
+Gary: *"first move the text input and send button into the actual text output
+frame"*. It was a `<footer>` at the bottom of the whole client, the full height
+of the workspace away from the text it answers. It is now the bottom edge of the
+console's own frame, so the transcript and the reply to it are one object.
+
+### Fixed — larger text produced a maze of nested scrollbars (UI1)
+
+Gary, with a screenshot at a larger text size and most of the scrollbars circled:
+*"I upped the text size and its creating a scroll bar maze from hell"*. Four
+separate causes, and only the first is scrollbars:
+
+- **Nested scroll containers.** A region scrolled, every panel body inside it
+  scrolled, and lists inside those scrolled again. The inner two were defensive:
+  panels already grow to their content. Now one scroll per column.
+- **A resized panel got a fixed `height`**, which clips as soon as content
+  outgrows it. Now a `minHeight` — a floor rather than a lid.
+- **Seven `font-size` declarations were in `px`** and so ignored the text-size
+  setting entirely. Turning the text up grew the game output and left every panel
+  title, status-bar button and dialog label at its original size. Now guarded
+  generally: no stylesheet may pin a `font-size` in pixels.
+- **The responsive breakpoints were in pixels**, and pixels do not know the text
+  got bigger. At 250% text an 800px client still called itself "desktop" and kept
+  three columns of a few characters each. Breakpoints are now measured against
+  the width expressed in the client's own rendered text, so 150% folds to two
+  columns and 250% to one. Browser zoom comes out right for free.
+
+Changing the text size also now asks the layout to re-measure. Nothing else would
+have: the responsive manager watches the root element's *size*, and the text
+scale changes only what is inside it.
+
+### Fixed — help examples could only be scrolled with a mouse (UI1)
+
+Found by running the axe gate at 800x600 instead of 1280x800:
+`scrollable-region-focusable`, serious. An example long enough to overflow its
+column is a horizontal scroll region, and it had no `tabindex`.
+
+The content is right to scroll — several examples are column-aligned tables, and
+wrapping them would destroy the alignment, which is the two-dimensional-layout
+exception WCAG 1.4.10 makes. So every example is now focusable, with
+`role="group"` and a name. Every one rather than the overflowing ones: whether an
+example overflows depends on window width and text size and changes under both.
+
+Help's focus trap collected `button, input, [tabindex='-1']` — the three kinds of
+element it happened to contain — so an example after the last button would have
+been skipped, Tab wrapping straight past it. Widened to include `[tabindex='0']`.
+
+### Fixed — the accessibility gate had only ever measured one viewport (UI1)
+
+Every rule about overflow, reflow and target size depends on how much room there
+is, so a clean axe run is only ever clean *for the viewport it ran at*.
+`qa-axe.js` now records the viewport and rendered text size in its results and
+names the four views to run. Clean at all four: 1280x800, 800x600, 390x844, and
+1280x800 at 200% text.
+
+### Changed — one frame instead of a page of boxes (UI1)
+
+Gary: *"our ui needs to be slick, clean and beautiful to look at"*. Every widget
+was a bordered, filled card, including the console — so the transcript had the
+same visual weight as the sound widget. The console slab is now the only framed
+object; side panels sit on the background separated by hairlines, the status bar
+is a row with a rule under it, and scrollbars are thin and in the client's own
+palette. No colour token changed.
+
+Both `prefers-contrast: more` and the client's high-contrast setting put the
+surfaces, borders and full-width scrollbars back. Unframed panels are a
+decoration decision and the wrong one for anybody who needs an edge to find an
+edge.
+
 ### Fixed — the client had lost ANSI colour on every line
 
 The worst thing the M29 plain-text work produced, found by Gary in a screenshot.

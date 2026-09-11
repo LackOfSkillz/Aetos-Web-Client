@@ -201,6 +201,7 @@ def _setting_validators():
 
     """
     from evennia.contrib.base_systems.aetos_webclient import (
+        bindings,
         csp,
         manifest,
         providers,
@@ -213,6 +214,12 @@ def _setting_validators():
         ("AETOS_AUTOMATION", manifest.get_automation_policy, manifest.AetosManifestError),
         ("AETOS_UI", ui_manifest.get_ui_description, ui_manifest.AetosUIError),
         ("AETOS_CSP", csp.build_policy, csp.AetosCspError),
+        # D1. This one matters more than the rest, because a malformed binding
+        # fails *quietly* at runtime by design: `bound_slots()` swallows the
+        # error so a typo in settings.py cannot turn into a failed login. That
+        # trade only works if the developer is told somewhere, and this is
+        # where.
+        ("AETOS_BINDINGS", bindings.get_bindings, bindings.AetosBindingError),
     ]
 
 

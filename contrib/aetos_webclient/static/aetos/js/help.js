@@ -1304,6 +1304,47 @@
             // Examples are meant to be copied, so they are selectable text in a
             // real <pre> rather than an image or a styled div.
             pre.textContent = section.example;
+
+            /*
+             * FOCUSABLE, BECAUSE IT SCROLLS.
+             *
+             * An example is `white-space: pre` and scrolls sideways rather than
+             * wrapping, and that is the right call for this content: several of
+             * them are column-aligned tables, and wrapping "resources   what
+             * your game measures" would destroy the alignment that makes it
+             * readable. WCAG 1.4.10 allows exactly that -- content requiring a
+             * two-dimensional layout.
+             *
+             * What it does not allow is a region you can only scroll with a
+             * mouse. axe found one long example at an 800px viewport
+             * (`scrollable-region-focusable`, serious): the end of the line was
+             * unreachable from the keyboard, and at a larger text size that is
+             * true of most of them.
+             *
+             * Every example is focusable, not only the ones that currently
+             * overflow. Whether one overflows depends on the window width and
+             * the player's text size and changes under both, so a conditional
+             * `tabindex` would be a control that is sometimes there -- and this
+             * project has been caught more than once by a rule that quietly
+             * became a no-op. The cost is one tab stop per example, on content a
+             * keyboard user wants to reach anyway in order to copy it.
+             */
+            pre.tabIndex = 0;
+            /*
+             * `role="group"` rather than a bare label: ARIA prohibits naming an
+             * element with the generic role, so `aria-label` on a plain <pre>
+             * would be dropped by some screen readers and flagged by axe as a
+             * prohibited attribute -- trading one violation for another.
+             *
+             * `group` over `region` because `region` is a landmark, and a help
+             * article with eight examples would add eight landmarks to a
+             * document where they mean nothing.
+             */
+            pre.setAttribute("role", "group");
+            pre.setAttribute(
+                "aria-label",
+                section.heading ? "Example: " + section.heading : "Example"
+            );
             block.appendChild(pre);
         }
 
@@ -1546,8 +1587,24 @@
                 // Focus stays inside while the overlay is open. Without this,
                 // Tab walks into the interface behind it, where a screen-reader
                 // user can operate controls they cannot see.
+                /*
+                 * `[tabindex='0']` is in the list because the examples are.
+                 *
+                 * The selector named the three kinds of focusable element help
+                 * happened to contain, which is a list that goes stale the
+                 * moment anything is added -- and it just did. An example that
+                 * sits after the last button in the DOM would have been skipped
+                 * entirely: Tab from that button matched `last` and wrapped
+                 * straight back to `first`, past the thing it should have
+                 * reached next.
+                 *
+                 * A focus trap whose idea of "focusable" is narrower than the
+                 * browser's does not trap focus, it loses it.
+                 */
                 var focusable = Array.prototype.slice.call(
-                    panel.querySelectorAll("button, input, [tabindex='-1']")
+                    panel.querySelectorAll(
+                        "button, input, [tabindex='-1'], [tabindex='0']"
+                    )
                 ).filter(function (element) { return element.offsetParent !== null; });
                 if (!focusable.length) {
                     return;

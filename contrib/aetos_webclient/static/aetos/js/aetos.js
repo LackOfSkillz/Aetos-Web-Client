@@ -1115,6 +1115,58 @@
             });
 
             /*
+             * Game output reaches the announcer.  A14.
+             *
+             * THIS WAS MISSING, and it is the most serious defect this project
+             * has shipped. Gary: *"when I turn screen reader on and then go back
+             * to the game and type look nothing is read to me."*
+             *
+             * Everything needed for it existed. The pipeline has had an
+             * `announce` stage since E0 and `events/pipeline.js` even carries a
+             * comment about the console being "still announced if the player's
+             * announcement settings" allow. The announcer has categories,
+             * per-category preferences, priorities, flood control and review
+             * mode. `screenReader.announceRoom` has defaulted to `true` since
+             * A0. The two live regions are in the template.
+             *
+             * Nothing connected them. The only observer of the `announce` stage
+             * was the capture recorder, so **no game text was ever announced**,
+             * and the console is deliberately `aria-live="off"` -- so a screen
+             * reader user got silence. Measured: emit a line of game text, and
+             * the polite region still held the previous message.
+             *
+             * The console's `aria-live="off"` is right and stays. `role="log"`
+             * carries an implicit polite region that would speak every line
+             * including combat spam, with no categories, no thresholds and no
+             * flood control. The announcer exists to make those decisions; it
+             * was simply never given anything to decide about.
+             *
+             * No filtering here, deliberately. Category, priority, per-category
+             * preferences, quiet mode, review mode and burst aggregation are all
+             * the announcer's job, and a second opinion in this file is how two
+             * places come to disagree about what a player asked for.
+             */
+            pipeline.observe("announce", function (event) {
+                if (!announcer) {
+                    return;
+                }
+                /*
+                 * The plain text, never the markup -- a screen reader must not
+                 * read span tags aloud. Falls back to the original only when
+                 * normalize produced nothing, which is the same string for an
+                 * event that carried no markup in the first place.
+                 */
+                var spoken = event.plainText || event.text || "";
+                if (!spoken || !String(spoken).trim()) {
+                    return;
+                }
+                announcer.announce(String(spoken), {
+                    category: event.category || "other",
+                    priority: event.priority || null
+                });
+            });
+
+            /*
              * Capture observes the announce stage.  E1.
              *
              * Last, so a capture records what the client actually decided --
@@ -1122,6 +1174,9 @@
              * transport instead would capture what arrived rather than what the
              * client made of it, and the bugs worth reproducing live in the
              * second thing.
+             *
+             * Registered after the announcer for the same reason: what the
+             * client decided includes whether it spoke.
              */
             if (capture) {
                 pipeline.observe("announce", function (event) {

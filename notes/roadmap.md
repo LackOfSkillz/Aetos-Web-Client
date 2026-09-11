@@ -119,8 +119,177 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M29  Compatibility matrix
 [~] M30  Accessibility review  -- WITHDRAWN, see Addendum A below
 [ ] M31  Release candidate
-[ ] M32  Upstream PR
-[ ] M33  Voice input + speech accessibility        <-- NEW in rev 2
+[x] D4   Static AST discovery -- 2026-09-11
+         The rest of B.23's patterns: AttributeProperty declarations,
+         reads (weaker than assignments, and said so), Command
+         classes as actions (always LOW -- source says the class
+         exists, not that a character has it), and handler calls
+         recognised in order to be REFUSED with provider advice.
+         Ceilings per B.53/B.56 -- files, file size, total bytes,
+         AST nodes -- each naming what was left out rather than
+         truncating silently. A source file whose NAME looks like a
+         credential is skipped unread.
+         add_action now keeps the stronger claim: static runs first,
+         so its LOW would have beaten the live command set's MEDIUM.
+         LAB FOUND: `self.args` and `self.caller` reported as game
+         handlers with advice to write a provider for them -- inside
+         a Command, `self` is the command. Fixed twice over (scoped
+         walk + Evennia's own member names), and the mutation check
+         showed the overlap honestly.
+         1679 -> 1708 py. See notes/d4-static-discovery.md.
+
+[x] D3   Runtime + structural discovery -- 2026-09-11
+         Representative character (--character, --typeclass with
+         subclasses), live values rendered without running their
+         code, HIGH/MEDIUM/LOW with reasons (LOW printed commented
+         out, per B.28), credentials refused by NAME before the
+         value is read (B.46), and a structural pass: lineage,
+         AttributeProperty, game handlers -> provider advice (B.66),
+         commands -> actions.
+         D0 BUG: every kind went into `resources`, so a text
+         attribute became a bar that never draws.
+         LAB FOUND: Evennia substitutes an empty `_CMDSET_ERROR`
+         set when a cmdset will not import, so discovery reported
+         a game with commands as having none -- the launcher does
+         not call evennia._init() before a Django command. Also:
+         a two-argument command offered as a target action, the
+         target's health offered as the player's, a pair "found"
+         from one reading. All four fixed.
+         MUTATION-CHECKED: 10 breakages, all caught -- after three
+         tests were found passing for the wrong reason, including a
+         credential test whose alarm the scan itself swallowed.
+         1606 -> 1679 py. See notes/d3-runtime-discovery.md.
+
+[x] A17  Applying the research to the a11y screens -- 2026-09-08
+         Gary, with screenshots at 175% text: "apply what you have
+         learned from our research and lets really make this
+         accessible, within great ui/ux practices."
+         The settings no longer take the whole screen (bounded to
+         half the viewport, scrolling its own overflow, and
+         focusable only WHILE it overflows -- Heydon's Data Tables
+         rule, since a tab stop that does nothing is a 2.4.3 fail).
+         The console frame now hugs its column: the 80ch cap was on
+         the contents while the border spanned the window.
+         SPECIFICITY BUG: focus mode's grid collapse was (0,2,0)
+         against the tablet template's (0,3,0), so it only worked
+         at sizes with no responsive template. Breakpoints are
+         measured in text, so 1600px at 175% is "tablet" -- leaving
+         a dead 339px column. My first fix was itself wrong: it
+         scoped through .aetos-root, but the attribute is on <html>.
+         Caught by re-measuring.
+         Tile names now composed with aria-labelledby from visible
+         text (aria-label is not translated, and cannot drift).
+         Summary chips lost their aria-label; the strip stands down
+         while the panel is open.
+         See notes/a17-applying-the-research.md.
+
+[x] A16  A backgrounded tab does not talk -- 2026-09-08
+         From research into Heydon Pickering's Notifications
+         article. A MUD sits in a background tab for hours and the
+         live region kept firing, so a screen reader reading
+         somebody's email was interrupted by a room description
+         from a game they were not playing.
+         Both regions take role="none"/aria-live="off" while
+         document.hidden, restored to their ORIGINAL attributes --
+         the two are not symmetrical and a hardcoded pair would
+         have given the urgent region an aria-live it never had.
+         Nothing is queued for replay. Speech is deliberately NOT
+         silenced: somebody using read-aloud has probably
+         backgrounded the tab in order to listen.
+         First version came back holding a stale line; found by
+         measuring. 380 -> 386 suite checks.
+         NOT built, and why: link-vs-text contrast (axe misses it,
+         but <a> is not on the sanitiser allowlist so game text
+         cannot produce a link at all).
+         See notes/a16-a-backgrounded-tab-does-not-talk.md.
+
+[x] A15  The client reads the game aloud -- 2026-09-07
+         Gary: "I have the reading turned on but it doesnt read
+         out loud" -- and, asked directly, "No, I turned the option
+         on in Aetos and expected it to speak."
+         The client was behaving as designed and the design was
+         wrong. Every accessibility decision assumed "announce"
+         means "hand it to assistive technology", so Aetos wrote to
+         a live region and said nothing itself. Silence for anyone
+         not running a screen reader -- which is most of the people
+         who want text read to them.
+         speech.js, on window.speechSynthesis: no dependency, no
+         CDN, nothing leaves the machine. A renderer of the
+         announcer's decisions, not a second channel. Off by
+         default; never detects a screen reader (A.72).
+         Fourth defect running that every gate called correct and
+         no person could use.
+         375 -> 380 suite checks.
+         See notes/a15-reading-the-game-aloud.md.
+
+[x] A14  Game output was never announced -- 2026-09-07
+         Gary: "when I turn screen reader on and then go back to
+         the game and type look nothing is read to me."
+         NO GAME OUTPUT HAS EVER BEEN ANNOUNCED. The pipeline's
+         `announce` stage has existed since E0; the announcer has
+         had categories, preferences, priorities and flood control
+         since A0; announceRoom has defaulted true throughout; the
+         console is deliberately aria-live="off". The only observer
+         of the announce stage was the capture recorder, so nothing
+         was ever handed to the announcer. Silence.
+         The browser suite's announce check ingested five lines and
+         asserted only that none reached the URGENT region -- true,
+         because none reached anywhere. A negative assertion is
+         satisfied by nothing happening at all.
+         Fixed with 30 lines of wiring and no new policy.
+         371 -> 373 suite checks.
+         See notes/a14-game-output-was-never-announced.md.
+
+[x] A13  Tiles, drilling down, and a draggable slider -- 2026-09-07
+         Gary on the A12 panel: "theres no way to get back once you
+         pick one... the text size slider is janky... once options
+         are selected I dont see them on the main screen."
+         Four defects, all real. The slider destroyed the element
+         being dragged on the first pixel of movement -- measured
+         counterfactually at 2 distinct values across a twelve-step
+         drag, moving BACKWARDS, focus lost. No gate could see it:
+         axe, the tree, the keyboard walk and NVDA all passed a
+         control no mouse could use. Second time this project has
+         met that shape after A0's scrolling region.
+         Panel is now hub-of-tiles plus a detail screen per setting,
+         with three ways back, and a strip showing what is in use
+         with the panel closed.
+         New `dragging` check: 368 -> 371 suite checks.
+         See notes/a13-tiles-and-drilling-down.md.
+
+[x] A12  Accessible UI/UX research and rebuild -- 2026-09-07
+         Gary, with every gate green: "this doesnt feel accessible
+         to me... we are way off the mark". He was right. Every
+         check we owned measured machine-readable correctness;
+         nothing measured legibility, density or effort.
+         Accessible mode and standard mode rendered BYTE-IDENTICAL,
+         because the mode masks preferences and every governed
+         preference defaults to its standard value.
+         Five starting points asked once; two typefaces; options
+         grouped four-and-fewer; a 24px target floor on every
+         pointer; the reading line bounded at 84 characters.
+         New `legibility` check: 288 -> 368 suite checks.
+         See notes/a12-accessible-ux-research.md.
+
+[x] M32  Upstream PR -- READY FOR REVIEW 2026-09-11
+         Re-opened after A12-A17 landed, at ce83a1e24: 1606 py
+         tests and 386 suite checks re-run on that exact head
+         first. Description's counts were stale (1541/368) and
+         were corrected before it left draft.
+         Was: OPEN AS DRAFT 2026-09-07
+         evennia/evennia#3981, opened 154 files / +54,980, then
+         converted to draft the same day so A12 lands before any
+         reviewer reads it cold. Nobody had commented.
+         Opened from LackOfSkillz/evennia feature/aetos-webclient.
+         Merging is Evennia's decision, not ours: their guidelines
+         say a contrib PR is reviewed and may go through several
+         iterations, and that not all PRs can be accepted.
+         The description states what is NOT validated -- braille,
+         AAC, JAWS, Orca -- and does not claim voice.
+[ ] M33  Voice input + speech accessibility
+         CONFIRMED after M32 (Gary, 2026-09-06). The PR description
+         must therefore not claim voice control -- blueprint s.76
+         lists it, and the first submission will not have it.        <-- NEW in rev 2
 ```
 
 ### Note on M33's position
@@ -625,13 +794,213 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
 [~] A8   Assistive-technology validation                -- 1249 py
          automated half DONE (axe x12 views, reflow, contrast);
          found a row of controls unreachable at 320px since M4.
-         Human half BLOCKED: braille tester + AAC reviewer
-         (questions.md 3). Scripts ready: docs/a8-tester-protocol.md
+         Human half is NOT blocked on people (Gary, 2026-09-06:
+         "get it as ready for testing as we are able to... before
+         I ask her to test"). READINESS PASS DONE, 2026-09-06:
+         qa-a8-readiness.js walks every task in the protocol --
+         38 ok, 0 FAIL, 13 need a session, 13 need a person.
+         Found setMode("standard") turning accessible mode ON, and
+         a QA harness reporting layout measured at 0x0. The keyboard
+         path is now walked (33 named stops) rather than assumed.
+         Outstanding: one pass over the 13 needs-session tasks with
+         a logged-in character -- needs somebody who can log in.
+         `npm run a11y` now runs the whole suite -- 8 checks over a
+         viewport/scale/mode matrix, 160 ok. Adds the computed a11y
+         tree, keyboard operation, live-region assertions, forced
+         colours, WCAG 1.4.10 at 320px, and focus stability.
+         Next: Guidepup driving real NVDA (approved, not built).
+         See notes/a11y-suite.md, notes/a8-readiness-pass.md,
+         docs/a8-tester-protocol.md
 [~] M30  WITHDRAWN -- superseded by the A-track (A.106)
 [~] M31  Release candidate  -- audit done, 1243 py; NOT releasable:
          A8 is the only blocker and it needs people, not code
-[ ] M32  Upstream PR
+[x] UI1  One frame, one scrollbar (Gary's change order)
+         (composer into the console frame; the scroll maze had four
+         causes and only one was scrollbars -- the breakpoints were
+         in pixels, and pixels do not know the text got bigger)
+[x] D0   Discovery architecture spike
+         (`evennia aetos discover` needs nothing from Evennia;
+         the binding grammar shipped accepting `db.__class__`,
+         because a dunder is an identifier -- caught by its own test)
+[x] D1   Safe AETOS_BINDINGS foundation
+         (a health bar from a settings block, no class anywhere;
+         the second level is a dict lookup, never getattr, and the
+         security tests use an object that records being touched)
+[x] D2   Declarative provider suite
+         (all five slots; equality after the normaliser is the gate,
+         and an `order` field that would have done nothing was cut
+         before it shipped)
+[x] D4   Static AST discovery -- 2026-09-11
+         The rest of B.23's patterns: AttributeProperty declarations,
+         reads (weaker than assignments, and said so), Command
+         classes as actions (always LOW -- source says the class
+         exists, not that a character has it), and handler calls
+         recognised in order to be REFUSED with provider advice.
+         Ceilings per B.53/B.56 -- files, file size, total bytes,
+         AST nodes -- each naming what was left out rather than
+         truncating silently. A source file whose NAME looks like a
+         credential is skipped unread.
+         add_action now keeps the stronger claim: static runs first,
+         so its LOW would have beaten the live command set's MEDIUM.
+         LAB FOUND: `self.args` and `self.caller` reported as game
+         handlers with advice to write a provider for them -- inside
+         a Command, `self` is the command. Fixed twice over (scoped
+         walk + Evennia's own member names), and the mutation check
+         showed the overlap honestly.
+         1679 -> 1708 py. See notes/d4-static-discovery.md.
+
+[x] D3   Runtime + structural discovery -- 2026-09-11
+         Representative character (--character, --typeclass with
+         subclasses), live values rendered without running their
+         code, HIGH/MEDIUM/LOW with reasons (LOW printed commented
+         out, per B.28), credentials refused by NAME before the
+         value is read (B.46), and a structural pass: lineage,
+         AttributeProperty, game handlers -> provider advice (B.66),
+         commands -> actions.
+         D0 BUG: every kind went into `resources`, so a text
+         attribute became a bar that never draws.
+         LAB FOUND: Evennia substitutes an empty `_CMDSET_ERROR`
+         set when a cmdset will not import, so discovery reported
+         a game with commands as having none -- the launcher does
+         not call evennia._init() before a Django command. Also:
+         a two-argument command offered as a target action, the
+         target's health offered as the player's, a pair "found"
+         from one reading. All four fixed.
+         MUTATION-CHECKED: 10 breakages, all caught -- after three
+         tests were found passing for the wrong reason, including a
+         credential test whose alarm the scan itself swallowed.
+         1606 -> 1679 py. See notes/d3-runtime-discovery.md.
+
+[x] A17  Applying the research to the a11y screens -- 2026-09-08
+         Gary, with screenshots at 175% text: "apply what you have
+         learned from our research and lets really make this
+         accessible, within great ui/ux practices."
+         The settings no longer take the whole screen (bounded to
+         half the viewport, scrolling its own overflow, and
+         focusable only WHILE it overflows -- Heydon's Data Tables
+         rule, since a tab stop that does nothing is a 2.4.3 fail).
+         The console frame now hugs its column: the 80ch cap was on
+         the contents while the border spanned the window.
+         SPECIFICITY BUG: focus mode's grid collapse was (0,2,0)
+         against the tablet template's (0,3,0), so it only worked
+         at sizes with no responsive template. Breakpoints are
+         measured in text, so 1600px at 175% is "tablet" -- leaving
+         a dead 339px column. My first fix was itself wrong: it
+         scoped through .aetos-root, but the attribute is on <html>.
+         Caught by re-measuring.
+         Tile names now composed with aria-labelledby from visible
+         text (aria-label is not translated, and cannot drift).
+         Summary chips lost their aria-label; the strip stands down
+         while the panel is open.
+         See notes/a17-applying-the-research.md.
+
+[x] A16  A backgrounded tab does not talk -- 2026-09-08
+         From research into Heydon Pickering's Notifications
+         article. A MUD sits in a background tab for hours and the
+         live region kept firing, so a screen reader reading
+         somebody's email was interrupted by a room description
+         from a game they were not playing.
+         Both regions take role="none"/aria-live="off" while
+         document.hidden, restored to their ORIGINAL attributes --
+         the two are not symmetrical and a hardcoded pair would
+         have given the urgent region an aria-live it never had.
+         Nothing is queued for replay. Speech is deliberately NOT
+         silenced: somebody using read-aloud has probably
+         backgrounded the tab in order to listen.
+         First version came back holding a stale line; found by
+         measuring. 380 -> 386 suite checks.
+         NOT built, and why: link-vs-text contrast (axe misses it,
+         but <a> is not on the sanitiser allowlist so game text
+         cannot produce a link at all).
+         See notes/a16-a-backgrounded-tab-does-not-talk.md.
+
+[x] A15  The client reads the game aloud -- 2026-09-07
+         Gary: "I have the reading turned on but it doesnt read
+         out loud" -- and, asked directly, "No, I turned the option
+         on in Aetos and expected it to speak."
+         The client was behaving as designed and the design was
+         wrong. Every accessibility decision assumed "announce"
+         means "hand it to assistive technology", so Aetos wrote to
+         a live region and said nothing itself. Silence for anyone
+         not running a screen reader -- which is most of the people
+         who want text read to them.
+         speech.js, on window.speechSynthesis: no dependency, no
+         CDN, nothing leaves the machine. A renderer of the
+         announcer's decisions, not a second channel. Off by
+         default; never detects a screen reader (A.72).
+         Fourth defect running that every gate called correct and
+         no person could use.
+         375 -> 380 suite checks.
+         See notes/a15-reading-the-game-aloud.md.
+
+[x] A14  Game output was never announced -- 2026-09-07
+         Gary: "when I turn screen reader on and then go back to
+         the game and type look nothing is read to me."
+         NO GAME OUTPUT HAS EVER BEEN ANNOUNCED. The pipeline's
+         `announce` stage has existed since E0; the announcer has
+         had categories, preferences, priorities and flood control
+         since A0; announceRoom has defaulted true throughout; the
+         console is deliberately aria-live="off". The only observer
+         of the announce stage was the capture recorder, so nothing
+         was ever handed to the announcer. Silence.
+         The browser suite's announce check ingested five lines and
+         asserted only that none reached the URGENT region -- true,
+         because none reached anywhere. A negative assertion is
+         satisfied by nothing happening at all.
+         Fixed with 30 lines of wiring and no new policy.
+         371 -> 373 suite checks.
+         See notes/a14-game-output-was-never-announced.md.
+
+[x] A13  Tiles, drilling down, and a draggable slider -- 2026-09-07
+         Gary on the A12 panel: "theres no way to get back once you
+         pick one... the text size slider is janky... once options
+         are selected I dont see them on the main screen."
+         Four defects, all real. The slider destroyed the element
+         being dragged on the first pixel of movement -- measured
+         counterfactually at 2 distinct values across a twelve-step
+         drag, moving BACKWARDS, focus lost. No gate could see it:
+         axe, the tree, the keyboard walk and NVDA all passed a
+         control no mouse could use. Second time this project has
+         met that shape after A0's scrolling region.
+         Panel is now hub-of-tiles plus a detail screen per setting,
+         with three ways back, and a strip showing what is in use
+         with the panel closed.
+         New `dragging` check: 368 -> 371 suite checks.
+         See notes/a13-tiles-and-drilling-down.md.
+
+[x] A12  Accessible UI/UX research and rebuild -- 2026-09-07
+         Gary, with every gate green: "this doesnt feel accessible
+         to me... we are way off the mark". He was right. Every
+         check we owned measured machine-readable correctness;
+         nothing measured legibility, density or effort.
+         Accessible mode and standard mode rendered BYTE-IDENTICAL,
+         because the mode masks preferences and every governed
+         preference defaults to its standard value.
+         Five starting points asked once; two typefaces; options
+         grouped four-and-fewer; a 24px target floor on every
+         pointer; the reading line bounded at 84 characters.
+         New `legibility` check: 288 -> 368 suite checks.
+         See notes/a12-accessible-ux-research.md.
+
+[x] M32  Upstream PR -- READY FOR REVIEW 2026-09-11
+         Re-opened after A12-A17 landed, at ce83a1e24: 1606 py
+         tests and 386 suite checks re-run on that exact head
+         first. Description's counts were stale (1541/368) and
+         were corrected before it left draft.
+         Was: OPEN AS DRAFT 2026-09-07
+         evennia/evennia#3981, opened 154 files / +54,980, then
+         converted to draft the same day so A12 lands before any
+         reviewer reads it cold. Nobody had commented.
+         Opened from LackOfSkillz/evennia feature/aetos-webclient.
+         Merging is Evennia's decision, not ours: their guidelines
+         say a contrib PR is reviewed and may go through several
+         iterations, and that not all PRs can be accepted.
+         The description states what is NOT validated -- braille,
+         AAC, JAWS, Orca -- and does not claim voice.
 [ ] M33  Voice input + speech accessibility
+         CONFIRMED after M32 (Gary, 2026-09-06). The PR description
+         must therefore not claim voice control -- blueprint s.76
+         lists it, and the first submission will not have it.
 ```
 
 ## Per-milestone gate, from here on
@@ -917,8 +1286,8 @@ D-track   developer integration            D0 next, independent
 [ ] D0   Discovery architecture spike           <-- next on the D-track
 [ ] D1   Safe AETOS_BINDINGS foundation
 [ ] D2   Declarative provider suite
-[ ] D3   Runtime + structural discovery
-[ ] D4   Static AST discovery
+[x] D3   Runtime + structural discovery      -- 1679 py, 2026-09-11
+[x] D4   Static AST discovery                -- 1708 py, 2026-09-11
 [ ] D5   Interactive setup wizard + generation
 [ ] D6   Hardening, docs and integration validation   (with M27, M28)
 ```
@@ -1218,7 +1587,173 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [ ] M21..M29
 [ ] A8   Assistive-technology validation
 [ ] M31  Release candidate
-[ ] M32  Upstream PR
+[x] D4   Static AST discovery -- 2026-09-11
+         The rest of B.23's patterns: AttributeProperty declarations,
+         reads (weaker than assignments, and said so), Command
+         classes as actions (always LOW -- source says the class
+         exists, not that a character has it), and handler calls
+         recognised in order to be REFUSED with provider advice.
+         Ceilings per B.53/B.56 -- files, file size, total bytes,
+         AST nodes -- each naming what was left out rather than
+         truncating silently. A source file whose NAME looks like a
+         credential is skipped unread.
+         add_action now keeps the stronger claim: static runs first,
+         so its LOW would have beaten the live command set's MEDIUM.
+         LAB FOUND: `self.args` and `self.caller` reported as game
+         handlers with advice to write a provider for them -- inside
+         a Command, `self` is the command. Fixed twice over (scoped
+         walk + Evennia's own member names), and the mutation check
+         showed the overlap honestly.
+         1679 -> 1708 py. See notes/d4-static-discovery.md.
+
+[x] D3   Runtime + structural discovery -- 2026-09-11
+         Representative character (--character, --typeclass with
+         subclasses), live values rendered without running their
+         code, HIGH/MEDIUM/LOW with reasons (LOW printed commented
+         out, per B.28), credentials refused by NAME before the
+         value is read (B.46), and a structural pass: lineage,
+         AttributeProperty, game handlers -> provider advice (B.66),
+         commands -> actions.
+         D0 BUG: every kind went into `resources`, so a text
+         attribute became a bar that never draws.
+         LAB FOUND: Evennia substitutes an empty `_CMDSET_ERROR`
+         set when a cmdset will not import, so discovery reported
+         a game with commands as having none -- the launcher does
+         not call evennia._init() before a Django command. Also:
+         a two-argument command offered as a target action, the
+         target's health offered as the player's, a pair "found"
+         from one reading. All four fixed.
+         MUTATION-CHECKED: 10 breakages, all caught -- after three
+         tests were found passing for the wrong reason, including a
+         credential test whose alarm the scan itself swallowed.
+         1606 -> 1679 py. See notes/d3-runtime-discovery.md.
+
+[x] A17  Applying the research to the a11y screens -- 2026-09-08
+         Gary, with screenshots at 175% text: "apply what you have
+         learned from our research and lets really make this
+         accessible, within great ui/ux practices."
+         The settings no longer take the whole screen (bounded to
+         half the viewport, scrolling its own overflow, and
+         focusable only WHILE it overflows -- Heydon's Data Tables
+         rule, since a tab stop that does nothing is a 2.4.3 fail).
+         The console frame now hugs its column: the 80ch cap was on
+         the contents while the border spanned the window.
+         SPECIFICITY BUG: focus mode's grid collapse was (0,2,0)
+         against the tablet template's (0,3,0), so it only worked
+         at sizes with no responsive template. Breakpoints are
+         measured in text, so 1600px at 175% is "tablet" -- leaving
+         a dead 339px column. My first fix was itself wrong: it
+         scoped through .aetos-root, but the attribute is on <html>.
+         Caught by re-measuring.
+         Tile names now composed with aria-labelledby from visible
+         text (aria-label is not translated, and cannot drift).
+         Summary chips lost their aria-label; the strip stands down
+         while the panel is open.
+         See notes/a17-applying-the-research.md.
+
+[x] A16  A backgrounded tab does not talk -- 2026-09-08
+         From research into Heydon Pickering's Notifications
+         article. A MUD sits in a background tab for hours and the
+         live region kept firing, so a screen reader reading
+         somebody's email was interrupted by a room description
+         from a game they were not playing.
+         Both regions take role="none"/aria-live="off" while
+         document.hidden, restored to their ORIGINAL attributes --
+         the two are not symmetrical and a hardcoded pair would
+         have given the urgent region an aria-live it never had.
+         Nothing is queued for replay. Speech is deliberately NOT
+         silenced: somebody using read-aloud has probably
+         backgrounded the tab in order to listen.
+         First version came back holding a stale line; found by
+         measuring. 380 -> 386 suite checks.
+         NOT built, and why: link-vs-text contrast (axe misses it,
+         but <a> is not on the sanitiser allowlist so game text
+         cannot produce a link at all).
+         See notes/a16-a-backgrounded-tab-does-not-talk.md.
+
+[x] A15  The client reads the game aloud -- 2026-09-07
+         Gary: "I have the reading turned on but it doesnt read
+         out loud" -- and, asked directly, "No, I turned the option
+         on in Aetos and expected it to speak."
+         The client was behaving as designed and the design was
+         wrong. Every accessibility decision assumed "announce"
+         means "hand it to assistive technology", so Aetos wrote to
+         a live region and said nothing itself. Silence for anyone
+         not running a screen reader -- which is most of the people
+         who want text read to them.
+         speech.js, on window.speechSynthesis: no dependency, no
+         CDN, nothing leaves the machine. A renderer of the
+         announcer's decisions, not a second channel. Off by
+         default; never detects a screen reader (A.72).
+         Fourth defect running that every gate called correct and
+         no person could use.
+         375 -> 380 suite checks.
+         See notes/a15-reading-the-game-aloud.md.
+
+[x] A14  Game output was never announced -- 2026-09-07
+         Gary: "when I turn screen reader on and then go back to
+         the game and type look nothing is read to me."
+         NO GAME OUTPUT HAS EVER BEEN ANNOUNCED. The pipeline's
+         `announce` stage has existed since E0; the announcer has
+         had categories, preferences, priorities and flood control
+         since A0; announceRoom has defaulted true throughout; the
+         console is deliberately aria-live="off". The only observer
+         of the announce stage was the capture recorder, so nothing
+         was ever handed to the announcer. Silence.
+         The browser suite's announce check ingested five lines and
+         asserted only that none reached the URGENT region -- true,
+         because none reached anywhere. A negative assertion is
+         satisfied by nothing happening at all.
+         Fixed with 30 lines of wiring and no new policy.
+         371 -> 373 suite checks.
+         See notes/a14-game-output-was-never-announced.md.
+
+[x] A13  Tiles, drilling down, and a draggable slider -- 2026-09-07
+         Gary on the A12 panel: "theres no way to get back once you
+         pick one... the text size slider is janky... once options
+         are selected I dont see them on the main screen."
+         Four defects, all real. The slider destroyed the element
+         being dragged on the first pixel of movement -- measured
+         counterfactually at 2 distinct values across a twelve-step
+         drag, moving BACKWARDS, focus lost. No gate could see it:
+         axe, the tree, the keyboard walk and NVDA all passed a
+         control no mouse could use. Second time this project has
+         met that shape after A0's scrolling region.
+         Panel is now hub-of-tiles plus a detail screen per setting,
+         with three ways back, and a strip showing what is in use
+         with the panel closed.
+         New `dragging` check: 368 -> 371 suite checks.
+         See notes/a13-tiles-and-drilling-down.md.
+
+[x] A12  Accessible UI/UX research and rebuild -- 2026-09-07
+         Gary, with every gate green: "this doesnt feel accessible
+         to me... we are way off the mark". He was right. Every
+         check we owned measured machine-readable correctness;
+         nothing measured legibility, density or effort.
+         Accessible mode and standard mode rendered BYTE-IDENTICAL,
+         because the mode masks preferences and every governed
+         preference defaults to its standard value.
+         Five starting points asked once; two typefaces; options
+         grouped four-and-fewer; a 24px target floor on every
+         pointer; the reading line bounded at 84 characters.
+         New `legibility` check: 288 -> 368 suite checks.
+         See notes/a12-accessible-ux-research.md.
+
+[x] M32  Upstream PR -- READY FOR REVIEW 2026-09-11
+         Re-opened after A12-A17 landed, at ce83a1e24: 1606 py
+         tests and 386 suite checks re-run on that exact head
+         first. Description's counts were stale (1541/368) and
+         were corrected before it left draft.
+         Was: OPEN AS DRAFT 2026-09-07
+         evennia/evennia#3981, opened 154 files / +54,980, then
+         converted to draft the same day so A12 lands before any
+         reviewer reads it cold. Nobody had commented.
+         Opened from LackOfSkillz/evennia feature/aetos-webclient.
+         Merging is Evennia's decision, not ours: their guidelines
+         say a contrib PR is reviewed and may go through several
+         iterations, and that not all PRs can be accepted.
+         The description states what is NOT validated -- braille,
+         AAC, JAWS, Orca -- and does not claim voice.
 [ ] M33  Voice input
 ```
 

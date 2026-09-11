@@ -185,6 +185,82 @@ class TestHelpAccessibility(TestCase):
         self.assertIn('event.key === "Escape"', HELP)
 
 
+class TestExamplesCanBeScrolledWithoutAMouse(TestCase):
+    """
+    Found by running the axe gate at 800x600 rather than at 1280x800, which is
+    the only viewport it had ever been run at.
+
+    An example is `white-space: pre` and scrolls sideways instead of wrapping,
+    and that is right for this content: several of them are column-aligned
+    tables, and wrapping "resources   what your game measures" would destroy the
+    alignment that makes it readable. WCAG 1.4.10 allows exactly that -- content
+    requiring a two-dimensional layout. What it does not allow is a region only a
+    mouse can scroll, which is what `scrollable-region-focusable` reported.
+
+    """
+
+    def test_an_example_is_focusable(self):
+        self.assertIn("pre.tabIndex = 0", HELP)
+
+    def test_every_example_is_focusable_rather_than_the_overflowing_ones(self):
+        """
+        Whether an example overflows depends on the window width and the
+        player's text size, and changes under both. A `tabindex` set from a
+        measurement is a control that is sometimes there -- which is the shape of
+        defect this project keeps finding, and it would be invisible at the
+        width whoever wrote it happened to be using.
+
+        """
+        block = HELP[HELP.index("if (section.example)") :][:900]
+        self.assertNotIn("scrollWidth", block)
+        self.assertNotIn("clientWidth", block)
+
+    def test_it_is_named_so_the_focus_stop_means_something(self):
+        self.assertIn('"aria-label"', HELP)
+        self.assertIn('"Example: " + section.heading', HELP)
+
+    def test_the_name_is_carried_by_a_role_that_may_be_named(self):
+        """
+        ARIA prohibits naming an element with the generic role, so `aria-label`
+        on a plain `<pre>` is dropped by some screen readers and flagged by axe
+        as a prohibited attribute -- one violation traded for another.
+
+        `group` rather than `region` because `region` is a landmark, and an
+        article with eight examples would add eight landmarks that mean nothing.
+
+        """
+        self.assertIn('pre.setAttribute("role", "group")', HELP)
+
+    def test_a_focus_stop_is_visible_when_it_is_focused(self):
+        css = (Path(AETOS_STATIC_DIR) / "aetos" / "css" / "aetos.css").read_text(encoding="utf-8")
+        self.assertIn(".aetos-help__example:focus-visible", css)
+
+
+class TestTheFocusTrapKnowsWhatIsFocusable(TestCase):
+    """
+    The defect the change above would otherwise have introduced.
+
+    The trap listed the three kinds of focusable element help happened to
+    contain -- `button, input, [tabindex='-1']` -- which is a list that goes
+    stale the moment anything is added, and something just was. An example
+    sitting after the last button would have been skipped entirely: Tab from that
+    button matched `last` and wrapped straight back to `first`, past the thing it
+    should have reached next.
+
+    A focus trap whose idea of "focusable" is narrower than the browser's does
+    not trap focus, it loses it.
+
+    """
+
+    def test_elements_made_focusable_with_tabindex_are_included(self):
+        self.assertIn("[tabindex='0']", HELP)
+
+    def test_the_trap_still_covers_what_it_covered_before(self):
+        block = HELP[HELP.index("var focusable = Array.prototype.slice.call") :][:400]
+        for expected in ("button", "input", "[tabindex='-1']"):
+            self.assertIn(expected, block)
+
+
 class TestHelpRendersAsText(TestCase):
     """
     Help content is authored in this file rather than supplied by a game, but it

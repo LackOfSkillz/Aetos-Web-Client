@@ -18,7 +18,10 @@ from pathlib import Path
 
 from django.test import TestCase
 
-from evennia.contrib.base_systems.aetos_webclient import AETOS_STATIC_DIR, AETOS_TEMPLATE_DIR
+from evennia.contrib.base_systems.aetos_webclient import (
+    AETOS_STATIC_DIR,
+    AETOS_TEMPLATE_DIR,
+)
 
 JS_DIR = Path(AETOS_STATIC_DIR) / "aetos" / "js"
 A11Y_DIR = JS_DIR / "accessibility"

@@ -12,7 +12,12 @@ Aetos adds no path that could bypass the command parser, locks or permissions.
 
 """
 
-from evennia.contrib.base_systems.aetos_webclient import manifest, protocol, providers, state
+from evennia.contrib.base_systems.aetos_webclient import (
+    manifest,
+    protocol,
+    providers,
+    state,
+)
 from evennia.utils import logger
 
 

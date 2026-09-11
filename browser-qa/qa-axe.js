@@ -26,6 +26,29 @@
  * attempted fix for it -- a role that orphaned fifteen list items. Neither
  * shows up in a screenshot.
  *
+ * ONE VIEWPORT IS NOT A PASS.
+ *
+ * This gate was run at 1280x800 and only at 1280x800 for its whole life, and it
+ * came back clean every time. Re-run at 800x600 it immediately found a serious
+ * violation the wide run could not see: a help example long enough to overflow
+ * its column becomes a scroll region, and it had no way to be scrolled from the
+ * keyboard.
+ *
+ * That is the general shape, not a one-off. Every rule about overflow, reflow
+ * and target size depends on how much room there is, so a result is only ever a
+ * result *for the viewport it was measured at* -- which is why the viewport is
+ * now recorded in the results rather than left to whoever remembers.
+ *
+ * Run it at least at:
+ *
+ *     1280x800   the desktop layout, three columns
+ *      800x600   the tablet layout, and where the overlays get tight
+ *      390x844   a phone, where the side regions become swipeable strips
+ *
+ * and, because the client's breakpoints are measured in text rather than
+ * pixels (UI1), a pass at 1280x800 with the text size at 200% is a fourth view
+ * and not a repeat of the first.
+ *
  * RUNTIME. Six full axe passes take well over half a minute, which exceeds the
  * evaluation timeout of some browser-automation harnesses. If the whole suite
  * times out, run `scan()` for one view at a time -- the results are identical,
@@ -35,7 +58,22 @@
 (async function aetosAxeQa() {
     "use strict";
 
-    var results = { passed: 0, failed: 0, failures: [] };
+    /*
+     * The viewport and text size are part of the result, not context somebody is
+     * expected to remember. A clean run says nothing about a width it was not
+     * measured at, and reading "passed: 13" with no idea which layout it passed
+     * in is how this gate stayed green through a serious violation.
+     */
+    var results = {
+        viewport: window.innerWidth + "x" + window.innerHeight,
+        textScale: (function () {
+            var root = document.querySelector(".aetos-root");
+            return root ? window.getComputedStyle(root).fontSize : "unknown";
+        }()),
+        passed: 0,
+        failed: 0,
+        failures: []
+    };
 
     function check(name, condition, detail) {
         if (condition) {

@@ -84,7 +84,25 @@
          * would make the toggle a thing you cannot afford to try.
          */
         shell: {
-            mode: "standard"
+            mode: "standard",
+
+            /*
+             * Which starting point the player took, if any.  A12.
+             *
+             * `null` means they have never been asked. That is the state the
+             * chooser exists for, and it is the whole reason this key is not
+             * simply "custom" by default: "not yet asked" and "asked, and chose
+             * to set it up themselves" are different, and only the first one
+             * should put a question in front of somebody.
+             *
+             * A preset is a **bulk write of ordinary preferences**, not a mode
+             * and not a layer. Once applied it is indistinguishable from having
+             * set those values by hand, which is what keeps `effective()` --
+             * the masking rule, the delicate part of A10 -- completely
+             * untouched by any of this. The name is kept only so the panel can
+             * show which one was taken.
+             */
+            preset: null
         },
 
         screenReader: {
@@ -101,6 +119,30 @@
             // information, it is noise with a number in it.
             announceResources: "thresholds",
             reviewModeBehavior: "pause-normal"
+        },
+
+        /*
+         * Aetos reading aloud, by itself.  A15.
+         *
+         * Distinct from everything in `screenReader` above, which describes what
+         * is handed to *your* assistive technology. This is the client's own
+         * voice, for the much larger group of people who want text read to them
+         * and do not run a screen reader.
+         *
+         * Off by default, and it must stay that way. A client that starts
+         * talking on load is alarming, and for somebody running a screen reader
+         * it would be two voices over each other. Aetos cannot detect a screen
+         * reader and must never try (A.72), so the only honest default is
+         * silence plus a clearly named control.
+         */
+        speech: {
+            enabled: false,
+            rate: 1.0,
+            volume: 1.0,
+            // The voice's name, or null for whatever the browser picks. A name
+            // rather than an index: voice lists differ between machines and an
+            // index would silently select a different voice on another one.
+            voice: null
         },
 
         braille: {
@@ -170,7 +212,26 @@
             // overrides it, in both directions -- a player may want motion the
             // operating system is suppressing.
             motion: "system",
-            stimulation: "standard"
+            stimulation: "standard",
+
+            /*
+             * The face the *shell* is set in.  A12.
+             *
+             * Game output is always monospace and is not affected: the server
+             * aligned it by counting characters. This is about the client's own
+             * prose -- labels, explanations, the accessibility panel's own 242
+             * words, all of which were monospaced until A12 because the whole
+             * client was.
+             *
+             * A preference rather than a decision because the evidence splits.
+             * Vision Australia and APA Style say avoid monospace for long
+             * passages; Rello and Baeza-Yates measured dyslexic readers and
+             * found monospace *improved* reading performance. Defaulting to
+             * proportional follows the larger body of low-vision guidance;
+             * `monospace` is here so that following it does not quietly cost
+             * the other group.
+             */
+            typeface: "proportional"
         },
 
         aac: {
@@ -290,7 +351,16 @@
             revertsInStandardMode: true,
             kind: "enum",
             label: "How much is announced",
-            detail: "What is spoken aloud or sent to a braille display."
+            /*
+             * A14b: this used to say "What is spoken aloud or sent to a braille
+             * display", which reads as a promise that Aetos speaks. It does not.
+             * It writes to a live region and a screen reader voices it, so with
+             * no screen reader running the setting appears to do nothing at all
+             * -- and the person most likely to be confused by that is somebody
+             * setting up assistive technology for the first time.
+             */
+            detail: "Passed to your screen reader or braille display, which "
+                + "reads it. Aetos does not speak by itself."
         },
         {
             path: "cognitive.quietMode",
@@ -335,6 +405,97 @@
             kind: "boolean",
             label: "Mute all sound",
             detail: "Captions stay on screen regardless."
+        },
+        {
+            path: "speech.enabled",
+            /*
+             * Not reverted by standard mode.
+             *
+             * Somebody who has asked the client to read to them has not asked
+             * for that to stop when they look at the standard interface, and
+             * silently muting it would be the same class of defect as quiet
+             * mode silencing the game.
+             */
+            revertsInStandardMode: false,
+            kind: "boolean",
+            label: "Read the game aloud",
+            detail: "Aetos reads new game text using your computer's own "
+                + "voice. Leave this off if you already use a screen reader, "
+                + "or you will hear everything twice."
+        },
+        {
+            path: "speech.rate",
+            revertsInStandardMode: false,
+            kind: "range",
+            label: "Reading speed",
+            detail: "How fast the game is read aloud. Only applies when "
+                + "reading aloud is on."
+        },
+        {
+            path: "visual.typeface",
+            /*
+             * Offered in both modes, for the same reason text size is: the
+             * shape of the letters is a basic property of a text interface
+             * rather than an accommodation somebody opts into.
+             */
+            revertsInStandardMode: false,
+            kind: "enum",
+            label: "Lettering",
+            detail: "Game text always keeps its fixed-width lettering so maps "
+                + "and tables line up. This is about the client's own words."
+        }
+    ];
+
+    /*
+     * How the options are grouped on screen.  A12.
+     *
+     * The panel used to render all eleven in one flat grid -- measured at five
+     * columns, 242 words and 53% of a 1080px screen, with the reading order
+     * zig-zagging across the full width. W3C's COGA guidance asks for no more
+     * than about seven options in any one section; this is four sections of
+     * four or fewer.
+     *
+     * Declared here rather than as a `section` key on each entry so that the
+     * grouping is legible in one place -- the question "is any section too
+     * long" should be answerable by looking, not by counting matching keys down
+     * a hundred-line list.
+     *
+     * An entry missing from every section still renders, under "More", so
+     * adding a preference and forgetting this list degrades to the old
+     * behaviour for one control rather than hiding it. A test enforces that the
+     * list is empty.
+     */
+    var SECTIONS = [
+        {
+            label: "Seeing",
+            paths: [
+                "visual.scale",
+                "visual.typeface",
+                "visual.contrast",
+                "visual.stimulation"
+            ]
+        },
+        {
+            label: "Movement and sound",
+            paths: ["visual.motion", "audio.muted"]
+        },
+        {
+            label: "Calm and focus",
+            paths: [
+                "cognitive.quietMode",
+                "cognitive.focusMode",
+                "cognitive.reorientEnabled"
+            ]
+        },
+        {
+            label: "Speech and other ways in",
+            paths: [
+                "speech.enabled",
+                "speech.rate",
+                "screenReader.announcementMode",
+                "aac.enabled",
+                "pointer.gestures"
+            ]
         }
     ];
 
@@ -365,6 +526,8 @@
     var SCALE_MAX = 2.5;
 
     var RANGES = {
+        "speech.rate": [0.5, 2.5],
+        "speech.volume": [0, 1],
         // The scale bounds by reference, not by repetition: an earlier draft
         // of this table wrote 2.0 here and silently narrowed a range that had
         // been 2.5 since A0.
@@ -379,6 +542,11 @@
 
     var ENUMS = {
         "shell.mode": ["standard", "accessible"],
+        "shell.preset": [
+            null, "low-vision", "calm", "screen-reader", "motor", "custom"
+        ],
+        "visual.typeface": ["proportional", "monospace"],
+        "speech.enabled": [true, false],
         "screenReader.announcementMode": ["selective", "all", "minimal"],
         "screenReader.announceResources": ["never", "thresholds", "always"],
         "screenReader.reviewModeBehavior": ["pause-normal", "pause-all", "pause-none"],
@@ -393,6 +561,127 @@
 
     //: Bounds on the one numeric setting, so a bad value cannot render the
     //: interface unreadably small or large.
+
+    /*
+     * Starting points.  A12.
+     *
+     * WHY THESE EXIST. Measured at A12, `accessible` mode and `standard` mode
+     * rendered **byte-identically**: same faces, same sizes, same everything.
+     * That is not a bug -- the mode masks preferences, and every governed
+     * preference defaults to its standard value, so by default there is nothing
+     * to mask. But it means the sequence for somebody who needs help was: find
+     * the switch, flip it, watch nothing happen, press Options, read 242 words
+     * across five columns, and make eleven decisions in a vocabulary nobody
+     * taught them -- and only then get an accessible client.
+     *
+     * Every step of that was correct in isolation. The sum put the entire
+     * configuration burden on the person least able to spend it, in the name of
+     * not presuming. W3C's COGA guidance asks for no more than about seven
+     * options in a section; we had eleven, before anything had been made easier.
+     *
+     * So: one question with five answers, asked once, instead of eleven
+     * questions asked immediately.
+     *
+     * WHAT A PRESET IS NOT. It is not a mode, a layer, or a lock. Applying one
+     * writes ordinary preferences, exactly as if they had been set by hand; the
+     * panel still shows every one of them and any can be changed afterwards.
+     * Nothing here reads a preset back, so there is no state to get out of sync
+     * and `effective()` never learns that presets exist.
+     *
+     * The names are what a person would call their own situation, not what a
+     * specification calls it. Somebody who cannot read small text knows that
+     * about themselves; they do not necessarily know the phrase "reduced
+     * stimulation".
+     */
+    var PRESETS = [
+        {
+            name: "low-vision",
+            label: "Hard to see small text",
+            detail: "Larger type, stronger borders, and less decoration "
+                + "competing with the words.",
+            values: {
+                visual: { scale: 1.5, contrast: "high", stimulation: "reduced" }
+            }
+        },
+        {
+            name: "calm",
+            label: "Too much going on",
+            detail: "A quieter screen with fewer interruptions and no "
+                + "movement. Nothing is lost -- it is all still in the log.",
+            values: {
+                visual: { motion: "reduced", stimulation: "minimal" },
+                cognitive: { quietMode: true, focusMode: true }
+            }
+        },
+        {
+            name: "screen-reader",
+            label: "I use a screen reader or braille display",
+            detail: "Announces what you chose rather than everything, and "
+                + "keeps orientation help on so you can always ask where you "
+                + "are.",
+            values: {
+                screenReader: { announcementMode: "selective" },
+                cognitive: { reorientEnabled: true },
+                visual: { stimulation: "reduced" }
+            }
+        },
+        {
+            name: "motor",
+            label: "Hard to click small things",
+            detail: "Bigger targets and text, and every gesture also has a "
+                + "keyboard command.",
+            values: {
+                visual: { scale: 1.25 },
+                pointer: { gestures: true }
+            }
+        },
+        {
+            /*
+             * Not an empty preset -- an answer.
+             *
+             * Recording "custom" is what stops the chooser asking again. A
+             * player who has decided to set things up themselves has answered
+             * the question, and being asked it every session would be the
+             * interruption this whole change exists to remove.
+             */
+            name: "custom",
+            label: "Let me choose each setting myself",
+            detail: "Opens the full list. Nothing is changed until you change "
+                + "it.",
+            values: {}
+        }
+    ];
+
+    /*
+     * Every preference any preset has an opinion about.  A14b.
+     *
+     * Derived from the table rather than listed beside it, so adding a value to
+     * a preset cannot forget to add it here -- which would bring back exactly
+     * the leftover-setting bug this exists to prevent.
+     */
+    var PRESET_KEYS = (function () {
+        var keys = [];
+        PRESETS.forEach(function (preset) {
+            Object.keys(preset.values).forEach(function (group) {
+                Object.keys(preset.values[group]).forEach(function (key) {
+                    var path = group + "." + key;
+                    if (keys.indexOf(path) === -1) {
+                        keys.push(path);
+                    }
+                });
+            });
+        });
+        return keys;
+    }());
+
+    function presetNamed(name) {
+        for (var i = 0; i < PRESETS.length; i++) {
+            if (PRESETS[i].name === name) {
+                return PRESETS[i];
+            }
+        }
+        return null;
+    }
 
     function clone(value) {
         return JSON.parse(JSON.stringify(value));
@@ -664,12 +953,70 @@
             };
         }
 
+        /*
+         * Take a starting point.  A12.
+         *
+         * One `update`, so subscribers see one change and the panel repaints
+         * once rather than eleven times. The preset name is recorded in the
+         * same write, which is what makes "have they been asked yet" a fact
+         * rather than a guess.
+         *
+         * An unknown name is refused rather than silently ignored: the only way
+         * to get one is a bug or a hand-edited profile, and quietly recording a
+         * preset that applied nothing would leave somebody looking at an
+         * unchanged client wondering what they had just chosen.
+         */
+        function applyPreset(name) {
+            var preset = presetNamed(name);
+            if (!preset) {
+                return Promise.resolve(get());
+            }
+
+            /*
+             * A starting point puts you at a known place.  A14b.
+             *
+             * Presets used to be purely additive: they wrote their own values
+             * and left everything else alone. Which means picking "Too much
+             * going on" and then "I use a screen reader" left `quietMode` on
+             * from the first -- and quiet mode silenced every line of game
+             * output, so the second preset produced a client that said nothing
+             * at all. Nobody chose that combination and nothing on screen
+             * explained it.
+             *
+             * So every key any preset touches is written on every apply: to the
+             * chosen preset's value, or back to its default. Switching starting
+             * points now means what it says, rather than accumulating the
+             * sediment of the ones before it.
+             *
+             * Only the keys presets touch. A preference somebody set by hand
+             * and no preset has an opinion about is theirs, and clearing it
+             * would make picking a starting point a destructive act.
+             */
+            var patch = {};
+            PRESET_KEYS.forEach(function (path) {
+                var parts = path.split(".");
+                patch[parts[0]] = patch[parts[0]] || {};
+                patch[parts[0]][parts[1]] = DEFAULTS[parts[0]][parts[1]];
+            });
+            Object.keys(preset.values).forEach(function (group) {
+                patch[group] = patch[group] || {};
+                Object.keys(preset.values[group]).forEach(function (key) {
+                    patch[group][key] = preset.values[group][key];
+                });
+            });
+
+            patch.shell = patch.shell || {};
+            patch.shell.preset = preset.name;
+            return update(patch);
+        }
+
         return {
             get: get,
             effective: effective,
             activeAccommodations: activeAccommodations,
             value: value,
             update: update,
+            applyPreset: applyPreset,
             reset: reset,
             load: load,
             subscribe: subscribe
@@ -707,6 +1054,10 @@
         ENUMS: ENUMS,
         RANGES: RANGES,
         GOVERNED: GOVERNED,
+        SECTIONS: SECTIONS,
+        PRESETS: PRESETS,
+        PRESET_KEYS: PRESET_KEYS,
+        presetNamed: presetNamed,
         UNCONDITIONAL: UNCONDITIONAL,
         VERSION: VERSION,
         DOC_ID: DOC_ID,

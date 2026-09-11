@@ -21,7 +21,11 @@ from django import template
 from django.conf import settings
 from django.templatetags.static import static
 
-from evennia.contrib.base_systems.aetos_webclient import AETOS_STATIC_DIR, constants, csp
+from evennia.contrib.base_systems.aetos_webclient import (
+    AETOS_STATIC_DIR,
+    constants,
+    csp,
+)
 
 register = template.Library()
 

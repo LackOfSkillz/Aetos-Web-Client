@@ -427,7 +427,32 @@ class TestAMalformedSettingCostsOnlyItself(TestCase):
         Contained in the sync, surfaced at the handshake -- so it is neither
         fatal nor silent.
 
+        **This test used to assert `AetosUIError` and was wrong about what that
+        meant.** It checked that `build_manifest` raised, and read that as "the
+        handshake reports it". The handshake catches `AetosManifestError` only,
+        and `AetosUIError` is a sibling rather than a subclass -- so what
+        actually happened was an unhandled exception leaving `aetos_hello`, and
+        every player connecting to a game with a mistyped `AETOS_UI` got a
+        connection that neither completed nor explained itself.
+
+        The intent was right and the assertion was one layer too low: it pinned
+        the mechanism instead of the outcome, so it went on passing while the
+        outcome was the opposite of its own docstring. `build_manifest` now
+        raises the type it has always documented, and
+        `test_inputfuncs.test_no_malformed_setting_escapes_the_handshake`
+        checks the outcome for every setting rather than for one.
+
         """
         with override_settings(AETOS_UI={"nonsense": True}):
-            with self.assertRaises(ui_manifest.AetosUIError):
+            with self.assertRaises(manifest.AetosManifestError):
                 manifest.build_manifest()
+
+    def test_the_message_survives_the_translation(self):
+        """
+        Re-raising must not cost the developer the sentence naming their typo.
+
+        """
+        with override_settings(AETOS_UI={"resources": "not a list"}):
+            with self.assertRaises(manifest.AetosManifestError) as caught:
+                manifest.build_manifest()
+        self.assertIn("AETOS_UI", str(caught.exception))

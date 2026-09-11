@@ -161,6 +161,7 @@ appear.
 | `AETOS_FEATURES` | Which structured subsystems your game exposes | below |
 | `AETOS_AUTOMATION` | What the client is permitted to offer players | below |
 | `AETOS_UI` | Names, order and announcement thresholds for your resources and panels, from settings alone | below |
+| `AETOS_BINDINGS` | Where a value lives, so a resource needs no provider class | [Bindings](#bindings----a-resource-bar-with-no-python-at-all) |
 | `AETOS_DIAGNOSTICS` | Whether the developer inspector and capture tools are available | below |
 | `AETOS_CSP` | Extra sources for the client page's Content-Security-Policy | [Security](#security) |
 
@@ -182,6 +183,11 @@ AETOS_AUTOMATION = {
 The client honours these. With `scripting` false, no scripting editor is offered
 at all. These are policy, not security: they shape the interface, while the server
 remains the thing that decides whether any command succeeds.
+
+**`voice` is reserved and nothing honours it yet.** Voice input is not built, so
+there is no spoken input for the flag to govern. It is in the defaults so that
+setting it is not an error and so the capability has its place, but setting it
+today changes nothing.
 
 ### Features
 
@@ -246,13 +252,128 @@ themselves have to come from somewhere Aetos cannot see.
 
 Aetos never scans or guesses your game model during play.
 
-> **Not yet built: bindings and discovery.** A future release is planned to add
-> `AETOS_BINDINGS`, declaring *where* a value lives rather than writing code to
-> fetch it, and a development-time helper that inspects a game and suggests
-> them. Neither exists today: nothing reads `AETOS_BINDINGS`, and setting it
-> does nothing at all. The design is in the project repository's Addendum B.
-> It is mentioned here only so that nobody plans around a setting that is not
-> there.
+### Bindings -- a resource bar with no Python at all
+
+If your game already keeps the value on the character, you do not need a provider
+class. Declare where it lives:
+
+```python
+AETOS_BINDINGS = {
+    "resources": {
+        "health": {"label": "Health", "value": "db.hp", "maximum": "db.hp_max"},
+    },
+}
+```
+
+That is the whole integration. No class, no import path, no file.
+
+A binding is a **path, not an expression**. Aetos reads `db.name`, or
+`db.name.child` for a key inside a dict you stored in an attribute, and nothing
+else -- no method calls, no indexing, no arithmetic. If a value has to be
+*computed*, that is what a provider is for. The restriction is deliberate: a
+setting that could compute would be a small programming language living in
+settings.py, and there would be no way back from the first "just this one
+exception".
+
+**A binding switches its own feature flag on.** You do not also have to set
+`AETOS_FEATURES = {"resources": True}` -- declaring the binding said that. If you
+set the flag explicitly it wins, in both directions, so `False` still turns the
+widget off.
+
+**Precedence is custom > binding > default.** A provider class you wrote always
+wins over a binding for the same slot, so migrating between them is never
+ambiguous.
+
+#### The other four slots
+
+`equipment`, `effects`, `target` and `actions` are declared the same way.
+
+```python
+AETOS_BINDINGS = {
+    "equipment": {
+        "weapon": {"label": "Weapon", "value": "db.gear.weapon"},
+        "head": {"label": "Head", "value": "db.gear.head"},
+    },
+    "effects": {
+        "poison": {"label": "Poisoned", "value": "db.poison",
+                   "remaining": "db.poison_left", "kind": "harmful"},
+    },
+    "target": {
+        "name": {"label": "Target", "value": "db.target_name"},
+        "health": {"label": "Health", "value": "db.target_hp",
+                   "maximum": "db.target_max"},
+    },
+    "actions": {
+        "attack": {"label": "Attack", "command": "attack {target}"},
+    },
+}
+```
+
+Each has one rule worth knowing:
+
+- **Equipment keeps its empty slots.** "Nothing on your head" is information a
+  player needs. (A resource that will not resolve is *dropped*, because that
+  means the game never had the number — a bar reading 0 would say something
+  false.)
+- **An effect is shown when its value is truthy**, so `True` and a stack count
+  both work. Zero is not active: a countdown that reached 0 has expired.
+- **`target` has one reserved key, `name`.** It supplies the target's identity;
+  every other entry becomes one of the target's resources, which go through the
+  same normaliser as your own — so the two bars cannot disagree about
+  thresholds or rounding. No name, no target.
+- **An action is a label and an ordinary command**, with `{target}` replaced by
+  the name of the entity whose menu was opened. Offering an action does not make
+  it legal: the command travels the ordinary command path and your server decides,
+  exactly as if the player had typed it.
+
+#### What a binding cannot do
+
+**Declare thresholds.** A resource with no thresholds is never announced, so a
+game that wants spoken announcements at meaningful crossings still needs
+`AETOS_UI` or a provider. That is a real limit of the zero-code path rather than
+an oversight.
+
+#### Finding what to bind
+
+```
+evennia aetos discover
+```
+
+reads your typeclass source -- parsed, never imported, so running it cannot have
+side effects -- the attributes of characters that already exist, and the
+Character typeclass and commands Evennia has loaded for them. In source it
+recognises `self.db.hp = 100`, `attributes.add("hp", 100)`,
+`hp = AttributeProperty(100)`, reads like `character.db.mana`, and your own
+`Command` classes. It prints a
+suggested `AETOS_BINDINGS` block with the evidence for every line. It changes
+nothing and never writes to your settings; you paste what you want.
+
+```
+evennia aetos discover --character #12
+```
+
+reads one character you choose instead of a sample of the newest. Worth doing:
+a character mid-way through your game carries what a fresh one does not.
+`--typeclass` samples a different typeclass, and its subclasses.
+
+Every suggestion is marked `HIGH`, `MEDIUM` or `LOW`, and says what was found,
+where, why it might matter, and what accepting it would put on screen. `LOW`
+entries are printed **commented out**, so pasting the block unchanged activates
+only what discovery could justify. A value and its ceiling are paired by
+structure -- `oxygen` with `oxygen_capacity`, `hull_integrity` with
+`hull_capacity` -- not from a list of fantasy stat names.
+
+It is bounded, and says when a bound was hit rather than truncating quietly: it
+will tell you how many files it did not scan, and name any file it skipped for
+being too large. A source file whose *name* looks like it holds credentials --
+`world/api_keys.py` -- is skipped without being read.
+
+Two things it deliberately will not do. Attributes whose names look like
+credentials (`password`, `token`, `api_key` and similar) are never read, printed
+or suggested; the report shows `<redacted>` in their place. And values behind a
+handler -- `character.stats.get("health")` -- are never turned into a binding,
+because a binding cannot call anything. Discovery names the handler and points
+you at a provider instead.
 
 ### Providers -- how to expose your game's data
 
