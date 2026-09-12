@@ -11,6 +11,31 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Changed — the integration path is taught in the right order (D6)
+
+The D-track is complete. This stage is mostly documentation and the tests that
+keep it honest.
+
+- **The README teaches four levels**, and most games stop at the second: nothing
+  at all, `AETOS_BINDINGS`, `AETOS_UI`, and a provider class only when a value
+  has to be calculated. Providers are now marked *advanced*; they used to be the
+  first thing offered.
+- **Runtime and tooling are separated**, in the addendum's own words: Aetos never
+  guesses your data model *during gameplay*, and the optional discovery tool
+  inspects your game *during development*.
+- **Fixed:** the in-client developer help showed the setup wizard's screen under
+  `evennia aetos discover`, which is the one-shot report, with labels that no
+  longer matched. Every `evennia aetos <command>` named in the README or the
+  in-client help is now checked against the commands that exist.
+- **New tests**: a pristine game yields nothing while its zero-configuration
+  providers keep working; a ship with `hull_integrity`, `oxygen` and
+  `reactor_output` pairs all three; 300 files stay inside the ceiling and say
+  what was skipped; every grammar refusal is a readable sentence naming the fix;
+  generated code is checked for the properties `black` would enforce; and
+  discovery is shown to add no models, no migrations and no writes.
+
+See [`notes/d6-hardening-and-docs.md`](notes/d6-hardening-and-docs.md).
+
 ### Added — a guided setup that tests a binding before you keep it (D5)
 
 `evennia aetos setup` walks the suggestions one at a time. It exists for one

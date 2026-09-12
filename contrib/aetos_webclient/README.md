@@ -242,15 +242,24 @@ file and replay it. Useful when a player reports something you cannot reproduce.
 
 ## Teaching Aetos about your game
 
-A stock Evennia game works without custom code. For anything more, you write
-a provider: a small class returning your data in the shape Aetos expects.
-That is the path that exists today, and the rest of this section describes it.
+There are four levels, and most games stop at the second.
 
-**Start with `AETOS_UI`** if all you want is to name, order and label what you
-already have -- it needs no code at all. Reach for a provider when the values
-themselves have to come from somewhere Aetos cannot see.
+| Level | What you write | When |
+|---|---|---|
+| 0 | nothing | a stock game already works: room, exits, people, items, inventory, map, movement |
+| 1 | `AETOS_BINDINGS` in settings | your game keeps a value on the character -- `db.hp`, `db.oxygen` -- and you want it on screen |
+| 2 | `AETOS_UI` in settings | you want to rename, reorder or set announcement thresholds for what you already have |
+| 3 | a provider class | the value has to be calculated, or lives somewhere a setting cannot name |
 
-Aetos never scans or guesses your game model during play.
+**Not sure what your game has?** `evennia aetos discover` reads it and suggests
+the bindings; `evennia aetos setup` walks you through them one at a time and
+reads each value off a live character so you see the number before you keep it.
+Neither changes anything -- see [Finding what to bind](#finding-what-to-bind).
+
+The Aetos Web Client never guesses, scans, or assumes your game's data model
+**during gameplay**. You explicitly bind game data to Aetos fields or supply a
+provider. The optional server-side Aetos Discovery tool can inspect your game
+**during development** and suggest those bindings for you.
 
 ### Bindings -- a resource bar with no Python at all
 
@@ -402,7 +411,12 @@ handler -- `character.stats.get("health")` -- are never turned into a binding,
 because a binding cannot call anything. Discovery names the handler and points
 you at a provider instead.
 
-### Providers -- how to expose your game's data
+### Providers -- advanced, for values a setting cannot name
+
+Reach for this when a binding cannot do the job: the value is calculated, comes
+from a handler you have to call, or is assembled from several places. If your
+game simply keeps it on the character, a binding is the shorter road and needs
+no Python at all.
 
 Aetos never assumes where you store anything:
 
