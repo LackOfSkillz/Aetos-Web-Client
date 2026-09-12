@@ -368,6 +368,33 @@ will tell you how many files it did not scan, and name any file it skipped for
 being too large. A source file whose *name* looks like it holds credentials --
 `world/api_keys.py` -- is skipped without being read.
 
+### The guided version
+
+```
+evennia aetos setup
+```
+
+walks the same suggestions one at a time, and does the thing a printed report
+cannot: it **reads each expression off a live character and shows you the
+number** before asking whether to keep it. A binding that resolves to nothing
+looks exactly like a correct one until you have a browser open and a bar
+missing.
+
+For each candidate you can accept it, edit it (a label or an expression, without
+editing Python), ignore it, or ask it to explain itself. At the end it writes
+what you accepted to `aetos-discovery/`:
+
+```
+aetos-discovery/
+├── report.txt               what was read, accepted, ignored and warned about
+├── suggested_bindings.py    the accepted candidates, ready to paste
+└── suggested_provider.py    only when a binding genuinely cannot reach a value
+```
+
+Nothing in that directory is imported by anything, and your `settings.py` is
+never touched -- you copy across what you want. Quitting part-way writes
+nothing.
+
 Two things it deliberately will not do. Attributes whose names look like
 credentials (`password`, `token`, `api_key` and similar) are never read, printed
 or suggested; the report shows `<redacted>` in their place. And values behind a

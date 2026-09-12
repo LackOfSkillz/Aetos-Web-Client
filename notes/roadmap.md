@@ -119,6 +119,30 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M29  Compatibility matrix
 [~] M30  Accessibility review  -- WITHDRAWN, see Addendum A below
 [ ] M31  Release candidate
+[x] D5   Setup wizard and generation -- 2026-09-11
+         `evennia aetos setup`: review each candidate, TEST it
+         against a live character before accepting (B.40 -- the
+         step the wizard exists for), edit without editing Python,
+         then write report.txt / suggested_bindings.py /
+         suggested_provider.py into aetos-discovery/, which nothing
+         imports. settings.py is never touched, generated Python is
+         parsed before it is written, and the provider skeleton is
+         labelled STARTER CODE and offered only where a binding
+         genuinely cannot reach.
+         The wizard owns no input()/print(): it takes `ask` and
+         `say`, so a list of answers walks it. END OF INPUT IS A
+         QUIT, not a default -- otherwise running it in a script
+         would accept everything.
+         GATE ASSERTED END TO END: bare character with db.hp/
+         db.hp_max -> walk -> generated file evaluated as a paste
+         would be -> bar read back from BoundResourceProvider.
+         LAB FOUND: a merged action said "not seen in a live command
+         set" directly under evidence that it was; the static
+         caveat now drops when the runtime pass disproves it.
+         Two release gates said no and both were right, not worked
+         around.
+         1708 -> 1749 py. See notes/d5-setup-wizard.md.
+
 [x] D4   Static AST discovery -- 2026-09-11
          The rest of B.23's patterns: AttributeProperty declarations,
          reads (weaker than assignments, and said so), Command
@@ -830,6 +854,30 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (all five slots; equality after the normaliser is the gate,
          and an `order` field that would have done nothing was cut
          before it shipped)
+[x] D5   Setup wizard and generation -- 2026-09-11
+         `evennia aetos setup`: review each candidate, TEST it
+         against a live character before accepting (B.40 -- the
+         step the wizard exists for), edit without editing Python,
+         then write report.txt / suggested_bindings.py /
+         suggested_provider.py into aetos-discovery/, which nothing
+         imports. settings.py is never touched, generated Python is
+         parsed before it is written, and the provider skeleton is
+         labelled STARTER CODE and offered only where a binding
+         genuinely cannot reach.
+         The wizard owns no input()/print(): it takes `ask` and
+         `say`, so a list of answers walks it. END OF INPUT IS A
+         QUIT, not a default -- otherwise running it in a script
+         would accept everything.
+         GATE ASSERTED END TO END: bare character with db.hp/
+         db.hp_max -> walk -> generated file evaluated as a paste
+         would be -> bar read back from BoundResourceProvider.
+         LAB FOUND: a merged action said "not seen in a live command
+         set" directly under evidence that it was; the static
+         caveat now drops when the runtime pass disproves it.
+         Two release gates said no and both were right, not worked
+         around.
+         1708 -> 1749 py. See notes/d5-setup-wizard.md.
+
 [x] D4   Static AST discovery -- 2026-09-11
          The rest of B.23's patterns: AttributeProperty declarations,
          reads (weaker than assignments, and said so), Command
@@ -1288,7 +1336,7 @@ D-track   developer integration            D0 next, independent
 [ ] D2   Declarative provider suite
 [x] D3   Runtime + structural discovery      -- 1679 py, 2026-09-11
 [x] D4   Static AST discovery                -- 1708 py, 2026-09-11
-[ ] D5   Interactive setup wizard + generation
+[x] D5   Interactive setup wizard + generation -- 1749 py, 2026-09-11
 [ ] D6   Hardening, docs and integration validation   (with M27, M28)
 ```
 
@@ -1587,6 +1635,30 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [ ] M21..M29
 [ ] A8   Assistive-technology validation
 [ ] M31  Release candidate
+[x] D5   Setup wizard and generation -- 2026-09-11
+         `evennia aetos setup`: review each candidate, TEST it
+         against a live character before accepting (B.40 -- the
+         step the wizard exists for), edit without editing Python,
+         then write report.txt / suggested_bindings.py /
+         suggested_provider.py into aetos-discovery/, which nothing
+         imports. settings.py is never touched, generated Python is
+         parsed before it is written, and the provider skeleton is
+         labelled STARTER CODE and offered only where a binding
+         genuinely cannot reach.
+         The wizard owns no input()/print(): it takes `ask` and
+         `say`, so a list of answers walks it. END OF INPUT IS A
+         QUIT, not a default -- otherwise running it in a script
+         would accept everything.
+         GATE ASSERTED END TO END: bare character with db.hp/
+         db.hp_max -> walk -> generated file evaluated as a paste
+         would be -> bar read back from BoundResourceProvider.
+         LAB FOUND: a merged action said "not seen in a live command
+         set" directly under evidence that it was; the static
+         caveat now drops when the runtime pass disproves it.
+         Two release gates said no and both were right, not worked
+         around.
+         1708 -> 1749 py. See notes/d5-setup-wizard.md.
+
 [x] D4   Static AST discovery -- 2026-09-11
          The rest of B.23's patterns: AttributeProperty declarations,
          reads (weaker than assignments, and said so), Command

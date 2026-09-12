@@ -164,6 +164,28 @@ def _fields(slot, item):
     return item.key, fields
 
 
+def entry_for(slot, item):
+    """
+    The key and fields one candidate would generate, for anything that needs
+    them outside this module.
+
+    Args:
+        slot (str): The binding slot.
+        item: A `Candidate` or `ActionCandidate`.
+
+    Returns:
+        tuple: `(key, [(field, value), ...])`.
+
+    Notes:
+        The wizard offers the developer exactly what the report would print, so
+        both ask the same function. Two copies of "what does a resource entry
+        look like" would drift, and the one that drifted would be the one
+        nobody reads.
+
+    """
+    return _fields(slot, item)
+
+
 def _heading(slot, item):
     """
     The name line of an explanation.

@@ -46,6 +46,7 @@ import os
 
 from evennia.contrib.base_systems.aetos_webclient.discovery import confidence
 from evennia.contrib.base_systems.aetos_webclient.discovery.candidates import (
+    SOURCE_ONLY_REASON,
     ActionCandidate,
     Candidate,
 )
@@ -409,8 +410,9 @@ def _action_from(node, label):
         command = key
 
     # Always LOW: source says the class exists, not that it is in any character's
-    # command set. B.28 -- "name appears only in source".
-    reasons.append("not seen in a live command set")
+    # command set. B.28 -- "name appears only in source". The merge drops this
+    # line if the runtime pass then finds the command on a real character.
+    reasons.append(SOURCE_ONLY_REASON)
     return ActionCandidate(
         key=key,
         command=command,
@@ -544,13 +546,17 @@ def scan_source(source, label, receivers=CHARACTER_RECEIVERS, max_nodes=MAX_NODE
     return found, actions, problems
 
 
-def scan_files(gamedir=None):
+def scan_files(gamedir=None, stats=None):
     """
     Everything the static pass finds across the files it is allowed to read.
 
     Args:
         gamedir (str, optional): The game directory. Defaults to
             `settings.GAME_DIR`.
+        stats (dict, optional): Filled in with `files_read`, for a report that
+            wants to say how much was looked at (B.45). An out-parameter rather
+            than another return value, because every caller wants the
+            candidates and only the report wants the count.
 
     Returns:
         tuple: `(candidates, actions, problems)`.
@@ -563,6 +569,8 @@ def scan_files(gamedir=None):
 
     """
     files, problems = select_files(gamedir)
+    if stats is not None:
+        stats["files_read"] = len(files)
     base = os.path.realpath(gamedir) if gamedir else game_directory()
     candidates, actions = [], []
 

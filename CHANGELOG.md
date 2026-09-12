@@ -11,6 +11,31 @@ change. Each milestone has a fuller record in [`notes/`](notes/).
 
 ## [Unreleased]
 
+### Added — a guided setup that tests a binding before you keep it (D5)
+
+`evennia aetos setup` walks the suggestions one at a time. It exists for one
+step: it reads each expression off a live character and shows the number
+*before* offering to accept it. A binding that resolves to nothing looks exactly
+like a correct one until a browser is open and a bar is missing.
+
+- **Review, edit, ignore or explain**, one candidate at a time, with the
+  evidence and confidence beside each. Editing changes a label or an expression
+  without editing Python; an expression the grammar refuses is explained in
+  words and not taken.
+- **A candidate whose test reads nothing is not accepted on a plain yes.** It
+  says so, asks again, and marks any deliberate acceptance as `(test failed)`.
+- **Writes `report.txt`, `suggested_bindings.py` and — only where a binding
+  genuinely cannot reach — `suggested_provider.py`** into `aetos-discovery/`,
+  which nothing imports. `settings.py` is never touched, generated Python is
+  parsed before it is written, and the provider skeleton is labelled
+  `STARTER CODE -- REVIEW BEFORE USE`.
+- **Quitting writes nothing, and end of input is a quit rather than a default**,
+  so running it without a terminal accepts nothing instead of everything.
+- **Fixed:** a command found both in source and on a live character kept the
+  caveat "not seen in a live command set" beside the evidence that it was.
+
+See [`notes/d5-setup-wizard.md`](notes/d5-setup-wizard.md).
+
 ### Added — the static pass reads what the runtime pass cannot (D4)
 
 A brand-new game has a typeclass and no characters; a game mid-edit has source

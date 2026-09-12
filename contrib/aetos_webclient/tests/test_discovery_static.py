@@ -197,6 +197,50 @@ class TestCommandsFoundInSource(TestCase):
         _, actions, _ = _scan('class Character(DefaultCharacter):\n    key = "bob"\n')
         self.assertEqual(actions, {})
 
+    def test_a_merged_action_drops_the_caveat_the_other_half_disproves(self):
+        """
+        Found by running the wizard against the lab: `setres` was presented as
+        "not seen in a live command set" directly under evidence that it was in
+        one. A reason that contradicts the evidence beside it costs the report
+        its credibility.
+
+        """
+        from evennia.contrib.base_systems.aetos_webclient.discovery.candidates import (
+            SOURCE_ONLY_REASON,
+            ActionCandidate,
+        )
+
+        found = CandidateSet()
+        found.add_action(
+            ActionCandidate(
+                "setres",
+                "setres {target}",
+                "world/demo_cmds.py:14",
+                confidence.LOW,
+                reasons=("declared in the game's source", SOURCE_ONLY_REASON),
+            )
+        )
+        found.add_action(
+            ActionCandidate(
+                "setres",
+                "setres {target}",
+                "setres in DefaultCharacter",
+                confidence.LOW,
+                reasons=("a command the game added, not one of Evennia's own",),
+            )
+        )
+        merged = found.actions["setres"]
+        self.assertNotIn(SOURCE_ONLY_REASON, merged.reasons)
+        self.assertIn("DefaultCharacter", merged.evidence)
+
+    def test_the_caveat_survives_when_source_is_all_there_is(self):
+        from evennia.contrib.base_systems.aetos_webclient.discovery.candidates import (
+            SOURCE_ONLY_REASON,
+        )
+
+        _, actions, _ = _scan(self.SOURCE, "commands/combat.py")
+        self.assertIn(SOURCE_ONLY_REASON, actions["attack"].reasons)
+
     def test_a_runtime_action_outranks_the_same_one_found_in_source(self):
         """
         The live command set is the stronger evidence, and the merge must not
