@@ -119,6 +119,34 @@ Legend: `[x]` complete · `[~]` in progress · `[ ]` not started
 [x] M29  Compatibility matrix
 [~] M30  Accessibility review  -- WITHDRAWN, see Addendum A below
 [ ] M31  Release candidate
+[x] D6   Hardening, documentation and validation -- 2026-09-12
+         THE D-TRACK IS COMPLETE.
+         The in-client help showed the WIZARD's screen under
+         `evennia aetos discover`, which is the one-shot report --
+         written when the wizard was a plan, accurate about the
+         thing and wrong about the command. Documentation that
+         names a command is now TESTED: every `evennia aetos <word>`
+         in the README and the in-client help must exist, and the
+         walkthrough example must sit under the command that walks.
+         B.50: the README taught providers first. It now opens with
+         four levels (nothing / AETOS_BINDINGS / AETOS_UI / a
+         provider) and providers are marked advanced, with a test
+         on the ordering.
+         B.51: "never scans during play" -> the wording that
+         separates gameplay from development tooling.
+         New tests: fresh Evennia end to end (and the zero-config
+         providers still answer -- "found nothing" and "broke
+         everything" look alike from inside a discovery test), a
+         ship with hull/oxygen/reactor pairs, 300 files against the
+         ceiling, every grammar refusal readable, generated code
+         checked for the properties black would enforce, and B.52
+         privacy asked of the syntax tree.
+         MY OWN TEST WAS TOO BLUNT: searching for "attributes.add("
+         as text flagged the scanner's own documentation of the
+         form it recognises.
+         1749 -> 1774 py; 386 a11y checks re-run (help.js is a
+         client file). See notes/d6-hardening-and-docs.md.
+
 [x] D5   Setup wizard and generation -- 2026-09-11
          `evennia aetos setup`: review each candidate, TEST it
          against a live character before accepting (B.40 -- the
@@ -854,6 +882,34 @@ completes, the README says *"Designed toward WCAG 2.2 AA"* and nothing stronger.
          (all five slots; equality after the normaliser is the gate,
          and an `order` field that would have done nothing was cut
          before it shipped)
+[x] D6   Hardening, documentation and validation -- 2026-09-12
+         THE D-TRACK IS COMPLETE.
+         The in-client help showed the WIZARD's screen under
+         `evennia aetos discover`, which is the one-shot report --
+         written when the wizard was a plan, accurate about the
+         thing and wrong about the command. Documentation that
+         names a command is now TESTED: every `evennia aetos <word>`
+         in the README and the in-client help must exist, and the
+         walkthrough example must sit under the command that walks.
+         B.50: the README taught providers first. It now opens with
+         four levels (nothing / AETOS_BINDINGS / AETOS_UI / a
+         provider) and providers are marked advanced, with a test
+         on the ordering.
+         B.51: "never scans during play" -> the wording that
+         separates gameplay from development tooling.
+         New tests: fresh Evennia end to end (and the zero-config
+         providers still answer -- "found nothing" and "broke
+         everything" look alike from inside a discovery test), a
+         ship with hull/oxygen/reactor pairs, 300 files against the
+         ceiling, every grammar refusal readable, generated code
+         checked for the properties black would enforce, and B.52
+         privacy asked of the syntax tree.
+         MY OWN TEST WAS TOO BLUNT: searching for "attributes.add("
+         as text flagged the scanner's own documentation of the
+         form it recognises.
+         1749 -> 1774 py; 386 a11y checks re-run (help.js is a
+         client file). See notes/d6-hardening-and-docs.md.
+
 [x] D5   Setup wizard and generation -- 2026-09-11
          `evennia aetos setup`: review each candidate, TEST it
          against a live character before accepting (B.40 -- the
@@ -1337,7 +1393,7 @@ D-track   developer integration            D0 next, independent
 [x] D3   Runtime + structural discovery      -- 1679 py, 2026-09-11
 [x] D4   Static AST discovery                -- 1708 py, 2026-09-11
 [x] D5   Interactive setup wizard + generation -- 1749 py, 2026-09-11
-[ ] D6   Hardening, docs and integration validation   (with M27, M28)
+[x] D6   Hardening, docs and integration validation -- 1774 py, 2026-09-12
 ```
 
 The D-track has no accessibility gates of its own, because it produces no player
@@ -1635,6 +1691,34 @@ generalises a lesson from mapper behaviour into a project-wide invariant.
 [ ] M21..M29
 [ ] A8   Assistive-technology validation
 [ ] M31  Release candidate
+[x] D6   Hardening, documentation and validation -- 2026-09-12
+         THE D-TRACK IS COMPLETE.
+         The in-client help showed the WIZARD's screen under
+         `evennia aetos discover`, which is the one-shot report --
+         written when the wizard was a plan, accurate about the
+         thing and wrong about the command. Documentation that
+         names a command is now TESTED: every `evennia aetos <word>`
+         in the README and the in-client help must exist, and the
+         walkthrough example must sit under the command that walks.
+         B.50: the README taught providers first. It now opens with
+         four levels (nothing / AETOS_BINDINGS / AETOS_UI / a
+         provider) and providers are marked advanced, with a test
+         on the ordering.
+         B.51: "never scans during play" -> the wording that
+         separates gameplay from development tooling.
+         New tests: fresh Evennia end to end (and the zero-config
+         providers still answer -- "found nothing" and "broke
+         everything" look alike from inside a discovery test), a
+         ship with hull/oxygen/reactor pairs, 300 files against the
+         ceiling, every grammar refusal readable, generated code
+         checked for the properties black would enforce, and B.52
+         privacy asked of the syntax tree.
+         MY OWN TEST WAS TOO BLUNT: searching for "attributes.add("
+         as text flagged the scanner's own documentation of the
+         form it recognises.
+         1749 -> 1774 py; 386 a11y checks re-run (help.js is a
+         client file). See notes/d6-hardening-and-docs.md.
+
 [x] D5   Setup wizard and generation -- 2026-09-11
          `evennia aetos setup`: review each candidate, TEST it
          against a live character before accepting (B.40 -- the

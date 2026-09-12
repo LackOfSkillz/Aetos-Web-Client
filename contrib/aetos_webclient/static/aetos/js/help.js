@@ -1132,27 +1132,30 @@
                     body: [
                         "A development-time tool that inspects your own game -- a " +
                             "representative character, your typeclasses, your command set -- " +
-                            "and suggests the bindings. It shows its evidence and how confident " +
-                            "it is, lets you correct anything, tests each binding against a " +
-                            "live character before generating, and writes the result out for " +
-                            "you to paste in.",
+                            "and suggests the bindings, with its evidence and how confident it " +
+                            "is beside each one.",
+                        "evennia aetos discover prints the suggestions in one go. " +
+                            "evennia aetos setup walks them one at a time and reads each value " +
+                            "off a live character, so you see the number before you keep it, " +
+                            "lets you correct anything, and writes what you accept to " +
+                            "aetos-discovery/ for you to paste in.",
                         "It never edits your game, never runs your code, and is not reachable " +
                             "by players. And when it cannot tell two candidates apart it says " +
                             "so rather than picking one."
                     ],
                     example:
-                        "evennia aetos discover\n\n" +
+                        "evennia aetos setup --character #12\n\n" +
                         "Possible resource found\n" +
                         "-----------------------\n" +
                         "Suggested name:  Health\n" +
-                        "Current:         db.hp\n" +
+                        "Value:           db.hp\n" +
                         "Maximum:         db.hp_max\n" +
                         "Test values:     82 / 100\n\n" +
                         "Evidence:\n" +
-                        "  both attributes exist        names appear related\n" +
-                        "  both are numeric             current <= maximum\n\n" +
+                        "  - hp and hp_max are named like a value and its ceiling\n" +
+                        "  - both are numbers on the characters read\n\n" +
                         "Confidence: HIGH\n\n" +
-                        "[Y] Use   [E] Edit   [N] Ignore   [?] Explain"
+                        "Use this integration?  [Y]es [E]dit [N]o [?]explain [Q]uit"
                 },
                 {
                     heading: "Where bindings stop, and why",
