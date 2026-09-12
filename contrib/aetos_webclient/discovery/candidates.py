@@ -264,6 +264,15 @@ class Candidate:
         return "runtime" in _origin_parts(self.origin)
 
 
+#: The caveat a source-only action carries.
+#:
+#: Named rather than written twice, because the merge has to *recognise* it: a
+#: command found in source and then found on a live character kept saying "not
+#: seen in a live command set" beside the evidence that it was. A reason that
+#: contradicts the evidence next to it costs the whole report its credibility.
+SOURCE_ONLY_REASON = "not seen in a live command set"
+
+
 @dataclass(frozen=True)
 class ActionCandidate:
     """
@@ -456,10 +465,18 @@ class CandidateSet:
             if rank.get(action.confidence, 9) < rank.get(existing.confidence, 9)
             else (existing, action)
         )
+        # Whichever half came from source carried "not seen in a live command
+        # set". If the other half *is* the live command set, that is no longer
+        # true and must not travel with the merge.
+        reasons = [
+            reason
+            for reason in dict.fromkeys(stronger.reasons + weaker.reasons)
+            if reason != SOURCE_ONLY_REASON
+        ]
         self.actions[action.key] = replace(
             stronger,
             evidence="%s; %s" % (stronger.evidence, weaker.evidence),
-            reasons=tuple(dict.fromkeys(stronger.reasons + weaker.reasons)),
+            reasons=tuple(reasons),
             warnings=tuple(dict.fromkeys(stronger.warnings + weaker.warnings)),
         )
 

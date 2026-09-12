@@ -114,12 +114,14 @@ class TestTheEntryPoint(TestCase):
 
     def test_there_is_one_command_with_subcommands_under_it(self):
         """
-        B.34 asks the documentation to expose exactly one command. D1 and D2 add
-        subcommands to this file rather than commands beside it.
+        B.34 asks the documentation to expose exactly one command. Later stages
+        add subcommands to this file rather than commands beside it -- D5's
+        `setup` is the second.
 
         """
         source = COMMAND.read_text(encoding="utf-8")
-        self.assertIn('SUBCOMMANDS = ("discover",)', source)
+        self.assertIn('SUBCOMMANDS = ("discover", "setup")', source)
+        self.assertEqual(source.count("class Command"), 1)
 
     def test_running_it_with_no_subcommand_does_not_guess(self):
         """

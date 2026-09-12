@@ -30,7 +30,7 @@ D0 ships; D1 and D2 add to this file rather than adding commands beside it.
 
 from django.core.management.base import BaseCommand, CommandError
 
-SUBCOMMANDS = ("discover",)
+SUBCOMMANDS = ("discover", "setup")
 
 
 class Command(BaseCommand):
@@ -38,7 +38,9 @@ class Command(BaseCommand):
 
     help = (
         "Aetos web client developer tools. "
-        "`evennia aetos discover` suggests AETOS_BINDINGS from your game's own data."
+        "`evennia aetos discover` suggests AETOS_BINDINGS from your game's own data; "
+        "`evennia aetos setup` walks through those suggestions one at a time, tests "
+        "each against a live character, and writes what you accept to aetos-discovery/."
     )
 
     def add_arguments(self, parser):
@@ -123,14 +125,24 @@ class Command(BaseCommand):
                 "unknown Aetos subcommand %r. Available: %s" % (subcommand, ", ".join(SUBCOMMANDS))
             )
 
-        self._discover(options)
+        if subcommand == "setup":
+            self._setup(options)
+        else:
+            self._discover(options)
 
-    def _discover(self, options):
+    def _gather(self, options):
         """
-        Suggest `AETOS_BINDINGS` from the game's own data.
+        Run whichever scans the options ask for.
 
         Args:
             options (dict): Parsed arguments.
+
+        Returns:
+            tuple: `(CandidateSet, problems, context, characters)`.
+
+        Raises:
+            CommandError: If a scan root escapes the game, or the developer
+                named a character or typeclass that cannot be used.
 
         """
         # Imported here rather than at module level so that `evennia aetos` with
@@ -155,7 +167,6 @@ class Command(BaseCommand):
         from evennia.contrib.base_systems.aetos_webclient.discovery import (
             CandidateSet,
             ScanRootError,
-            report,
             runtime_scan,
             static_scan,
             structure,
@@ -171,7 +182,7 @@ class Command(BaseCommand):
 
         if not options.get("runtime_only"):
             try:
-                candidates, actions, issues = static_scan.scan_files()
+                candidates, actions, issues = static_scan.scan_files(stats=context)
             except ScanRootError as error:
                 raise CommandError(str(error))
             for candidate in candidates:
@@ -212,6 +223,20 @@ class Command(BaseCommand):
 
         found.pair_maximums()
         found.assess(sampled=len(characters))
+        context["problems"] = problems
+        return found, problems, context, characters
+
+    def _discover(self, options):
+        """
+        Suggest `AETOS_BINDINGS` from the game's own data.
+
+        Args:
+            options (dict): Parsed arguments.
+
+        """
+        from evennia.contrib.base_systems.aetos_webclient.discovery import report
+
+        found, problems, context, _ = self._gather(options)
         self.stdout.write(
             report.render(
                 found,
@@ -219,4 +244,74 @@ class Command(BaseCommand):
                 include_all=options.get("include_all"),
                 context=context,
             )
+        )
+
+    def _setup(self, options):
+        """
+        Walk the suggestions one at a time, test each, and write what is accepted.
+
+        Args:
+            options (dict): Parsed arguments.
+
+        Notes:
+            The wizard owns no input or output of its own; this is where it is
+            wired to a terminal. Quitting, or running with no terminal at all,
+            writes nothing -- the files appear only at the end of a walk the
+            developer finished.
+
+        """
+        from evennia.contrib.base_systems.aetos_webclient.discovery import (
+            generate,
+            wizard,
+        )
+
+        found, problems, context, characters = self._gather(options)
+
+        walk = wizard.Wizard(
+            found,
+            context=context,
+            character=characters[0] if characters else None,
+            ask=lambda prompt: input(prompt),
+            say=lambda text: self.stdout.write(text),
+        )
+        result = walk.run()
+        if result["quit"]:
+            return
+
+        accepted = result["accepted"]
+        bindings = generate.bindings_source(accepted) if accepted else None
+        provider = (
+            generate.provider_source(result["provider_findings"])
+            if result["provider_findings"]
+            else None
+        )
+        names = [generate.REPORT_FILE]
+        if bindings:
+            names.append(generate.BINDINGS_FILE)
+        if provider:
+            names.append(generate.PROVIDER_FILE)
+
+        text = generate.report_source(
+            context,
+            result["accepted_lines"],
+            result["ignored_lines"],
+            problems,
+            names,
+        )
+
+        try:
+            written = generate.write(
+                context.get("gamedir"), text, bindings=bindings, provider=provider
+            )
+        except Exception as error:
+            raise CommandError("nothing was written (%s)" % error)
+
+        self.stdout.write("")
+        self.stdout.write("Written:")
+        for path in written:
+            self.stdout.write("  %s" % path)
+        self.stdout.write("")
+        self.stdout.write(
+            "Nothing has been applied. Copy what you want from %s into "
+            "server/conf/settings.py." % generate.BINDINGS_FILE
         )
